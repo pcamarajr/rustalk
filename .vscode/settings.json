@@ -1,0 +1,59 @@
+{
+  "cSpell.words": [
+    "RUSTALK",
+    "rustalk",
+    "Tauri",
+    "tauri",
+    "SvelteKit",
+    "sveltekit",
+    "PCMU",
+    "PCMA",
+    "DTMF",
+    "WASAPI",
+    "CoreAudio",
+    "coreaudio",
+    "rsip",
+    "libsip",
+    "serde",
+    "tokio",
+    "nextest",
+    "tarpaulin",
+    "ssrc",
+    "unmarshal",
+    "Pcmu",
+    "pcmu",
+    "wireframes",
+    "testuser",
+    "testpass",
+    "NSIS",
+    "nsis",
+    "msvc",
+    "rustup",
+    "tlsv",
+    "winget",
+    "xcrun",
+    "notarytool",
+    "codesign",
+    "cicd"
+  ],
+  "files.associations": {
+    "*.md": "markdown"
+  },
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  "[rust]": {
+    "editor.defaultFormatter": "rust-lang.rust-analyzer",
+    "editor.formatOnSave": true
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "[svelte]": {
+    "editor.defaultFormatter": "svelte.svelte-vscode",
+    "editor.formatOnSave": true
+  },
+  "rust-analyzer.checkOnSave.command": "clippy"
+}
