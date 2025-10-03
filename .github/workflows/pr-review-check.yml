@@ -1,0 +1,215 @@
+name: RUSTALK PR Review Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, edited]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  validate-testing-instructions:
+    name: Validate Testing Instructions
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup GitHub CLI
+        run: |
+          type -p gh &>/dev/null || {
+            echo "GitHub CLI not found, installing..."
+            (type -p wget >/dev/null || (sudo apt update && sudo apt-get install wget -y)) \
+            && sudo mkdir -p -m 755 /etc/apt/keyrings \
+            && wget -qO- https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null \
+            && sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+            && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+            && sudo apt update \
+            && sudo apt install gh -y
+          }
+          echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+
+      - name: Validate Testing Instructions
+        id: validate
+        run: |
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          echo "🔍 Validating PR #${PR_NUMBER} testing instructions..."
+
+          # Get PR body
+          PR_BODY=$(gh pr view $PR_NUMBER --json body --jq .body)
+
+          # Initialize validation results
+          MISSING_SECTIONS=()
+          WARNINGS=()
+
+          # Check for required sections
+          if ! echo "$PR_BODY" | grep -q "### Prerequisites"; then
+            MISSING_SECTIONS+=("Prerequisites")
+          fi
+
+          if ! echo "$PR_BODY" | grep -q "### Setup from Scratch"; then
+            MISSING_SECTIONS+=("Setup from Scratch (0 to 1)")
+          fi
+
+          if ! echo "$PR_BODY" | grep -q "### How to Test"; then
+            MISSING_SECTIONS+=("How to Test")
+          fi
+
+          if ! echo "$PR_BODY" | grep -q "### Running Automated Tests"; then
+            MISSING_SECTIONS+=("Running Automated Tests")
+          fi
+
+          if ! echo "$PR_BODY" | grep -q "### Expected Build Times"; then
+            MISSING_SECTIONS+=("Expected Build Times")
+          fi
+
+          if ! echo "$PR_BODY" | grep -q "### Troubleshooting"; then
+            MISSING_SECTIONS+=("Troubleshooting")
+          fi
+
+          # Check for placeholder content
+          if echo "$PR_BODY" | grep -q "Feature 1: \[Feature Name\]"; then
+            WARNINGS+=("Feature testing sections contain placeholders")
+          fi
+
+          if echo "$PR_BODY" | grep -q "Required:\n-\n-\n-"; then
+            WARNINGS+=("Prerequisites section not filled out")
+          fi
+
+          # Generate validation report
+          if [ ${#MISSING_SECTIONS[@]} -gt 0 ]; then
+            echo "validation_status=failed" >> $GITHUB_OUTPUT
+            echo "has_issues=true" >> $GITHUB_OUTPUT
+          elif [ ${#WARNINGS[@]} -gt 0 ]; then
+            echo "validation_status=warning" >> $GITHUB_OUTPUT
+            echo "has_issues=true" >> $GITHUB_OUTPUT
+          else
+            echo "validation_status=passed" >> $GITHUB_OUTPUT
+            echo "has_issues=false" >> $GITHUB_OUTPUT
+          fi
+
+          # Store results for comment
+          {
+            echo 'VALIDATION_REPORT<<EOF'
+            echo "## 🧪 Testing Instructions Validation"
+            echo ""
+
+            if [ ${#MISSING_SECTIONS[@]} -gt 0 ]; then
+              echo "### ❌ Missing Required Sections"
+              echo ""
+              for section in "${MISSING_SECTIONS[@]}"; do
+                echo "- \`$section\`"
+              done
+              echo ""
+            fi
+
+            if [ ${#WARNINGS[@]} -gt 0 ]; then
+              echo "### ⚠️ Warnings"
+              echo ""
+              for warning in "${WARNINGS[@]}"; do
+                echo "- $warning"
+              done
+              echo ""
+            fi
+
+            if [ ${#MISSING_SECTIONS[@]} -eq 0 ] && [ ${#WARNINGS[@]} -eq 0 ]; then
+              echo "### ✅ All Testing Instructions Present"
+              echo ""
+              echo "Great job! Your PR includes comprehensive testing instructions."
+            fi
+
+            echo ""
+            echo "---"
+            echo ""
+            echo "**Required Sections:**"
+            echo "- Prerequisites (with tool versions)"
+            echo "- Setup from Scratch (0 to 1 instructions)"
+            echo "- How to Test (step-by-step for each feature)"
+            echo "- Running Automated Tests"
+            echo "- Expected Build Times"
+            echo "- Troubleshooting"
+            echo ""
+            echo "See [PR template](.github/pull_request_template.md) for detailed guidelines."
+            echo 'EOF'
+          } >> $GITHUB_OUTPUT
+
+      - name: Post validation comment
+        if: steps.validate.outputs.has_issues == 'true'
+        run: |
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+
+          # Check if we already posted a validation comment
+          EXISTING_COMMENT=$(gh pr view $PR_NUMBER --json comments --jq '.comments[] | select(.body | contains("Testing Instructions Validation")) | .id' | head -1)
+
+          if [ -n "$EXISTING_COMMENT" ]; then
+            echo "Updating existing validation comment..."
+            gh api --method PATCH \
+              "/repos/${{ github.repository }}/issues/comments/${EXISTING_COMMENT}" \
+              -f body="${{ steps.validate.outputs.VALIDATION_REPORT }}"
+          else
+            echo "Creating new validation comment..."
+            gh pr comment $PR_NUMBER --body "${{ steps.validate.outputs.VALIDATION_REPORT }}"
+          fi
+
+      - name: Set status check
+        run: |
+          if [ "${{ steps.validate.outputs.validation_status }}" = "failed" ]; then
+            echo "❌ Validation failed - missing required sections"
+            exit 1
+          elif [ "${{ steps.validate.outputs.validation_status }}" = "warning" ]; then
+            echo "⚠️ Validation warning - please complete testing instructions"
+            # Don't fail on warnings, just alert
+          else
+            echo "✅ Validation passed"
+          fi
+
+  code-quality-check:
+    name: Code Quality & Standards
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          components: rustfmt, clippy
+
+      - name: Check Rust formatting
+        run: cargo fmt --check
+        continue-on-error: true
+        id: rustfmt
+
+      - name: Run Clippy
+        run: cargo clippy -- -D warnings
+        continue-on-error: true
+        id: clippy
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check TypeScript formatting
+        run: npm run format -- --check
+        continue-on-error: true
+        id: prettier
+
+      - name: Run ESLint
+        run: npm run lint
+        continue-on-error: true
+        id: eslint
+
+      - name: Report quality issues
+        if: steps.rustfmt.outcome == 'failure' || steps.clippy.outcome == 'failure' || steps.prettier.outcome == 'failure' || steps.eslint.outcome == 'failure'
+        run: |
+          echo "::warning::Code quality checks failed. Please run 'cargo fmt', 'cargo clippy', 'npm run format', and 'npm run lint' locally."

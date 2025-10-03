@@ -38,6 +38,101 @@ Closes RUST-XXX
 - Rust backend: `XX%` (target: 85%+)
 - Frontend: `XX%` (target: 80%+)
 
+## 🧪 Testing Instructions
+
+### Prerequisites
+<!-- List all tools and versions required to test this PR -->
+<!-- Example:
+- Rust 1.70 or later
+- Node.js 18+ and npm/pnpm
+- macOS 11+ OR Windows 10+
+- [Any additional tools or services]
+-->
+
+**Required:**
+-
+-
+-
+
+**Optional:**
+-
+
+### Setup from Scratch (0 to 1)
+<!-- Provide step-by-step instructions for someone who has never set up the project -->
+
+1. **Clone and checkout this PR:**
+   ```bash
+   git fetch origin pull/<PR_NUMBER>/head:pr-<PR_NUMBER>
+   git checkout pr-<PR_NUMBER>
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   # Backend dependencies
+   cargo check
+
+   # Frontend dependencies
+   npm install
+   ```
+
+3. **Build the project:**
+   ```bash
+   # Development build
+   npm run dev
+
+   # OR production build
+   npm run tauri:build
+   ```
+
+### How to Test
+<!-- Provide clear, step-by-step instructions for testing the implemented features -->
+
+#### Feature 1: [Feature Name]
+1. **Steps to test:**
+   -
+   -
+   -
+
+2. **Expected result:**
+   -
+   -
+
+3. **How to verify:**
+   ```bash
+   # Commands to verify the feature works
+   ```
+
+#### Feature 2: [Feature Name]
+<!-- Repeat for each major feature -->
+
+### Running Automated Tests
+
+```bash
+# Run Rust unit tests
+cargo test
+
+# Run frontend tests
+npm test
+
+# Run E2E tests
+npm run test:e2e
+```
+
+### Expected Build Times
+<!-- Help reviewers understand if build is taking longer than expected -->
+- Initial cargo build: ~X minutes
+- npm install: ~X seconds
+- Development mode startup: ~X seconds
+
+### Troubleshooting
+<!-- List common issues and solutions -->
+
+**Issue:** [Common problem]
+**Solution:** [How to fix it]
+
+**Issue:** [Another problem]
+**Solution:** [How to fix it]
+
 ## Checklist
 <!-- Mark completed items with an 'x' -->
 
