@@ -23,8 +23,7 @@
         "hide": true,
         "show": true,
         "minimize": true,
-        "maximize": true,
-        "fullscreen": false
+        "maximize": true
       }
     },
     "bundle": {
@@ -69,7 +68,6 @@
     },
     "windows": [
       {
-        "fullscreen": false,
         "height": 600,
         "resizable": true,
         "title": "RUSTALK",

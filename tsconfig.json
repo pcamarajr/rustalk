@@ -12,11 +12,7 @@
     "moduleResolution": "bundler",
     "module": "esnext",
     "target": "esnext",
-    "lib": ["esnext", "dom", "dom.iterable"],
-    "paths": {
-      "$lib": ["./src/lib"],
-      "$lib/*": ["./src/lib/*"]
-    }
+    "lib": ["esnext", "dom", "dom.iterable"]
   },
   "include": ["src/**/*.d.ts", "src/**/*.ts", "src/**/*.js", "src/**/*.svelte"]
 }

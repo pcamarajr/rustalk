@@ -1,8 +1,10 @@
 # Cargo configuration for RUSTALK
 
-# Use cargo-nextest for faster test execution
-[target.'cfg(all())']
-runner = "nextest"
+# Note: cargo-nextest configuration
+# Install with: cargo install cargo-nextest
+# Uncomment below once nextest is installed
+# [target.'cfg(all())']
+# runner = "nextest"
 
 # Nextest configuration
 [profile.ci]
