@@ -1,0 +1,10 @@
+# Cargo configuration for RUSTALK
+
+# Use cargo-nextest for faster test execution
+[target.'cfg(all())']
+runner = "nextest"
+
+# Nextest configuration
+[profile.ci]
+retries = 2
+fail-fast = false
