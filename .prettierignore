@@ -1,0 +1,13 @@
+# Ignore build artifacts
+dist/
+.svelte-kit/
+node_modules/
+target/
+
+# Ignore lock files
+package-lock.json
+pnpm-lock.yaml
+Cargo.lock
+
+# Ignore generated files
+*.d.ts
