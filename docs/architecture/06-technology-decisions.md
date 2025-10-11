@@ -6,14 +6,14 @@
 
 ## Decision Summary
 
-| Component | Choice | Alternatives Considered | Status |
-|-----------|--------|------------------------|--------|
-| SIP Library | `rsip` + custom async | rvoip, pjsip-rs | ✅ Approved |
-| Audio I/O | `cpal` | coreaudio-rs, platform-specific | ✅ Approved |
-| RTP/Media | `webrtc-rs` (modules) | Custom RTP, rvoip | ✅ Approved |
-| Secure Storage | `keyring` | platform-specific | ✅ Approved |
-| TLS | `rustls` | native-tls | ✅ Approved |
-| Async Runtime | Tokio | async-std | ✅ Approved |
+| Component      | Choice                | Alternatives Considered         | Status      |
+| -------------- | --------------------- | ------------------------------- | ----------- |
+| SIP Library    | `rsip` + custom async | rvoip, pjsip-rs                 | ✅ Approved |
+| Audio I/O      | `cpal`                | coreaudio-rs, platform-specific | ✅ Approved |
+| RTP/Media      | `webrtc-rs` (modules) | Custom RTP, rvoip               | ✅ Approved |
+| Secure Storage | `keyring`             | platform-specific               | ✅ Approved |
+| TLS            | `rustls`              | native-tls                      | ✅ Approved |
+| Async Runtime  | Tokio                 | async-std                       | ✅ Approved |
 
 ---
 
@@ -26,6 +26,7 @@
 **License:** MIT
 
 #### Decision Criteria Scores
+
 - **Documentation Quality:** ⭐⭐⭐⭐ (Good)
 - **Examples/Boilerplate:** ⭐⭐⭐ (Moderate)
 - **Battle-Tested:** ⭐⭐⭐ (Moderate - 100 stars, active dev)
@@ -34,6 +35,7 @@
 - **Community:** ⭐⭐⭐ (Moderate - 24 forks, active)
 
 #### Pros
+
 - ✅ Pure Rust implementation (no FFI)
 - ✅ Zero-cost abstractions with lazy header parsing
 - ✅ Follows RFC 3261 specifications closely
@@ -42,12 +44,14 @@
 - ✅ Good API documentation on docs.rs
 
 #### Cons
+
 - ⚠️ NOT a complete SIP server/client (parser/generator only)
 - ⚠️ Requires building full async networking layer with Tokio
 - ⚠️ Limited production usage examples
 - ⚠️ Significant development effort (estimated 40-60 hours)
 
 #### Mitigation Strategy
+
 - Use SPARC TDD methodology to incrementally build async layer
 - Phase 1: Parser/generator integration (16h)
 - Phase 1: Transport layer with TLS (20h)
@@ -55,6 +59,7 @@
 - Phase 3: Dialog layer (remaining hours in call flows)
 
 #### Companion Library: rsip-dns
+
 **Repository:** https://github.com/vasilakisfil/rsip-dns
 **Purpose:** RFC 3263 DNS SRV lookups for SIP
 **Async Support:** ✅ Yes (ResolvableExt trait)
@@ -68,12 +73,14 @@
 **License:** MIT
 
 #### Why Rejected
+
 - 🚫 **Alpha stage - NOT PRODUCTION READY**
 - 🚫 Explicitly marked as unstable, APIs subject to change
 - 🚫 Released July 2025 (too new, insufficient battle testing)
 - 🚫 Known issues remain per documentation
 
 #### Positive Aspects (Future Consideration)
+
 - ✨ All-in-one solution: SIP + RTP + audio codecs + processing
 - ✨ RFC 3261 compliant
 - ✨ Multiple codecs (G.711, G.722, Opus, G.729)
@@ -82,6 +89,7 @@
 - ✨ Built for async/await with Tokio
 
 #### Recommendation
+
 **Monitor for beta/stable release.** If rvoip reaches production-ready status during Phase 2-3, consider migration path. This would eliminate significant custom SIP stack work.
 
 ---
@@ -92,6 +100,7 @@
 **Crates:** Multiple fragmented/abandoned projects
 
 #### Why Rejected
+
 - 🚫 FFI to C library (not idiomatic Rust)
 - 🚫 Requires unsafe code throughout
 - 🚫 Poor async/Tokio integration
@@ -101,6 +110,7 @@
 - 🚫 Limited Rust-specific documentation
 
 #### Positive Aspects
+
 - ✅ PJSIP is industry-standard, battle-tested
 - ✅ Complete SIP/RTP/audio solution
 - ✅ Extensive features and codec support
@@ -119,6 +129,7 @@
 **License:** Apache 2.0
 
 #### Decision Criteria Scores
+
 - **Documentation Quality:** ⭐⭐⭐⭐⭐ (Excellent)
 - **Examples/Boilerplate:** ⭐⭐⭐⭐ (Good - multiple examples)
 - **Battle-Tested:** ⭐⭐⭐⭐⭐ (Production-proven)
@@ -127,11 +138,13 @@
 - **Community:** ⭐⭐⭐⭐⭐ (RustAudio - very active)
 
 #### Platform Support
+
 - **macOS:** CoreAudio (native, full-featured)
 - **Windows:** WASAPI (native), ASIO (optional for ultra-low latency)
 - **Linux:** ALSA, JACK (future support)
 
 #### Pros
+
 - ✅ **Best choice** for cross-platform pure Rust audio
 - ✅ Part of RustAudio community (excellent ecosystem)
 - ✅ Battle-tested in production applications
@@ -140,10 +153,12 @@
 - ✅ Comprehensive documentation and examples
 
 #### Cons
+
 - ⚠️ Callback-based API (requires async bridge to Tokio)
 - ⚠️ Some platform-specific quirks (documented)
 
 #### Integration Pattern
+
 ```rust
 // Callback → Tokio bridge using channels
 let (tx, rx) = tokio::sync::mpsc::channel(1024);
@@ -181,6 +196,7 @@ tokio::spawn(async move {
 **License:** MIT/Apache 2.0
 
 #### Decision Criteria Scores
+
 - **Documentation Quality:** ⭐⭐⭐⭐ (Good)
 - **Examples/Boilerplate:** ⭐⭐⭐⭐ (Good - multiple examples)
 - **Battle-Tested:** ⭐⭐⭐ (Moderate - Pion rewrite)
@@ -189,6 +205,7 @@ tokio::spawn(async move {
 - **Community:** ⭐⭐⭐⭐ (Good - active development)
 
 #### Pros
+
 - ✅ Most complete pure Rust RTP/RTCP implementation
 - ✅ Modular design - can use RTP modules without full WebRTC stack
 - ✅ Async/await support throughout
@@ -196,17 +213,20 @@ tokio::spawn(async move {
 - ✅ Active development and maintenance
 
 #### Cons
+
 - ⚠️ Early development stage (not explicitly production-ready)
 - ⚠️ May require upstream bug fixes/contributions
 - ⚠️ Some features still in development
 
 #### Risk Mitigation
+
 - Thorough testing in Phase 2-3
 - Budget 8-12 hours for potential bug fixes
 - Contribute fixes upstream if needed
 - Fallback: Build minimal RTP stack (adds 40+ hours)
 
 #### Usage
+
 ```rust
 use webrtc_rtp as rtp;
 
@@ -226,11 +246,13 @@ session.write_rtp(&packet).await?;
 **License:** MIT/Apache 2.0
 
 #### Platform Support
+
 - **macOS:** Keychain Services API
 - **Windows:** Credential Manager API
 - **Linux:** Secret Service API (future)
 
 #### Pros
+
 - ✅ Cross-platform with single API
 - ✅ Uses platform-native secure storage
 - ✅ Well-documented
@@ -238,6 +260,7 @@ session.write_rtp(&packet).await?;
 - ✅ Simple API
 
 #### Example
+
 ```rust
 use keyring::Entry;
 
@@ -258,6 +281,7 @@ let password = entry.get_password()?;
 **License:** Apache 2.0/ISC/MIT
 
 #### Pros
+
 - ✅ Pure Rust TLS implementation
 - ✅ Memory-safe (no OpenSSL CVEs)
 - ✅ Excellent async/Tokio integration
@@ -265,6 +289,7 @@ let password = entry.get_password()?;
 - ✅ Used in production (Cloudflare, etc.)
 
 #### Cons
+
 - ⚠️ Smaller ecosystem than OpenSSL
 
 **Decision:** Prefer rustls for SIPS (SIP over TLS) unless compatibility issues arise.
@@ -283,6 +308,7 @@ let password = entry.get_password()?;
 ## Technology Stack Summary
 
 ### Final Approved Stack
+
 ```toml
 # Cargo.toml dependencies (estimated)
 [dependencies]
@@ -318,16 +344,19 @@ async-trait = "0.1"
 If SIP interoperability is **not** a hard requirement, consider:
 
 ### WebRTC Stack
+
 - **Signaling:** Custom WebRTC signaling server (instead of SIP)
 - **Media:** `webrtc-rs` (full stack)
 - **Audio:** `cpal` (same)
 
 #### Pros
+
 - ✅ More modern protocol
 - ✅ Better NAT traversal (ICE/STUN/TURN)
 - ✅ More complete Rust stack available
 
 #### Cons
+
 - ❌ Not traditional VoIP/SIP
 - ❌ May not work with existing SIP providers
 - ❌ Requires custom signaling server
@@ -339,49 +368,56 @@ If SIP interoperability is **not** a hard requirement, consider:
 ## Risk Assessment
 
 ### High Risk
-| Risk | Impact | Probability | Mitigation |
-|------|--------|-------------|------------|
-| rsip async layer too complex | Schedule delay | Medium | SPARC TDD, phased approach, monitor rvoip |
-| webrtc-rs bugs | Quality issues | Medium | Thorough testing, upstream contributions |
+
+| Risk                         | Impact         | Probability | Mitigation                                |
+| ---------------------------- | -------------- | ----------- | ----------------------------------------- |
+| rsip async layer too complex | Schedule delay | Medium      | SPARC TDD, phased approach, monitor rvoip |
+| webrtc-rs bugs               | Quality issues | Medium      | Thorough testing, upstream contributions  |
 
 ### Medium Risk
-| Risk | Impact | Probability | Mitigation |
-|------|--------|-------------|------------|
-| cpal audio latency | UX degradation | Low | Low-level API, small buffers, jitter buffer |
-| Platform-specific issues | Compatibility | Medium | Platform abstraction, test early on Windows |
+
+| Risk                     | Impact         | Probability | Mitigation                                  |
+| ------------------------ | -------------- | ----------- | ------------------------------------------- |
+| cpal audio latency       | UX degradation | Low         | Low-level API, small buffers, jitter buffer |
+| Platform-specific issues | Compatibility  | Medium      | Platform abstraction, test early on Windows |
 
 ### Low Risk
-| Risk | Impact | Probability | Mitigation |
-|------|--------|-------------|------------|
-| keyring API changes | Code churn | Low | Stable API, pin version |
-| rustls compatibility | Integration issues | Very Low | Well-tested with Tokio |
+
+| Risk                 | Impact             | Probability | Mitigation              |
+| -------------------- | ------------------ | ----------- | ----------------------- |
+| keyring API changes  | Code churn         | Low         | Stable API, pin version |
+| rustls compatibility | Integration issues | Very Low    | Well-tested with Tokio  |
 
 ---
 
 ## Future Considerations
 
 ### When rvoip Reaches Stability
+
 - **Timeline:** Monitor for beta/v1.0 (likely 6-12 months)
 - **Action:** Evaluate migration path from rsip → rvoip
 - **Benefit:** Eliminate custom SIP stack maintenance
 
 ### Codec Support
+
 - **MVP:** G.711 (simplest, widely supported)
 - **Future:** Opus (high quality), G.722 (wideband)
 - **Research:** Existing Rust codec crates vs. FFI
 
 ### Additional Libraries
-| Component | Library | Status |
-|-----------|---------|--------|
-| DTMF | TBD | Post-MVP |
-| Call recording | TBD | Post-MVP |
-| NAT traversal | STUN/TURN | Post-MVP |
+
+| Component      | Library   | Status   |
+| -------------- | --------- | -------- |
+| DTMF           | TBD       | Post-MVP |
+| Call recording | TBD       | Post-MVP |
+| NAT traversal  | STUN/TURN | Post-MVP |
 
 ---
 
 ## Consensus Statement
 
 **Approved by Hive Mind Collective:**
+
 - ✅ Researcher Agent: Technology evaluation complete
 - ✅ Analyst Agent: Architecture alignment verified
 - ✅ Tester Agent: Testing approach validated

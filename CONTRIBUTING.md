@@ -5,6 +5,7 @@ Thank you for your interest in contributing to RUSTALK! This guide will help you
 ## 🎯 Project Overview
 
 RUSTALK is an AI-developed, open-source VoIP desktop application built with:
+
 - **Backend**: Rust + Tauri
 - **Frontend**: SvelteKit + TypeScript
 - **Development**: AI agents with SPARC methodology
@@ -63,6 +64,7 @@ npx claude-flow@alpha command rustalk/feature-sparc --feature "Your Feature Name
 ```
 
 **SPARC Phases:**
+
 1. **Specification**: Define requirements and acceptance criteria
 2. **Pseudocode**: Design algorithm and logic flow
 3. **Architecture**: Plan structure and dependencies
@@ -95,19 +97,20 @@ mod tests {
 
 ```typescript
 // TypeScript example: src/lib/stores/auth.test.ts
-import { describe, it, expect } from 'vitest'
-import { authStore } from './auth'
+import { describe, it, expect } from 'vitest';
+import { authStore } from './auth';
 
 describe('authStore', () => {
   it('should initialize with logged out state', () => {
-    expect(authStore.isAuthenticated()).toBe(false)
-  })
-})
+    expect(authStore.isAuthenticated()).toBe(false);
+  });
+});
 ```
 
 ### 4. Follow Code Standards
 
 **Rust:**
+
 ```bash
 # Format code
 cargo fmt
@@ -120,6 +123,7 @@ cargo test
 ```
 
 **TypeScript/SvelteKit:**
+
 ```bash
 # Format code
 npm run format
@@ -147,6 +151,7 @@ chore(deps): update rsip to 0.5
 ```
 
 **Types:**
+
 - `feat`: New feature
 - `fix`: Bug fix
 - `docs`: Documentation only
@@ -175,24 +180,31 @@ Before submitting a PR, ensure:
 **Every PR MUST include comprehensive testing instructions.** Use our PR template which includes:
 
 #### 1. Prerequisites
+
 List all required tools with versions:
+
 ```markdown
 **Required:**
+
 - Rust 1.70+
 - Node.js 18+
 - [Any feature-specific requirements]
 ```
 
 #### 2. Setup from Scratch (0 to 1)
+
 Provide step-by-step setup for someone who has never run the project:
-```markdown
+
+````markdown
 1. Clone and checkout:
    ```bash
    git fetch origin pull/<PR_NUMBER>/head:pr-<PR_NUMBER>
    git checkout pr-<PR_NUMBER>
    ```
+````
 
 2. Install dependencies:
+
    ```bash
    npm install
    cargo check
@@ -202,7 +214,8 @@ Provide step-by-step setup for someone who has never run the project:
    ```bash
    npm run dev
    ```
-```
+
+````
 
 #### 3. How to Test Each Feature
 Break down testing by feature with clear steps:
@@ -223,8 +236,9 @@ Break down testing by feature with clear steps:
    ```bash
    # Check logs for successful registration
    tail -f ~/.rustalk/logs/app.log | grep "SIP REGISTER"
-   ```
-```
+````
+
+````
 
 #### 4. Running Automated Tests
 ```markdown
@@ -237,8 +251,9 @@ npm test
 
 # Run E2E tests
 npm run test:e2e
-```
-```
+````
+
+````
 
 #### 5. Expected Build Times
 Help reviewers know if something is wrong:
@@ -246,10 +261,12 @@ Help reviewers know if something is wrong:
 - Initial cargo build: ~2-3 minutes
 - npm install: ~30-60 seconds
 - Development mode startup: ~5-10 seconds
-```
+````
 
 #### 6. Troubleshooting
+
 Document common issues and solutions:
+
 ```markdown
 **Issue:** cargo check fails with "linking error"
 **Solution:** Install Xcode Command Line Tools: `xcode-select --install`
@@ -358,9 +375,11 @@ RUSTALK follows clean architecture with 5 layers:
 ### Available Agents
 
 **Core agents** (`.claude/agents/core/`):
+
 - `coder`, `tester`, `reviewer`, `planner`, `researcher`
 
 **RUSTALK-specific agents** (`.claude/agents/rustalk/`):
+
 - `sip-specialist` - SIP protocol expert
 - `tauri-engineer` - Tauri integration specialist
 - `audio-engineer` - Audio systems specialist
@@ -386,19 +405,21 @@ Agents use MCP memory tools for coordination:
 
 ```javascript
 // Store findings in shared memory
-mcp__claude-flow__memory_usage({
-  action: "store",
-  namespace: "rustalk",
-  key: "feature-status",
-  value: JSON.stringify({ status: "in-progress", tests: "passing" })
-})
+mcp__claude -
+  flow__memory_usage({
+    action: 'store',
+    namespace: 'rustalk',
+    key: 'feature-status',
+    value: JSON.stringify({ status: 'in-progress', tests: 'passing' }),
+  });
 
 // Retrieve context from other agents
-mcp__claude-flow__memory_usage({
-  action: "retrieve",
-  namespace: "rustalk",
-  key: "architecture-decisions"
-})
+mcp__claude -
+  flow__memory_usage({
+    action: 'retrieve',
+    namespace: 'rustalk',
+    key: 'architecture-decisions',
+  });
 ```
 
 ## 📚 Documentation
@@ -418,18 +439,23 @@ Use Markdown with clear structure:
 # Feature Name
 
 ## Overview
+
 [Brief description]
 
 ## Architecture
+
 [Design decisions]
 
 ## API
+
 [Interface specifications]
 
 ## Testing
+
 [How to test this feature]
 
 ## Examples
+
 [Usage examples]
 ```
 
@@ -451,6 +477,7 @@ We use Linear for issue tracking:
 ## 🎉 Recognition
 
 Contributors will be recognized in:
+
 - Project README
 - Release notes
 - Linear issue acknowledgments

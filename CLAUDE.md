@@ -5,6 +5,7 @@
 **RUSTALK** is an open-source, white-label VoIP desktop application built entirely by autonomous AI agents.
 
 **Tech Stack:**
+
 - **Backend**: Rust + Tauri (desktop framework)
 - **Frontend**: SvelteKit + TypeScript
 - **Platforms**: macOS (primary), Windows (secondary), Linux (future)
@@ -17,6 +18,7 @@
 ## 📁 File Organization
 
 **NEVER save to root folder. Use these directories:**
+
 - `/src-tauri` - Rust backend code (SIP, audio, Tauri commands)
 - `/src` - SvelteKit frontend code
 - `/tests` - E2E tests (Playwright)
@@ -30,6 +32,7 @@
 ## 🏗️ Tech Stack Specifics
 
 ### Rust Backend (`/src-tauri`)
+
 - **Framework**: Tauri v1.x
 - **SIP**: Agent-researched library (prefer well-documented, async-ready)
 - **Audio**: Platform-specific (CoreAudio/macOS, WASAPI/Windows)
@@ -37,6 +40,7 @@
 - **Storage**: Keychain (macOS), Credential Manager (Windows)
 
 ### SvelteKit Frontend (`/src`)
+
 - **Framework**: SvelteKit (file-based routing, minimal boilerplate)
 - **Language**: TypeScript (strict mode)
 - **Styling**: TailwindCSS or utility-first CSS framework
@@ -44,6 +48,7 @@
 - **IPC**: Tauri invoke API
 
 ### Testing Strategy
+
 - **Rust**: `cargo test` + `cargo-nextest` (85%+ coverage)
 - **Frontend**: Vitest unit tests (80%+ coverage)
 - **E2E**: Playwright (macOS + Windows)
@@ -54,12 +59,14 @@
 ## 🧪 Test-Driven Development
 
 **Always test-first:**
+
 1. Write failing test
 2. Implement minimum code to pass
 3. Refactor for quality
 4. Achieve coverage targets
 
 **Coverage Requirements:**
+
 - Rust backend: 85%+
 - SvelteKit frontend: 80%+
 - E2E: All critical user paths
@@ -69,6 +76,7 @@
 ## 📚 MVP Feature Scope
 
 ### Must-Have (Blocker)
+
 1. SIP registration with credentials
 2. Outbound calls (dial + initiate)
 3. Inbound calls (receive + answer)
@@ -77,6 +85,7 @@
 6. Secure credential storage
 
 ### Post-MVP
+
 - Contact list
 - Call history
 - DTMF support
@@ -99,9 +108,11 @@
 ### Available Agents
 
 **Core agents** are in `.claude/agents/core/`:
+
 - `coder`, `tester`, `reviewer`, `planner`, `researcher`
 
 **RUSTALK-specific agents** are in `.claude/agents/rustalk/`:
+
 - `sip-specialist` - SIP protocol expert
 - `tauri-engineer` - Tauri integration specialist
 - `audio-engineer` - Audio systems specialist
@@ -111,6 +122,7 @@
 ### Custom Commands
 
 **RUSTALK workflows** are in `.claude/commands/rustalk/`:
+
 - `feature-sparc` - Full SPARC cycle for a feature
 - `linear-pr` - Create PR linked to Linear issue
 - `platform-build` - macOS/Windows build automation
@@ -122,14 +134,18 @@
 ## 🔄 Development Workflow
 
 ### Phase 1: Initial Planning
+
 Run once for full project architecture:
+
 ```bash
 npx claude-flow sparc run specification "RUSTALK MVP architecture"
 npx claude-flow sparc run architecture "Rust + Tauri + SvelteKit design"
 ```
 
 ### Phase 2: Feature Development
+
 For each feature, run full SPARC cycle:
+
 ```bash
 # Use custom RUSTALK command
 npx claude-flow@alpha command rustalk/feature-sparc --feature "SIP Registration"
@@ -139,6 +155,7 @@ npx claude-flow sparc tdd "SIP Registration feature"
 ```
 
 ### Phase 3: Linear + GitHub Integration
+
 ```bash
 # Create PR linked to Linear issue (semi-automated)
 npx claude-flow@alpha command rustalk/linear-pr --issue "RUST-123"
@@ -149,16 +166,19 @@ npx claude-flow@alpha command rustalk/linear-pr --issue "RUST-123"
 ## 🚀 Platform Builds
 
 ### macOS (Primary)
+
 - **Target**: macOS 11+, Universal Binary (Intel + Apple Silicon)
 - **Signing**: Apple Developer ID required
 - **Distribution**: DMG with notarization
 
 ### Windows (Secondary)
+
 - **Target**: Windows 10+, x64
 - **Installer**: NSIS (Tauri default)
 - **Distribution**: GitHub Releases
 
 ### Commands
+
 ```bash
 # Development
 pnpm dev              # Run SvelteKit + Tauri dev mode
@@ -192,11 +212,13 @@ When choosing libraries/approaches, prioritize:
 ## 🔗 Linear + GitHub Integration
 
 ### Linear Issues
+
 - **Epic format**: `[EPIC] Feature Area` (e.g., `[EPIC] SIP Integration`)
 - **Feature format**: `Feature Name` with SPARC-formatted description
 - **Labels**: `epic`, `feature`, `rustalk`, `macos`, `windows`
 
 ### GitHub PRs (Semi-Automated)
+
 - Agents create **draft PRs** via `rustalk/linear-pr` command
 - PRs auto-link to Linear: `Closes RUST-123`
 - Human review and merge required
@@ -264,6 +286,7 @@ When working on RUSTALK:
 ---
 
 # important-instruction-reminders
+
 - Do what has been asked; nothing more, nothing less
 - NEVER create files unless absolutely necessary
 - ALWAYS prefer editing existing files

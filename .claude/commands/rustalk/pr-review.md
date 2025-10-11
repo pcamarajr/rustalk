@@ -3,7 +3,7 @@ name: pr-review
 description: Multi-agent PR review orchestration for RUSTALK with comprehensive testing validation
 tools: mcp__claude-flow__swarm_init, mcp__claude-flow__agent_spawn, mcp__claude-flow__task_orchestrate, Bash, Read, Write, Grep
 type: review
-color: "#9B59B6"
+color: '#9B59B6'
 priority: high
 hooks:
   pre: |
@@ -38,9 +38,11 @@ npx claude-flow@alpha command rustalk/pr-review --pr <PR_NUMBER> --focus securit
 ## Agent Team
 
 ### 1. Testing Validator Agent
+
 **Role**: Validate testing instructions completeness
 
 **Checks:**
+
 - ✓ Prerequisites section complete with versions
 - ✓ 0-to-1 setup instructions present
 - ✓ Feature testing steps documented
@@ -50,26 +52,32 @@ npx claude-flow@alpha command rustalk/pr-review --pr <PR_NUMBER> --focus securit
 - ✓ Troubleshooting section present
 
 **Output:**
+
 ```markdown
 ## 🧪 Testing Instructions Review
 
 ### ✅ Complete
+
 - Prerequisites listed with versions
 - Setup from scratch documented
 
 ### ⚠️ Missing
+
 - Expected build times not documented
 - Troubleshooting section empty
 
 ### 📝 Suggestions
+
 1. Add estimated build time: ~2 minutes for initial cargo build
 2. Include common issues like "cargo check fails due to missing deps"
 ```
 
 ### 2. Security Agent
+
 **Role**: Security vulnerability scanning
 
 **Checks:**
+
 - Credential handling (no hardcoded secrets)
 - TLS/SIPS enforcement
 - Input validation
@@ -78,6 +86,7 @@ npx claude-flow@alpha command rustalk/pr-review --pr <PR_NUMBER> --focus securit
 - Secure storage usage
 
 **Integration:**
+
 ```bash
 # Run cargo audit
 cargo audit
@@ -87,9 +96,11 @@ git diff main... | grep -i "password\|secret\|api_key\|token"
 ```
 
 ### 3. Architecture Agent
+
 **Role**: Clean architecture compliance
 
 **Checks:**
+
 - Layer separation (Domain/Application/Infrastructure)
 - Dependency direction correctness
 - SOLID principles adherence
@@ -97,13 +108,16 @@ git diff main... | grep -i "password\|secret\|api_key\|token"
 - Module structure
 
 **References:**
+
 - `/docs/architecture/01-layers.md`
 - `CLAUDE.md` file organization rules
 
 ### 4. Production Validator Agent
+
 **Role**: Deployment readiness verification
 
 **Checks:**
+
 - All features fully implemented (no TODOs)
 - Tests passing with coverage targets
 - Build succeeds on target platforms
@@ -112,9 +126,11 @@ git diff main... | grep -i "password\|secret\|api_key\|token"
 - Error handling present
 
 ### 5. Documentation Agent
+
 **Role**: Documentation completeness
 
 **Checks:**
+
 - Testing instructions complete
 - API changes documented
 - Architecture docs updated
@@ -127,26 +143,28 @@ git diff main... | grep -i "password\|secret\|api_key\|token"
 
 ```javascript
 // Initialize hierarchical swarm
-mcp__claude-flow__swarm_init({
-  topology: "hierarchical",
-  maxAgents: 5,
-  strategy: "specialized"
-})
+mcp__claude -
+  flow__swarm_init({
+    topology: 'hierarchical',
+    maxAgents: 5,
+    strategy: 'specialized',
+  });
 
 // Spawn specialized review agents
 const agents = [
-  "testing-validator",
-  "security",
-  "architecture",
-  "production-validator",
-  "documentation"
-]
+  'testing-validator',
+  'security',
+  'architecture',
+  'production-validator',
+  'documentation',
+];
 
 for (const agentType of agents) {
-  await mcp__claude-flow__agent_spawn({
-    type: agentType,
-    capabilities: [agentType, "code-review", "rustalk-specific"]
-  })
+  (await mcp__claude) -
+    flow__agent_spawn({
+      type: agentType,
+      capabilities: [agentType, 'code-review', 'rustalk-specific'],
+    });
 }
 ```
 
@@ -173,38 +191,39 @@ mcp__claude-flow__memory_usage \
 // Orchestrate parallel review tasks
 const reviewTasks = [
   {
-    agent: "testing-validator",
-    task: "Validate testing instructions completeness in PR body and template compliance",
-    priority: "critical"
+    agent: 'testing-validator',
+    task: 'Validate testing instructions completeness in PR body and template compliance',
+    priority: 'critical',
   },
   {
-    agent: "security",
-    task: "Scan code changes for security vulnerabilities and verify secure practices",
-    priority: "critical"
+    agent: 'security',
+    task: 'Scan code changes for security vulnerabilities and verify secure practices',
+    priority: 'critical',
   },
   {
-    agent: "architecture",
-    task: "Verify clean architecture compliance and file organization",
-    priority: "high"
+    agent: 'architecture',
+    task: 'Verify clean architecture compliance and file organization',
+    priority: 'high',
   },
   {
-    agent: "production-validator",
-    task: "Verify all features fully implemented and deployment ready",
-    priority: "high"
+    agent: 'production-validator',
+    task: 'Verify all features fully implemented and deployment ready',
+    priority: 'high',
   },
   {
-    agent: "documentation",
-    task: "Ensure documentation is complete and accurate",
-    priority: "medium"
-  }
-]
+    agent: 'documentation',
+    task: 'Ensure documentation is complete and accurate',
+    priority: 'medium',
+  },
+];
 
 // Execute tasks in parallel
-await mcp__claude-flow__task_orchestrate({
-  task: JSON.stringify(reviewTasks),
-  strategy: "parallel",
-  priority: "high"
-})
+(await mcp__claude) -
+  flow__task_orchestrate({
+    task: JSON.stringify(reviewTasks),
+    strategy: 'parallel',
+    priority: 'high',
+  });
 ```
 
 ### Phase 4: Aggregate & Report
@@ -212,19 +231,19 @@ await mcp__claude-flow__task_orchestrate({
 ```javascript
 // Retrieve review results from memory
 const results = {
-  testing: await getAgentResults("testing-validator"),
-  security: await getAgentResults("security"),
-  architecture: await getAgentResults("architecture"),
-  production: await getAgentResults("production-validator"),
-  documentation: await getAgentResults("documentation")
-}
+  testing: await getAgentResults('testing-validator'),
+  security: await getAgentResults('security'),
+  architecture: await getAgentResults('architecture'),
+  production: await getAgentResults('production-validator'),
+  documentation: await getAgentResults('documentation'),
+};
 
 // Generate review summary
-const summary = generateReviewSummary(results)
+const summary = generateReviewSummary(results);
 
 // Post to PR if enabled
 if (options.postComment) {
-  await postPRComment(PR_NUMBER, summary)
+  await postPRComment(PR_NUMBER, summary);
 }
 ```
 
@@ -241,13 +260,13 @@ if (options.postComment) {
 
 ## 📊 Review Summary
 
-| Agent | Status | Critical Issues | Warnings | Suggestions |
-|-------|--------|----------------|----------|-------------|
-| 🧪 Testing Validator | {{ status }} | {{ critical }} | {{ warnings }} | {{ suggestions }} |
-| 🔒 Security | {{ status }} | {{ critical }} | {{ warnings }} | {{ suggestions }} |
-| 🏗️ Architecture | {{ status }} | {{ critical }} | {{ warnings }} | {{ suggestions }} |
-| ✅ Production Validator | {{ status }} | {{ critical }} | {{ warnings }} | {{ suggestions }} |
-| 📚 Documentation | {{ status }} | {{ critical }} | {{ warnings }} | {{ suggestions }} |
+| Agent                   | Status       | Critical Issues | Warnings       | Suggestions       |
+| ----------------------- | ------------ | --------------- | -------------- | ----------------- |
+| 🧪 Testing Validator    | {{ status }} | {{ critical }}  | {{ warnings }} | {{ suggestions }} |
+| 🔒 Security             | {{ status }} | {{ critical }}  | {{ warnings }} | {{ suggestions }} |
+| 🏗️ Architecture         | {{ status }} | {{ critical }}  | {{ warnings }} | {{ suggestions }} |
+| ✅ Production Validator | {{ status }} | {{ critical }}  | {{ warnings }} | {{ suggestions }} |
+| 📚 Documentation        | {{ status }} | {{ critical }}  | {{ warnings }} | {{ suggestions }} |
 
 **Overall Status**: {{ overall_status }}
 
@@ -346,7 +365,7 @@ required_sections:
     - clone_checkout_steps: true
     - dependency_installation: true
     - build_commands: true
-    - from_scratch: true  # Must start from clean state
+    - from_scratch: true # Must start from clean state
 
   feature_testing:
     - per_feature_breakdown: true
@@ -433,24 +452,27 @@ All agents store their findings in shared memory for coordination:
 
 ```javascript
 // Testing validator stores findings
-mcp__claude-flow__memory_usage({
-  action: "store",
-  namespace: "rustalk/pr-review",
-  key: `pr-${PR_NUMBER}-testing-validation`,
-  value: JSON.stringify({
-    status: "warning",
-    missing_sections: ["Expected Build Times"],
-    suggestions: ["Add build time estimates"],
-    timestamp: Date.now()
-  })
-})
+mcp__claude -
+  flow__memory_usage({
+    action: 'store',
+    namespace: 'rustalk/pr-review',
+    key: `pr-${PR_NUMBER}-testing-validation`,
+    value: JSON.stringify({
+      status: 'warning',
+      missing_sections: ['Expected Build Times'],
+      suggestions: ['Add build time estimates'],
+      timestamp: Date.now(),
+    }),
+  });
 
 // Security agent retrieves context
-const testingContext = await mcp__claude-flow__memory_usage({
-  action: "retrieve",
-  namespace: "rustalk/pr-review",
-  key: `pr-${PR_NUMBER}-testing-validation`
-})
+const testingContext =
+  (await mcp__claude) -
+  flow__memory_usage({
+    action: 'retrieve',
+    namespace: 'rustalk/pr-review',
+    key: `pr-${PR_NUMBER}-testing-validation`,
+  });
 ```
 
 ## Best Practices
@@ -465,11 +487,13 @@ const testingContext = await mcp__claude-flow__memory_usage({
 ## Examples
 
 ### Quick Review
+
 ```bash
 npx claude-flow@alpha command rustalk/pr-review --pr 1 --depth quick
 ```
 
 ### Comprehensive Security-Focused Review
+
 ```bash
 npx claude-flow@alpha command rustalk/pr-review \
   --pr 1 \
@@ -478,6 +502,7 @@ npx claude-flow@alpha command rustalk/pr-review \
 ```
 
 ### Silent Review (no PR comment)
+
 ```bash
 npx claude-flow@alpha command rustalk/pr-review \
   --pr 1 \

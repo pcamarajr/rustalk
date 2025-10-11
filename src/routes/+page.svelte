@@ -6,9 +6,7 @@
 
 <div class="container">
   <h1>Welcome to {name}</h1>
-  <p class="description">
-    AI-Developed VoIP Desktop Application
-  </p>
+  <p class="description">AI-Developed VoIP Desktop Application</p>
   <div class="status">
     <span class="badge">Phase 1: Infrastructure Setup</span>
   </div>

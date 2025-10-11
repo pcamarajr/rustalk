@@ -20,6 +20,7 @@ npm test -- --run    # SUCCESS - 1 test passed
 ```
 
 **Dependencies**:
+
 - SvelteKit 2.11.1
 - Svelte 5.2.13
 - Vite 6.0.7
@@ -35,6 +36,7 @@ cargo test           # SUCCESS - 1 test passed
 ```
 
 **Dependencies**:
+
 - Tauri 1.8.3
 - rsip 0.4.0 (SIP protocol)
 - cpal 0.15.3 (audio I/O)
@@ -206,14 +208,14 @@ cargo clippy -- -D warnings  # Lint Rust code
 
 ## Build Status
 
-| Component | Status | Version |
-|-----------|--------|---------|
-| Rust Backend | ✅ Passing | 1.70+ |
-| SvelteKit Frontend | ✅ Passing | 2.11.1 |
-| Unit Tests | ✅ Passing | 1/1 |
-| E2E Tests | ✅ Configured | Playwright |
-| Linting | ✅ Configured | ESLint + Clippy |
-| Formatting | ✅ Configured | Prettier + rustfmt |
+| Component          | Status        | Version            |
+| ------------------ | ------------- | ------------------ |
+| Rust Backend       | ✅ Passing    | 1.70+              |
+| SvelteKit Frontend | ✅ Passing    | 2.11.1             |
+| Unit Tests         | ✅ Passing    | 1/1                |
+| E2E Tests          | ✅ Configured | Playwright         |
+| Linting            | ✅ Configured | ESLint + Clippy    |
+| Formatting         | ✅ Configured | Prettier + rustfmt |
 
 ---
 

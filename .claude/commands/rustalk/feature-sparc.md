@@ -15,24 +15,28 @@ Executes a full SPARC (Specification, Pseudocode, Architecture, Refinement, Comp
 ## Workflow Phases
 
 ### 1. Specification (S)
+
 - Analyze feature requirements
 - Define acceptance criteria
 - Document edge cases and error scenarios
 - Create feature spec in `/docs/features/<feature-slug>.md`
 
 ### 2. Pseudocode (P)
+
 - Design algorithm and data flow
 - Define state machines (for SIP flows)
 - Plan error handling strategy
 - Document in spec file
 
 ### 3. Architecture (A)
+
 - Design Rust module structure
 - Define Tauri command API
 - Plan frontend component structure
 - Create architecture diagram
 
 ### 4. Refinement (R) - TDD Implementation
+
 - Write failing Rust tests
 - Implement Rust backend to pass tests
 - Write failing SvelteKit tests
@@ -40,6 +44,7 @@ Executes a full SPARC (Specification, Pseudocode, Architecture, Refinement, Comp
 - Achieve 85%+ backend, 80%+ frontend coverage
 
 ### 5. Completion (C)
+
 - Integration testing (E2E with Playwright)
 - Code review
 - Documentation update
@@ -51,20 +56,20 @@ This command spawns multiple agents in parallel:
 
 ```javascript
 // Step 1: Specification & Architecture (parallel)
-Task("Specification Agent", "Create detailed spec for <feature>", "specification")
-Task("Architecture Agent", "Design system architecture for <feature>", "architecture")
-Task("SIP Specialist", "If SIP-related, design protocol flow", "sip-specialist")
+Task('Specification Agent', 'Create detailed spec for <feature>', 'specification');
+Task('Architecture Agent', 'Design system architecture for <feature>', 'architecture');
+Task('SIP Specialist', 'If SIP-related, design protocol flow', 'sip-specialist');
 
 // Step 2: TDD Implementation (parallel)
-Task("Test Engineer 1", "Write Rust unit tests for <feature>", "tester")
-Task("Rust Coder", "Implement Rust backend for <feature>", "coder")
-Task("Tauri Engineer", "Create Tauri commands for <feature>", "tauri-engineer")
-Task("Frontend Coder", "Build SvelteKit components for <feature>", "coder")
-Task("Test Engineer 2", "Write E2E tests for <feature>", "tester")
+Task('Test Engineer 1', 'Write Rust unit tests for <feature>', 'tester');
+Task('Rust Coder', 'Implement Rust backend for <feature>', 'coder');
+Task('Tauri Engineer', 'Create Tauri commands for <feature>', 'tauri-engineer');
+Task('Frontend Coder', 'Build SvelteKit components for <feature>', 'coder');
+Task('Test Engineer 2', 'Write E2E tests for <feature>', 'tester');
 
 // Step 3: Review & Documentation (parallel)
-Task("Code Reviewer", "Review all code for quality and security", "reviewer")
-Task("API Docs", "Generate API documentation", "api-docs")
+Task('Code Reviewer', 'Review all code for quality and security', 'reviewer');
+Task('API Docs', 'Generate API documentation', 'api-docs');
 ```
 
 ## Memory Coordination
@@ -124,6 +129,7 @@ After completion, you will have:
 ## Next Steps
 
 After SPARC completion:
+
 1. Review all generated code and tests
 2. Run full test suite: `cargo nextest run && pnpm test && pnpm test:e2e`
 3. Create PR: `npx claude-flow@alpha command rustalk/linear-pr --feature "<feature>"`

@@ -20,6 +20,7 @@ RUSTALK is an open-source, white-label VoIP desktop application built with **Rus
 ## Technology Stack (Consensus Approved)
 
 ### Backend (Rust + Tauri)
+
 - **Framework**: Tauri v1.x
 - **SIP Protocol**: `rsip` (pure Rust parser/generator) + custom async layer
 - **Audio I/O**: `cpal` (RustAudio, cross-platform)
@@ -29,6 +30,7 @@ RUSTALK is an open-source, white-label VoIP desktop application built with **Rus
 - **Async Runtime**: Tokio
 
 ### Frontend (SvelteKit + TypeScript)
+
 - **Framework**: SvelteKit (file-based routing)
 - **Language**: TypeScript (strict mode)
 - **Styling**: TailwindCSS
@@ -36,6 +38,7 @@ RUSTALK is an open-source, white-label VoIP desktop application built with **Rus
 - **IPC**: Tauri invoke API
 
 ### Testing
+
 - **Rust**: `cargo-nextest`, `cargo-llvm-cov`, `mockall`
 - **Frontend**: Vitest, Svelte Testing Library
 - **E2E**: Playwright (macOS + Windows)
@@ -44,6 +47,7 @@ RUSTALK is an open-source, white-label VoIP desktop application built with **Rus
 ## MVP Feature Scope
 
 ### Must-Have (Blockers)
+
 1. SIP registration with credentials
 2. Outbound calls (dial + initiate)
 3. Inbound calls (receive + answer)
@@ -52,6 +56,7 @@ RUSTALK is an open-source, white-label VoIP desktop application built with **Rus
 6. Secure credential storage
 
 ### Timeline
+
 - **Total Duration**: 9.4 weeks (374 hours)
 - **Phase 1**: Core Infrastructure (2.4 weeks)
 - **Phase 2**: SIP Registration + Audio Selection (1.7 weeks)
@@ -77,6 +82,7 @@ RUSTALK is an open-source, white-label VoIP desktop application built with **Rus
 ## Key Design Decisions
 
 ### 1. SIP Library: rsip
+
 - **Decision**: Use `rsip` as foundation, build custom async layer
 - **Rationale**: Pure Rust, excellent type safety, RFC-compliant
 - **Trade-off**: Significant custom development vs. complete stack
@@ -84,6 +90,7 @@ RUSTALK is an open-source, white-label VoIP desktop application built with **Rus
 - **Mitigation**: SPARC TDD methodology, phased implementation
 
 ### 2. Audio: cpal
+
 - **Decision**: Use `cpal` for all audio I/O
 - **Rationale**: Cross-platform, pure Rust, well-documented, battle-tested
 - **Platforms**: CoreAudio (macOS), WASAPI (Windows)
@@ -91,12 +98,14 @@ RUSTALK is an open-source, white-label VoIP desktop application built with **Rus
 - **Mitigation**: Well-established pattern using channels
 
 ### 3. RTP: webrtc-rs
+
 - **Decision**: Use RTP/RTCP modules from `webrtc-rs`
 - **Rationale**: Most complete pure Rust RTP implementation
 - **Risk**: Early development stage, may require upstream contributions
 - **Mitigation**: Thorough testing, budget for bug fixes
 
 ### 4. Architecture Style: Clean + Hexagonal
+
 - **Decision**: Clean Architecture with Hexagonal Pattern
 - **Rationale**: Testability, platform abstraction, framework independence
 - **Benefit**: Core logic isolated from external dependencies
@@ -122,6 +131,7 @@ RUSTALK is an open-source, white-label VoIP desktop application built with **Rus
 ## Hive Mind Coordination
 
 This architecture was designed through collective intelligence:
+
 - **Researcher Agent**: Technology research and library evaluation
 - **Analyst Agent**: Architecture design and module structure
 - **Tester Agent**: Testing strategy and quality assurance

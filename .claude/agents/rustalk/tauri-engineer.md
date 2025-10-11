@@ -1,7 +1,7 @@
 ---
 name: tauri-engineer
 type: specialist
-color: "#FFC107"
+color: '#FFC107'
 description: Tauri desktop framework integration specialist
 capabilities:
   - tauri_commands
@@ -257,12 +257,7 @@ pub mod windows {
         "depends": []
       },
       "externalBin": [],
-      "icon": [
-        "icons/32x32.png",
-        "icons/128x128.png",
-        "icons/icon.icns",
-        "icons/icon.ico"
-      ],
+      "icon": ["icons/32x32.png", "icons/128x128.png", "icons/icon.icns", "icons/icon.ico"],
       "identifier": "com.rustalk.app",
       "longDescription": "Open-source VoIP desktop application",
       "macOS": {
@@ -361,6 +356,7 @@ mod tests {
 ## Coordination with Other Agents
 
 ### With sip-specialist
+
 ```javascript
 // Retrieve SIP API from memory
 mcp__claude-flow__memory_usage {
@@ -383,6 +379,7 @@ mcp__claude-flow__memory_usage {
 ```
 
 ### With coder (SvelteKit)
+
 - Share TypeScript types for Tauri commands
 - Document invoke API patterns
 - Provide error handling examples
@@ -398,6 +395,7 @@ mcp__claude-flow__memory_usage {
 ## Build Configuration
 
 ### macOS
+
 ```toml
 # Cargo.toml
 [target.'cfg(target_os = "macos")'.dependencies]
@@ -406,6 +404,7 @@ cocoa = "0.25"
 ```
 
 ### Windows
+
 ```toml
 [target.'cfg(target_os = "windows")'.dependencies]
 windows = { version = "0.52", features = ["Win32_Security_Credentials"] }

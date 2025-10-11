@@ -41,6 +41,7 @@ Use these scopes to indicate which part of the codebase is affected:
 ## Examples
 
 ### Feature
+
 ```
 feat(sip): implement SIP registration
 
@@ -51,6 +52,7 @@ feat(sip): implement SIP registration
 ```
 
 ### Bug Fix
+
 ```
 fix(audio): resolve CoreAudio device enumeration crash
 
@@ -62,6 +64,7 @@ Fixes RUST-123
 ```
 
 ### Breaking Change
+
 ```
 feat(backend)!: change call state enum structure
 
@@ -83,6 +86,7 @@ Migration required for existing state handling code.
 ## Footer
 
 Use the footer for:
+
 - Breaking change notices
 - Linear issue references
 - Co-authored-by credits

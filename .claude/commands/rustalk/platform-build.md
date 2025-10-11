@@ -204,6 +204,7 @@ Task("Build Tester", "Validate <platform> build", "tester")
 ### Manual Testing Checklist
 
 **macOS**:
+
 - [ ] App opens without security warnings
 - [ ] Microphone permission prompt appears
 - [ ] SIP registration succeeds
@@ -211,6 +212,7 @@ Task("Build Tester", "Validate <platform> build", "tester")
 - [ ] App Icon displays correctly
 
 **Windows**:
+
 - [ ] Installer runs without errors
 - [ ] App installs to correct location
 - [ ] Firewall prompts for network access
@@ -267,11 +269,13 @@ npx claude-flow@alpha command rustalk/platform-build --platform windows --sign t
 ## Troubleshooting
 
 **macOS**:
+
 - "Developer cannot be verified": Enable code signing
 - "Microphone permission denied": Add entitlements.plist
 - Universal binary too large: Check for duplicate dependencies
 
 **Windows**:
+
 - NSIS errors: Update WiX Toolset
 - DLL not found: Check Visual Studio runtime dependencies
 - Installer not signed: Add code signing certificate
@@ -279,10 +283,12 @@ npx claude-flow@alpha command rustalk/platform-build --platform windows --sign t
 ## Output Artifacts
 
 **macOS**:
+
 - `RUSTALK.app` - Application bundle
 - `rustalk.dmg` - Disk image installer
 - `rustalk-universal.tar.gz` - Archive for distribution
 
 **Windows**:
+
 - `rustalk_<version>_x64-setup.exe` - NSIS installer
 - `rustalk_<version>_x64.msi` - MSI installer (if WiX configured)

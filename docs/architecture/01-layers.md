@@ -42,6 +42,7 @@ External Systems (SIP Server, Audio Devices, Keychain)
 **Technology:** SvelteKit + TypeScript + TailwindCSS
 
 ### Responsibilities
+
 - Render UI components
 - Handle user input
 - Manage UI state via Svelte stores
@@ -50,12 +51,14 @@ External Systems (SIP Server, Audio Devices, Keychain)
 - Provide responsive, accessible interface
 
 ### Key Components
+
 - **Pages/Routes**: `/`, `/settings`, `/login`
 - **Components**: `Dialer`, `ActiveCall`, `CallControls`, `AudioDeviceSelector`, `ContactList`
 - **Stores**: `callStore`, `authStore`, `audioStore`, `settingsStore`
 - **API Layer**: `callApi`, `authApi`, `audioApi` (Tauri invoke wrappers)
 
 ### Data Flow
+
 ```
 User clicks "Call" button
   → callStore.initiate(number)
@@ -65,6 +68,7 @@ User clicks "Call" button
 ```
 
 ### Testing
+
 - **Unit Tests**: Stores, API layer, utility functions (Vitest)
 - **Component Tests**: Svelte Testing Library
 - **Coverage Target**: 80%+
@@ -77,6 +81,7 @@ User clicks "Call" button
 **Technology:** Tauri Commands API + Tauri Events API
 
 ### Responsibilities
+
 - Expose Tauri commands to frontend
 - Validate and sanitize all inputs
 - Translate errors from Rust → TypeScript
@@ -84,6 +89,7 @@ User clicks "Call" button
 - Enforce security (no credential leakage)
 
 ### Command Structure
+
 ```rust
 // Example: Tauri command
 #[tauri::command]
@@ -105,18 +111,21 @@ async fn initiate_call(
 ```
 
 ### Key Commands
+
 - **Auth**: `register_account`, `unregister_account`, `get_registration_status`
 - **Calls**: `initiate_call`, `answer_call`, `hangup_call`, `mute_call`
 - **Audio**: `list_audio_devices`, `set_audio_device`, `get_audio_levels`
 - **Settings**: `save_settings`, `load_settings`
 
 ### Events (Backend → Frontend)
+
 - `call_state_changed`: Call status updates (ringing, connected, ended)
 - `incoming_call`: New inbound call notification
 - `registration_state_changed`: SIP registration status
 - `audio_device_changed`: Audio device selection changed
 
 ### Testing
+
 - **Integration Tests**: Full IPC flow (invoke command → service → response)
 - **Mock Backend**: Test commands with mock services
 - **Error Handling**: Verify all error cases return proper TypeScript errors
@@ -129,6 +138,7 @@ async fn initiate_call(
 **Technology:** Rust + Tokio (async)
 
 ### Responsibilities
+
 - Orchestrate business operations
 - Manage call state machine
 - Coordinate SIP sessions
@@ -137,6 +147,7 @@ async fn initiate_call(
 - Handle credential lifecycle
 
 ### Key Services
+
 ```
 services/
 ├── call_service.rs        # Call lifecycle management
@@ -146,6 +157,7 @@ services/
 ```
 
 ### CallService Example
+
 ```rust
 pub struct CallService {
     sip_client: Arc<dyn SipClient>,
@@ -174,11 +186,13 @@ impl CallService {
 ```
 
 ### State Management
+
 - Call states: `Idle`, `Ringing`, `Connecting`, `Active`, `OnHold`, `Ended`
 - Registration states: `Unregistered`, `Registering`, `Registered`, `Failed`
 - Thread-safe state using `Arc<RwLock<T>>`
 
 ### Testing
+
 - **Unit Tests**: Business logic with mocked infrastructure
 - **Integration Tests**: Full service flows with test doubles
 - **Coverage Target**: 85%+
@@ -191,6 +205,7 @@ impl CallService {
 **Technology:** Pure Rust (no external dependencies)
 
 ### Responsibilities
+
 - Define core business entities
 - Implement domain events
 - Define value objects
@@ -198,6 +213,7 @@ impl CallService {
 - **No external dependencies** (framework-agnostic)
 
 ### Key Entities
+
 ```
 domain/
 ├── entities/
@@ -216,6 +232,7 @@ domain/
 ```
 
 ### Example: Call Entity
+
 ```rust
 #[derive(Debug, Clone)]
 pub struct Call {
@@ -249,6 +266,7 @@ impl Call {
 ```
 
 ### Domain Traits (Dependency Inversion)
+
 ```rust
 #[async_trait]
 pub trait SipClient: Send + Sync {
@@ -259,6 +277,7 @@ pub trait SipClient: Send + Sync {
 ```
 
 ### Testing
+
 - **Unit Tests**: Entity logic, state transitions
 - **No Mocks Needed**: Pure business logic
 
@@ -270,6 +289,7 @@ pub trait SipClient: Send + Sync {
 **Technology:** Rust + platform-specific libraries
 
 ### Responsibilities
+
 - Implement domain traits (SipClient, AudioEngine, etc.)
 - Handle SIP protocol (rsip + Tokio)
 - Manage RTP sessions (webrtc-rs)
@@ -278,6 +298,7 @@ pub trait SipClient: Send + Sync {
 - TLS/SIPS (rustls)
 
 ### Module Structure
+
 ```
 infrastructure/
 ├── sip/
@@ -301,6 +322,7 @@ infrastructure/
 ```
 
 ### Platform Abstraction Pattern
+
 ```rust
 // Platform-specific code isolated
 #[cfg(target_os = "macos")]
@@ -315,6 +337,7 @@ pub use windows::WindowsAudioBackend as PlatformAudioBackend;
 ```
 
 ### Testing
+
 - **Unit Tests**: SIP parsing, audio buffer logic
 - **Integration Tests**: Full protocol flows with mock servers
 - **Platform Tests**: Keychain/Credential Manager with test accounts
@@ -324,6 +347,7 @@ pub use windows::WindowsAudioBackend as PlatformAudioBackend;
 ## Layer Dependencies
 
 ### Dependency Rules
+
 1. **Outer layers depend on inner layers** (never the reverse)
 2. **Domain layer has ZERO external dependencies**
 3. **Infrastructure implements domain traits** (dependency inversion)
@@ -331,6 +355,7 @@ pub use windows::WindowsAudioBackend as PlatformAudioBackend;
 5. **IPC translates between Rust and TypeScript**
 
 ### Dependency Graph
+
 ```
 Presentation → IPC → Application → Domain ← Infrastructure
                                       ↑
@@ -377,23 +402,28 @@ Presentation → IPC → Application → Domain ← Infrastructure
 ## Benefits of This Architecture
 
 ### 1. Testability
+
 - Each layer can be tested independently
 - Domain logic tested without infrastructure
 - Mock infrastructure for application tests
 
 ### 2. Platform Abstraction
+
 - Platform-specific code isolated to infrastructure layer
 - Easy to add Linux support in future
 
 ### 3. Framework Independence
+
 - Core logic not tied to Tauri, SvelteKit, or any framework
 - Can migrate frontend to React/Vue without touching business logic
 
 ### 4. Clear Boundaries
+
 - Each layer has single responsibility
 - Easy to understand and navigate codebase
 
 ### 5. Scalability
+
 - New features added by extending services
 - Infrastructure changes don't affect business logic
 

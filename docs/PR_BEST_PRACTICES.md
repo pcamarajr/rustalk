@@ -5,6 +5,7 @@ This guide provides best practices and examples for creating high-quality pull r
 ## 🎯 Purpose
 
 Pull requests should be:
+
 - **Testable**: Anyone can verify changes without hunting for information
 - **Complete**: All context and instructions provided
 - **Professional**: Clear, concise, well-documented
@@ -25,38 +26,46 @@ Pull requests should be:
 ### Example: Excellent PR Title & Description
 
 **Bad Title:**
+
 ```
 fix stuff
 ```
 
 **Good Title:**
+
 ```
 feat(sip): add TLS support for secure registration
 ```
 
 **Excellent Description:**
+
 ```markdown
 ## Summary
+
 Implements TLS encryption for SIP registration to meet security requirements
 defined in SEC-6.4 (see /docs/architecture/05-implementation-roadmap.md).
 
 ## Problem
+
 Current SIP registration sends credentials in plaintext, violating our
 security guidelines and making it unsuitable for production use.
 
 ## Solution
+
 - Added rustls-based TLS transport for SIP connections
 - Implemented certificate validation with custom CA support
 - Updated SipClient trait to support both TCP and TLS transports
 - Added comprehensive tests for TLS handshake and certificate validation
 
 ## Technical Details
+
 - Uses rustls 0.23 with tokio-rustls for async TLS
 - Supports SIPS URI scheme (sips:user@domain.com)
 - Falls back to TCP for development mode (configurable)
 - Certificate pinning available for enhanced security
 
 ## Breaking Changes
+
 None - TLS support is additive and enabled via SIPS URI scheme.
 ```
 
@@ -66,17 +75,19 @@ None - TLS support is additive and enabled via SIPS URI scheme.
 
 Use this template for **every PR**:
 
-```markdown
+````markdown
 ## 🧪 Testing Instructions
 
 ### Prerequisites
 
 **Required:**
+
 - Tool 1: Version X.Y+ (check: `tool --version`)
 - Tool 2: Version A.B+ (check: `tool --version`)
 - Platform: macOS 11+ / Windows 10+
 
 **Optional:**
+
 - Tool for advanced testing (if applicable)
 
 ### Setup from Scratch (0 to 1)
@@ -86,14 +97,17 @@ Use this template for **every PR**:
    git fetch origin pull/<PR_NUMBER>/head:pr-<BRANCH_NAME>
    git checkout pr-<BRANCH_NAME>
    ```
+````
 
 2. **Install dependencies:**
+
    ```bash
    npm install
    cd src-tauri && cargo check && cd ..
    ```
 
 3. **Configure for testing** (if needed):
+
    ```bash
    # Any special configuration steps
    cp .env.example .env
@@ -112,17 +126,20 @@ Use this template for **every PR**:
 **What to test:** [Brief description of what this feature does]
 
 **Steps:**
+
 1. Open the application
 2. Navigate to [specific location]
 3. Perform [specific action]
 4. Observe [expected behavior]
 
 **Expected result:**
+
 - [Specific observable outcome 1]
 - [Specific observable outcome 2]
 - [What should NOT happen]
 
 **How to verify:**
+
 ```bash
 # Commands to verify the feature works
 tail -f ~/.rustalk/logs/app.log | grep "SUCCESS"
@@ -132,6 +149,7 @@ tail -f ~/.rustalk/logs/app.log | grep "SUCCESS"
 [Include if visual changes]
 
 #### Feature 2: [Next Feature]
+
 [Repeat pattern above]
 
 ### Running Automated Tests
@@ -146,6 +164,7 @@ npm test -- --grep "auth"  # Test auth components
 ```
 
 **Expected test output:**
+
 ```
 running 12 tests
 test sip::tls::test_handshake ... ok
@@ -164,6 +183,7 @@ test result: ok. 12 passed; 0 failed; 0 ignored
 
 **Issue:** [Specific error message or problem]
 **Solution:**
+
 ```bash
 # Exact commands to fix
 cargo clean && cargo build
@@ -171,6 +191,7 @@ cargo clean && cargo build
 
 **Issue:** [Another common problem]
 **Solution:** [Step-by-step fix]
+
 ```
 
 ## 🔍 Review Checklist
@@ -232,19 +253,24 @@ Split large PRs into smaller ones when:
 
 **Bad (one massive PR):**
 ```
+
 feat: add complete SIP + audio + UI
+
 - 2500 lines changed
 - Hard to review
 - High risk of bugs
+
 ```
 
 **Good (split into logical chunks):**
 ```
+
 PR #1: feat(sip): add SIP client trait and basic registration (300 lines)
 PR #2: feat(sip): add TLS support for SIP (250 lines)
 PR #3: feat(audio): implement audio device selection (400 lines)
 PR #4: feat(ui): add registration UI components (350 lines)
 PR #5: feat(integration): wire up SIP + audio + UI (200 lines)
+
 ```
 
 ## 🎨 Commit Message Excellence
@@ -252,32 +278,39 @@ PR #5: feat(integration): wire up SIP + audio + UI (200 lines)
 ### Format
 
 ```
+
 <type>(<scope>): <description>
 
 [optional body]
 
 [optional footer]
+
 ```
 
 ### Examples
 
 **Simple feature:**
 ```
+
 feat(sip): add TLS certificate validation
+
 ```
 
 **With body:**
 ```
+
 feat(sip): add TLS certificate validation
 
 Implements custom CA certificate support and certificate pinning
 for enhanced security. Uses rustls for memory-safe TLS.
 
 Closes RUST-45
+
 ```
 
 **Breaking change:**
 ```
+
 feat(api)!: change SipConfig structure
 
 BREAKING CHANGE: SipConfig now requires separate tls field instead
@@ -285,9 +318,11 @@ of auto-detecting from URI. Update all SipConfig instantiations to
 include explicit tls: true/false.
 
 Migration:
+
 - Old: SipConfig { uri: "sips:..." }
 - New: SipConfig { uri: "sips:...", tls: true }
-```
+
+````
 
 ### Commit Best Practices
 
@@ -322,11 +357,12 @@ to track this enhancement separately, as it's a larger refactor that
 deserves its own PR.
 
 Ready for re-review!
-```
+````
 
 ### When to Merge
 
 Merge when:
+
 - ✅ All reviewers approved
 - ✅ All CI checks passing
 - ✅ No unresolved conversations
@@ -334,6 +370,7 @@ Merge when:
 - ✅ Documentation complete
 
 **Don't merge if:**
+
 - ❌ Any tests failing
 - ❌ Unresolved review comments
 - ❌ CI checks not complete
@@ -344,6 +381,7 @@ Merge when:
 ### Example 1: Infrastructure Setup (PR #1)
 
 **What makes it good:**
+
 - ✅ Comprehensive testing instructions (0-to-1 setup)
 - ✅ Clear expected build times
 - ✅ Troubleshooting section with solutions
@@ -351,21 +389,26 @@ Merge when:
 - ✅ Atomic commits with clear messages
 
 **Testing instructions excerpt:**
+
 ```markdown
 ### Prerequisites
+
 - Rust 1.70+ (check: `rustc --version`)
 - Node.js 18+ (check: `node --version`)
 
 ### Setup from Scratch
+
 1. Clone and checkout...
 2. Install dependencies...
 3. Build the project...
 
 ### Expected Build Times
+
 - Initial cargo check: ~2-3 minutes
 - npm install: ~30-60 seconds
 
 ### Troubleshooting
+
 **Issue:** cargo check fails with network errors
 **Solution:** Try `cargo update` first...
 ```
@@ -373,12 +416,15 @@ Merge when:
 ### Example 2: Feature Implementation
 
 **Good structure:**
-```markdown
+
+````markdown
 ## Summary
+
 Implements SIP registration with secure credential storage per
 Phase 1 requirements (SEC-6.2).
 
 ## Changes
+
 - CredentialStore trait for platform abstraction
 - macOS Keychain integration via keyring crate
 - SipClient uses stored credentials for registration
@@ -387,11 +433,14 @@ Phase 1 requirements (SEC-6.2).
 ## Testing Instructions
 
 ### Prerequisites
+
 - macOS 11+ (Keychain integration requires macOS)
 - Test SIP server credentials (or use provided test account)
 
 ### Feature 1: Credential Storage
+
 **Steps:**
+
 1. Open Settings > Account
 2. Enter SIP credentials:
    - Server: sip.test.rustalk.dev
@@ -400,20 +449,25 @@ Phase 1 requirements (SEC-6.2).
 3. Click "Save Credentials"
 
 **Expected:**
+
 - Success message appears
 - Credentials stored in Keychain
 - Password not visible in app logs
 
 **Verify:**
+
 ```bash
 # Check Keychain for stored credential
 security find-internet-password -s "rustalk"
 # Should show entry without revealing password
 ```
+````
 
 ### Feature 2: SIP Registration
+
 ...
-```
+
+````
 
 ## 🚫 Common Mistakes to Avoid
 
@@ -423,34 +477,42 @@ security find-internet-password -s "rustalk"
 ```markdown
 ## Testing
 Run the app and test the feature.
-```
+````
 
 **Good:**
+
 ```markdown
 ## Testing Instructions
 
 ### Prerequisites
+
 - Rust 1.70+
 - Test SIP server access
 
 ### Setup from Scratch
+
 [Detailed steps...]
 
 ### How to Test
+
 [Step-by-step for each feature...]
 ```
 
 ### Mistake 2: Vague Descriptions
 
 **Bad:**
+
 ```markdown
 ## Description
+
 Updated SIP code to fix some issues.
 ```
 
 **Good:**
+
 ```markdown
 ## Description
+
 Fixed SIP registration timeout when server takes >5s to respond.
 
 **Root Cause:** Registration timeout was hardcoded to 3s, causing
@@ -463,18 +525,23 @@ retry logic with exponential backoff.
 ### Mistake 3: Missing Prerequisites
 
 **Bad:**
+
 ```markdown
 1. Run `cargo test`
 ```
-*(Fails if dependencies not installed)*
+
+_(Fails if dependencies not installed)_
 
 **Good:**
+
 ```markdown
 ### Prerequisites
+
 - Rust 1.70+ installed
 - ALSA dev libraries (Linux): `apt-get install libasound2-dev`
 
 ### Steps
+
 1. Install dependencies: `cargo check`
 2. Run tests: `cargo test`
 ```
@@ -482,23 +549,28 @@ retry logic with exponential backoff.
 ### Mistake 4: No Troubleshooting
 
 **Bad:**
-*(No troubleshooting section at all)*
+_(No troubleshooting section at all)_
 
 **Good:**
-```markdown
+
+````markdown
 ### Troubleshooting
 
 **Issue:** Tests fail with "connection refused"
 **Solution:** Ensure test SIP server is running:
+
 ```bash
 docker-compose up test-sip-server
 ```
+````
 
 **Issue:** Build fails with "linking error"
 **Solution:** Install platform dependencies:
+
 - macOS: `xcode-select --install`
 - Linux: `apt-get install build-essential`
-```
+
+````
 
 ## 🎓 Learning Resources
 
@@ -521,9 +593,10 @@ Run multi-agent PR review swarm:
 
 ```bash
 npx claude-flow@alpha command rustalk/pr-review --pr <PR_NUMBER>
-```
+````
 
 This deploys specialized agents:
+
 - **Testing Validator**: Checks testing instruction completeness
 - **Security Agent**: Scans for vulnerabilities
 - **Architecture Agent**: Verifies clean architecture compliance

@@ -1,7 +1,7 @@
 ---
 name: audio-engineer
 type: specialist
-color: "#9C27B0"
+color: '#9C27B0'
 description: Audio systems and RTP streaming specialist
 capabilities:
   - audio_devices
@@ -412,6 +412,7 @@ mod tests {
 ## Coordination with Other Agents
 
 ### With sip-specialist
+
 ```javascript
 // Share RTP port and codec info
 mcp__claude-flow__memory_usage {
@@ -428,6 +429,7 @@ mcp__claude-flow__memory_usage {
 ```
 
 ### With tauri-engineer
+
 ```javascript
 // Share audio device API
 mcp__claude-flow__memory_usage {

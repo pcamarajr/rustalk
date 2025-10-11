@@ -23,6 +23,7 @@ Phase 4: Polish + Windows         █████░░░░░░░░░░�
 ### Tasks
 
 #### Security & Storage (28 hours)
+
 - **SEC-6.1** (8h): Design `CredentialStore` trait abstraction
   - Files: `/src-tauri/src/domain/traits/credential_store.rs`
   - Tests: Unit tests for trait contract
@@ -37,6 +38,7 @@ Phase 4: Polish + Windows         █████░░░░░░░░░░�
   - Tests: Unit tests for validation rules
 
 #### Audio System (36 hours)
+
 - **AUD-5.1** (16h): Design `AudioEngine` trait + platform abstraction
   - Files: `/src-tauri/src/domain/traits/audio_engine.rs`
   - Files: `/src-tauri/src/infrastructure/audio/mod.rs`
@@ -49,6 +51,7 @@ Phase 4: Polish + Windows         █████░░░░░░░░░░�
   - Dependencies: `cpal`
 
 #### SIP Transport (30 hours)
+
 - **SIP-1.1** (16h): Integrate `rsip` library + basic parsing
   - Files: `/src-tauri/src/infrastructure/sip/parser.rs`
   - Files: `/src-tauri/src/infrastructure/sip/message_builder.rs`
@@ -66,15 +69,18 @@ Phase 4: Polish + Windows         █████░░░░░░░░░░�
   - Tests: Unit tests for cert validation
 
 ### Deliverables
+
 - ✅ Secure credential storage working on macOS (Keychain)
 - ✅ Audio device enumeration working on macOS (CoreAudio)
 - ✅ SIP transport layer with SIPS (TLS) support
 - ✅ All tests passing with 85%+ coverage
 
 ### Milestone
+
 **Demo:** Show credentials stored in Keychain + list audio devices + TLS handshake to SIP server
 
 ### Completion Criteria
+
 - [ ] `cargo test` passes with 85%+ coverage
 - [ ] Manual verification: Credentials persist in macOS Keychain
 - [ ] TLS connection succeeds to test SIP server
@@ -89,6 +95,7 @@ Phase 4: Polish + Windows         █████░░░░░░░░░░�
 ### Tasks
 
 #### SIP Registration (36 hours)
+
 - **SIP-1.3** (12h): REGISTER message handling (with 401 challenge)
   - Files: `/src-tauri/src/infrastructure/sip/registration.rs`
   - Tests: Unit tests for 401 challenge flow
@@ -108,6 +115,7 @@ Phase 4: Polish + Windows         █████░░░░░░░░░░�
   - Tests: Component tests for login form
 
 #### Audio Device Selection (30 hours)
+
 - **AUD-5.3** (10h): Audio device enumeration API
   - Files: `/src-tauri/src/services/audio_service.rs`
   - Tests: Unit tests with mock audio engine
@@ -126,15 +134,18 @@ Phase 4: Polish + Windows         █████░░░░░░░░░░�
   - Tests: Component tests
 
 ### Deliverables
+
 - ✅ Working SIP registration with real SIP server
 - ✅ Audio device selection in settings UI
 - ✅ Persistent credential storage
 - ✅ E2E test for registration flow
 
 ### Milestone
+
 **Demo:** Register SIP account via UI + select audio devices in settings
 
 ### Completion Criteria
+
 - [ ] Successful registration with test SIP server
 - [ ] Audio devices appear in UI dropdowns
 - [ ] Credentials persist across app restarts
@@ -149,6 +160,7 @@ Phase 4: Polish + Windows         █████░░░░░░░░░░�
 ### Tasks
 
 #### Outbound Calls (74 hours)
+
 - **OUT-2.1** (10h): INVITE message construction
   - Files: `/src-tauri/src/infrastructure/sip/invite.rs`
   - Tests: Unit tests for INVITE generation
@@ -180,6 +192,7 @@ Phase 4: Polish + Windows         █████░░░░░░░░░░�
   - Tests: Component tests
 
 #### Inbound Calls (56 hours)
+
 - **IN-3.1** (10h): INVITE listener for incoming calls
   - Files: `/src-tauri/src/infrastructure/sip/listener.rs`
   - Tests: Unit tests for INVITE handling
@@ -205,15 +218,18 @@ Phase 4: Polish + Windows         █████░░░░░░░░░░�
   - Tests: Component tests
 
 ### Deliverables
+
 - ✅ Make outbound calls with audio
 - ✅ Receive inbound calls with audio
 - ✅ Working RTP bidirectional audio
 - ✅ E2E tests for both call flows
 
 ### Milestone
+
 **Demo:** Make outbound call to test number + receive inbound call + two-way audio working
 
 ### Completion Criteria
+
 - [ ] Two-way audio working in test calls (manual verification)
 - [ ] Call state transitions correctly (Idle → Ringing → Active → Ended)
 - [ ] UI updates reflect call status in real-time
@@ -228,6 +244,7 @@ Phase 4: Polish + Windows         █████░░░░░░░░░░�
 ### Tasks
 
 #### Call Controls (24 hours)
+
 - **CTL-4.1** (6h): BYE message handling (hangup)
   - Files: `/src-tauri/src/infrastructure/sip/bye.rs`
   - Tests: Unit tests for BYE message
@@ -245,6 +262,7 @@ Phase 4: Polish + Windows         █████░░░░░░░░░░�
   - Tests: Component tests
 
 #### Windows Platform Support (32 hours)
+
 - **AUD-5.7** (20h): Windows WASAPI integration via `cpal`
   - Files: `/src-tauri/src/infrastructure/audio/windows.rs`
   - Tests: Integration test - Windows audio I/O
@@ -256,6 +274,7 @@ Phase 4: Polish + Windows         █████░░░░░░░░░░�
   - Platform: Windows 10+
 
 #### Production Polish (28 hours)
+
 - **SEC-6.4** (6h): Tauri credential commands (`save_credentials`, `load_credentials`)
   - Files: `/src-tauri/src/commands/credentials.rs`
   - Tests: Integration tests
@@ -272,15 +291,18 @@ Phase 4: Polish + Windows         █████░░░░░░░░░░�
   - Tests: Accessibility audit with tools
 
 ### Deliverables
+
 - ✅ Hangup, mute controls working
 - ✅ Windows build with full feature parity
 - ✅ Production-ready UI
 - ✅ Complete E2E test suite
 
 ### Milestone
+
 **Demo:** Full feature demo on macOS + Windows (registration, calls, controls, audio)
 
 ### Completion Criteria
+
 - [ ] All MVP features working on macOS + Windows
 - [ ] E2E tests pass on both platforms
 - [ ] No critical bugs in issue tracker
@@ -300,6 +322,7 @@ Secure Storage ──────┐
 ```
 
 ### Critical Path
+
 1. **Secure Storage** (blocks SIP registration)
 2. **SIP Registration** (blocks all calling features)
 3. **Audio Selection** (blocks call flows)
@@ -310,20 +333,24 @@ Secure Storage ──────┐
 ## Parallel Work Opportunities
 
 ### Phase 1 (3 developers)
+
 - **Dev 1:** Security + Storage (SEC-6.x)
 - **Dev 2:** Audio system (AUD-5.1, AUD-5.2)
 - **Dev 3:** SIP transport (SIP-1.1, SIP-1.2, SEC-6.6)
 
 ### Phase 2 (2 developers)
+
 - **Dev 1:** SIP registration (SIP-1.x)
 - **Dev 2:** Audio selection (AUD-5.x)
 
 ### Phase 3 (Sequential, some overlap)
+
 - **Step 1:** Outbound flow (OUT-2.x) - 74h
 - **Step 2:** Inbound flow (IN-3.x) - 56h
   - Note: RTP implementation (OUT-2.4) can overlap with SIP messages
 
 ### Phase 4 (3 developers)
+
 - **Dev 1:** Call controls (CTL-4.x)
 - **Dev 2:** Windows platform (AUD-5.7, SEC-6.3)
 - **Dev 3:** UI polish (POL-7.x)
@@ -333,24 +360,27 @@ Secure Storage ──────┐
 ## Risk Management
 
 ### High-Risk Tasks
-| Task | Risk | Impact | Mitigation |
-|------|------|--------|------------|
-| SIP-1.2 | Custom async layer complexity | Schedule delay | SPARC TDD, monitor rvoip, allocate buffer |
-| OUT-2.4 | RTP audio quality issues | UX degradation | Jitter buffer, low latency buffers, test early |
-| AUD-5.2 | macOS audio latency | UX degradation | Small buffer sizes, CoreAudio low-level API |
+
+| Task    | Risk                          | Impact         | Mitigation                                     |
+| ------- | ----------------------------- | -------------- | ---------------------------------------------- |
+| SIP-1.2 | Custom async layer complexity | Schedule delay | SPARC TDD, monitor rvoip, allocate buffer      |
+| OUT-2.4 | RTP audio quality issues      | UX degradation | Jitter buffer, low latency buffers, test early |
+| AUD-5.2 | macOS audio latency           | UX degradation | Small buffer sizes, CoreAudio low-level API    |
 
 ### Medium-Risk Tasks
-| Task | Risk | Impact | Mitigation |
-|------|------|--------|------------|
-| OUT-2.2 | SDP negotiation edge cases | Call failures | Thorough unit tests, real server testing |
-| AUD-5.7 | Windows audio differences | Platform issues | Test early on Windows, platform abstraction |
-| IN-3.1 | Concurrent incoming calls | State corruption | Thread-safe state, mutex/RwLock |
+
+| Task    | Risk                       | Impact           | Mitigation                                  |
+| ------- | -------------------------- | ---------------- | ------------------------------------------- |
+| OUT-2.2 | SDP negotiation edge cases | Call failures    | Thorough unit tests, real server testing    |
+| AUD-5.7 | Windows audio differences  | Platform issues  | Test early on Windows, platform abstraction |
+| IN-3.1  | Concurrent incoming calls  | State corruption | Thread-safe state, mutex/RwLock             |
 
 ---
 
 ## Timeline Visualization
 
 ### Gantt Chart (Weeks)
+
 ```
 Week 1-2   [█████████ Phase 1: Core Infrastructure ██████████]
 Week 3-4   [██████ Phase 2: Registration + Audio ███████]
@@ -359,18 +389,20 @@ Week 8-9   [████████ Phase 4: Polish + Windows █████�
 ```
 
 ### Milestone Timeline
-| Week | Milestone | Demo |
-|------|-----------|------|
-| 2 | Phase 1 Complete | Keychain + Audio devices + TLS |
-| 4 | Phase 2 Complete | Register account + Select audio |
-| 7 | Phase 3 Complete | Outbound + Inbound calls working |
-| 9 | **MVP Complete** | **Full demo on macOS + Windows** |
+
+| Week | Milestone        | Demo                             |
+| ---- | ---------------- | -------------------------------- |
+| 2    | Phase 1 Complete | Keychain + Audio devices + TLS   |
+| 4    | Phase 2 Complete | Register account + Select audio  |
+| 7    | Phase 3 Complete | Outbound + Inbound calls working |
+| 9    | **MVP Complete** | **Full demo on macOS + Windows** |
 
 ---
 
 ## Success Metrics
 
 ### Technical Metrics
+
 - [ ] Code coverage: Rust ≥85%, SvelteKit ≥80%
 - [ ] Audio latency: <150ms end-to-end
 - [ ] SIP registration time: <3 seconds
@@ -378,12 +410,14 @@ Week 8-9   [████████ Phase 4: Polish + Windows █████�
 - [ ] Zero memory leaks in 24h stress test
 
 ### Quality Metrics
+
 - [ ] Zero critical bugs
 - [ ] All E2E tests passing on macOS + Windows
 - [ ] Accessibility score ≥90 (Lighthouse)
 - [ ] No security vulnerabilities (`cargo audit`)
 
 ### Feature Completeness
+
 - [ ] All 6 MVP features implemented
 - [ ] macOS build working
 - [ ] Windows build working
@@ -394,12 +428,14 @@ Week 8-9   [████████ Phase 4: Polish + Windows █████�
 ## Post-MVP Backlog (Future Phases)
 
 ### Phase 5 (Future)
+
 - Contact list management
 - Call history with local storage
 - DTMF tone support
 - Call transfer (attended/blind)
 
 ### Phase 6 (Future)
+
 - Linux support (ALSA/PulseAudio)
 - Additional audio codecs (Opus, G.722)
 - Conference calling
@@ -410,6 +446,7 @@ Week 8-9   [████████ Phase 4: Polish + Windows █████�
 ## Coordination Notes
 
 ### For Agents
+
 - **Coder:** Follow this roadmap sequentially, TDD approach
 - **Tester:** Create test infrastructure in Phase 1 (before implementation)
 - **Reviewer:** Review code at end of each phase
@@ -418,7 +455,9 @@ Week 8-9   [████████ Phase 4: Polish + Windows █████�
 - **Tauri Engineer:** Focus on command handlers in Phases 2-4
 
 ### Memory Coordination
+
 All roadmap data stored in swarm memory:
+
 - `rustalk-mvp/implementation/feature_breakdown` - 39 detailed tasks
 - `rustalk-mvp/implementation/dependencies` - Dependency graph
 - `rustalk-mvp/implementation/phases` - This document

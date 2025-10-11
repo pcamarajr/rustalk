@@ -7,11 +7,13 @@
 ## S - Specification
 
 ### Project Overview
+
 **RUSTALK** is an open-source, white-label VoIP desktop application built with Rust + Tauri + SvelteKit. This document serves as the comprehensive SPARC Specification for the MVP architecture.
 
 ### Requirements
 
 #### Functional Requirements
+
 1. **SIP Registration (FR-001)**
    - User can register SIP account with credentials (username, password, server)
    - System handles 401 authentication challenge
@@ -51,6 +53,7 @@
    - Auto-populate credentials on login
 
 #### Non-Functional Requirements
+
 1. **Performance (NFR-001)**
    - Audio latency: <150ms end-to-end
    - SIP registration: <3 seconds
@@ -79,6 +82,7 @@
    - SPARC methodology for all features
 
 ### Success Criteria
+
 - [ ] All 6 MVP features implemented and tested
 - [ ] macOS build distributable (DMG)
 - [ ] Windows build distributable (MSI)
@@ -162,6 +166,7 @@ MUTE FLOW:
 ### Key Algorithms
 
 #### SIP Authentication (Digest)
+
 ```
 FUNCTION calculate_auth_response(username, password, realm, nonce, method, uri):
     ha1 = MD5(username + ":" + realm + ":" + password)
@@ -171,6 +176,7 @@ FUNCTION calculate_auth_response(username, password, realm, nonce, method, uri):
 ```
 
 #### RTP Session Setup
+
 ```
 FUNCTION setup_rtp_session(local_sdp, remote_sdp):
     local_port = allocate_rtp_port()  // Even number
@@ -188,6 +194,7 @@ FUNCTION setup_rtp_session(local_sdp, remote_sdp):
 ```
 
 #### Audio Stream
+
 ```
 FUNCTION audio_output_loop(rtp_session, speaker_device):
     WHILE call_active:
@@ -214,9 +221,11 @@ FUNCTION audio_input_loop(mic_device, rtp_session):
 ### Layer Architecture
 
 #### 1. Presentation Layer (SvelteKit)
+
 **Path:** `/src`
 
 **Components:**
+
 - `Dialer.svelte` - Phone number input and call button
 - `ActiveCall.svelte` - Active call status and duration
 - `CallControls.svelte` - Hangup, mute buttons
@@ -225,20 +234,24 @@ FUNCTION audio_input_loop(mic_device, rtp_session):
 - `LoginForm.svelte` - SIP credentials input
 
 **Stores:**
+
 - `callStore.ts` - Call state (active call, status, duration)
 - `authStore.ts` - Registration state
 - `audioStore.ts` - Audio devices and selection
 - `settingsStore.ts` - User preferences
 
 **API Layer:**
+
 - `callApi.ts` - Wrapper for Tauri call commands
 - `authApi.ts` - Wrapper for auth commands
 - `audioApi.ts` - Wrapper for audio commands
 
 #### 2. IPC Boundary Layer
+
 **Path:** `/src-tauri/src/commands`
 
 **Modules:**
+
 - `auth.rs` - register_account, unregister_account, get_registration_status
 - `call.rs` - initiate_call, answer_call, hangup_call, mute_call
 - `audio.rs` - list_audio_devices, set_audio_device, get_audio_levels
@@ -246,43 +259,52 @@ FUNCTION audio_input_loop(mic_device, rtp_session):
 - `validation.rs` - Input validation helpers
 
 **Events Emitted:**
+
 - `call_state_changed` - { call_id, state, remote_number }
 - `incoming_call` - { call_id, caller_id }
 - `registration_state_changed` - { state }
 - `audio_device_changed` - { device_id }
 
 #### 3. Application Layer
+
 **Path:** `/src-tauri/src/services`
 
 **Services:**
+
 - `CallService` - Orchestrates call lifecycle
 - `AuthService` - Manages SIP registration
 - `AudioService` - Audio device management
 - `SettingsService` - User settings persistence
 
 **State Management:**
+
 - `Arc<RwLock<CallState>>` - Thread-safe call state
 - `Arc<RwLock<RegistrationState>>` - Thread-safe auth state
 
 #### 4. Domain Layer
+
 **Path:** `/src-tauri/src/domain`
 
 **Entities:**
+
 - `Call` - id, direction, remote_number, state, timestamps
 - `Credentials` - username, password, server (value object)
 - `AudioDevice` - id, name, device_type (Input/Output)
 - `Contact` - name, number (future)
 
 **Traits:**
+
 - `SipClient` - send_invite, send_bye, register
 - `AudioEngine` - enumerate_devices, start_stream, stop_stream
 - `RtpManager` - create_session, send_packet, receive_packet
 - `CredentialStore` - save, load, delete
 
 #### 5. Infrastructure Layer
+
 **Path:** `/src-tauri/src/infrastructure`
 
 **SIP Module (`sip/`):**
+
 - `client.rs` - SipClient trait implementation
 - `transport.rs` - UDP/TCP/TLS transport with Tokio
 - `parser.rs` - rsip message parsing
@@ -291,17 +313,20 @@ FUNCTION audio_input_loop(mic_device, rtp_session):
 - `sdp.rs` - SDP offer/answer generation
 
 **RTP Module (`rtp/`):**
+
 - `session.rs` - RtpManager implementation
 - `codec.rs` - G.711 encoder/decoder
 - `jitter_buffer.rs` - Audio jitter buffer
 
 **Audio Module (`audio/`):**
+
 - `engine.rs` - AudioEngine trait implementation
 - `macos.rs` - CoreAudio backend (via cpal)
 - `windows.rs` - WASAPI backend (via cpal)
 - `device_manager.rs` - Device enumeration
 
 **Storage Module (`storage/`):**
+
 - `credentials.rs` - CredentialStore implementation
 - `keychain.rs` - macOS Keychain (via keyring)
 - `credential_mgr.rs` - Windows Credential Manager (via keyring)
@@ -348,12 +373,12 @@ UI updates to show "Active Call"
 
 ### Technology Mapping
 
-| Layer | Technology | Files |
-|-------|-----------|-------|
-| Presentation | SvelteKit + TypeScript | `/src/**/*.svelte`, `/src/**/*.ts` |
-| IPC Boundary | Tauri Commands | `/src-tauri/src/commands/**/*.rs` |
-| Application | Rust + Tokio | `/src-tauri/src/services/**/*.rs` |
-| Domain | Pure Rust | `/src-tauri/src/domain/**/*.rs` |
+| Layer          | Technology                     | Files                                   |
+| -------------- | ------------------------------ | --------------------------------------- |
+| Presentation   | SvelteKit + TypeScript         | `/src/**/*.svelte`, `/src/**/*.ts`      |
+| IPC Boundary   | Tauri Commands                 | `/src-tauri/src/commands/**/*.rs`       |
+| Application    | Rust + Tokio                   | `/src-tauri/src/services/**/*.rs`       |
+| Domain         | Pure Rust                      | `/src-tauri/src/domain/**/*.rs`         |
 | Infrastructure | rsip, cpal, webrtc-rs, keyring | `/src-tauri/src/infrastructure/**/*.rs` |
 
 ---
@@ -363,23 +388,27 @@ UI updates to show "Active Call"
 ### Optimization Strategies
 
 #### 1. Audio Latency Reduction
+
 - Use small audio buffer sizes (128-256 samples)
 - Direct CoreAudio/WASAPI APIs via cpal
 - Jitter buffer tuning (20-50ms)
 - Packet loss concealment for RTP
 
 #### 2. SIP Message Parsing
+
 - Use rsip's lazy parsing (zero-copy where possible)
 - Cache parsed headers for repeated access
 - Reuse buffer allocations
 
 #### 3. Async Performance
+
 - Use Tokio's multi-threaded runtime
 - Channel-based communication (not mutex for hot paths)
 - Separate Tokio tasks for SIP, RTP, audio
 - Avoid blocking in async contexts
 
 #### 4. Memory Management
+
 - Pool audio buffers to avoid allocations
 - Reuse RTP packet buffers
 - Arc for shared state (not Clone)
@@ -388,6 +417,7 @@ UI updates to show "Active Call"
 ### Error Handling Strategy
 
 #### Error Types
+
 ```rust
 #[derive(thiserror::Error)]
 pub enum RustalkError {
@@ -406,6 +436,7 @@ pub enum RustalkError {
 ```
 
 #### Error Propagation
+
 - Infrastructure: Return `Result<T, RustalkError>`
 - Application: Log errors, emit events to UI
 - IPC Boundary: Translate to Tauri-compatible errors
@@ -414,17 +445,20 @@ pub enum RustalkError {
 ### Security Hardening
 
 #### Input Validation
+
 - Phone number: regex `^\+?[0-9]{1,15}$`
 - SIP server: validate hostname/IP format
 - Username/password: max length limits
 - SDP: sanitize before parsing
 
 #### TLS Configuration
+
 - TLS 1.2+ only (no TLS 1.0/1.1)
 - Certificate pinning for known servers (optional)
 - Validate certificate chains
 
 #### Credential Protection
+
 - Never log credentials
 - Scrub error messages
 - Use SecureString/Zeroize for passwords in memory
@@ -436,6 +470,7 @@ pub enum RustalkError {
 ### Testing Strategy
 
 #### Unit Tests (85%+ Rust, 80%+ SvelteKit)
+
 ```rust
 #[cfg(test)]
 mod tests {
@@ -459,6 +494,7 @@ mod tests {
 ```
 
 #### Integration Tests
+
 ```rust
 #[tokio::test]
 async fn test_full_registration_flow() {
@@ -478,6 +514,7 @@ async fn test_full_registration_flow() {
 ```
 
 #### E2E Tests (Playwright)
+
 ```typescript
 test('user can register SIP account', async ({ page }) => {
   await page.goto('/login');
@@ -486,14 +523,14 @@ test('user can register SIP account', async ({ page }) => {
   await page.fill('[data-testid="server"]', 'sip.example.com');
   await page.click('[data-testid="register-btn"]');
 
-  await expect(page.locator('[data-testid="status"]'))
-    .toHaveText('Registered');
+  await expect(page.locator('[data-testid="status"]')).toHaveText('Registered');
 });
 ```
 
 ### Definition of Done
 
 Each feature is complete when:
+
 - [ ] Unit tests written and passing (85%+ coverage)
 - [ ] Integration tests passing
 - [ ] E2E test passing on macOS
@@ -525,6 +562,7 @@ Each feature is complete when:
 ### Deployment
 
 #### macOS Build
+
 ```bash
 # Universal binary (Intel + Apple Silicon)
 cargo tauri build --target universal-apple-darwin
@@ -542,6 +580,7 @@ xcrun stapler staple target/...dmg
 ```
 
 #### Windows Build
+
 ```bash
 # x64 build
 cargo tauri build --target x86_64-pc-windows-msvc

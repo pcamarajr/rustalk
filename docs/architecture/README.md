@@ -7,12 +7,14 @@
 ## Quick Navigation
 
 ### Core Architecture Documents
+
 1. **[00-overview.md](00-overview.md)** - Start here for high-level architecture summary
 2. **[01-layers.md](01-layers.md)** - Detailed explanation of 5-layer architecture
 3. **[05-implementation-roadmap.md](05-implementation-roadmap.md)** - 4-phase development plan (9.4 weeks)
 4. **[06-technology-decisions.md](06-technology-decisions.md)** - Technology stack research and consensus
 
 ### Additional Documentation (Coming Soon)
+
 - **02-backend-modules.md** - Rust module structure (`/src-tauri`)
 - **03-frontend-structure.md** - SvelteKit organization (`/src`)
 - **04-testing-strategy.md** - Comprehensive testing approach
@@ -21,6 +23,7 @@
 ## Architecture at a Glance
 
 ### Technology Stack
+
 - **Backend:** Rust + Tauri v1.x
 - **Frontend:** SvelteKit + TypeScript
 - **SIP:** `rsip` (pure Rust) + custom async layer
@@ -30,6 +33,7 @@
 - **Async:** Tokio runtime
 
 ### MVP Features (6 Total)
+
 1. SIP registration with credentials
 2. Outbound calls (dial + initiate)
 3. Inbound calls (receive + answer)
@@ -38,6 +42,7 @@
 6. Secure credential storage
 
 ### Timeline
+
 - **Total:** 9.4 weeks (374 hours)
 - **Phase 1:** Core Infrastructure (2.4 weeks)
 - **Phase 2:** SIP Registration + Audio Selection (1.7 weeks)
@@ -45,6 +50,7 @@
 - **Phase 4:** Polish + Windows (2.1 weeks)
 
 ### Architecture Layers
+
 ```
 Presentation (SvelteKit)          /src
     ↕ Tauri IPC
@@ -60,7 +66,9 @@ Infrastructure (SIP/RTP/Audio)    /src-tauri/src/infrastructure
 ## Development Approach
 
 ### SPARC Methodology
+
 All features developed using SPARC phases:
+
 1. **Specification** - Define requirements
 2. **Pseudocode** - Design algorithms
 3. **Architecture** - Structure modules
@@ -68,6 +76,7 @@ All features developed using SPARC phases:
 5. **Completion** - Validate and test
 
 ### Test-Driven Development (TDD)
+
 1. Write failing test
 2. Implement minimum code to pass
 3. Refactor for quality
@@ -76,6 +85,7 @@ All features developed using SPARC phases:
 ## How This Was Created
 
 This architecture was designed by an **AI hive mind collective** using:
+
 - **Queen Coordinator:** Strategic decision-making
 - **Researcher Agent:** Technology evaluation
 - **Analyst Agent:** Architecture design
