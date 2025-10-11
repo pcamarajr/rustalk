@@ -1,0 +1,81 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/schema.json",
+  "build": {
+    "beforeBuildCommand": "npm run build",
+    "beforeDevCommand": "npm run dev",
+    "devPath": "http://localhost:4000",
+    "distDir": "../dist"
+  },
+  "package": {
+    "productName": "RUSTALK",
+    "version": "0.1.0"
+  },
+  "tauri": {
+    "allowlist": {
+      "all": false,
+      "shell": {
+        "all": false,
+        "open": true
+      },
+      "window": {
+        "all": false,
+        "close": true,
+        "hide": true,
+        "show": true,
+        "minimize": true,
+        "maximize": true
+      }
+    },
+    "bundle": {
+      "active": true,
+      "category": "Communication",
+      "copyright": "Copyright © 2025 RUSTALK Contributors",
+      "deb": {
+        "depends": []
+      },
+      "externalBin": [],
+      "icon": [
+        "icons/32x32.png",
+        "icons/128x128.png",
+        "icons/128x128@2x.png",
+        "icons/icon.icns",
+        "icons/icon.ico"
+      ],
+      "identifier": "com.rustalk.app",
+      "longDescription": "Open-source VoIP desktop application built entirely by autonomous AI agents using Rust + Tauri + SvelteKit",
+      "macOS": {
+        "entitlements": null,
+        "exceptionDomain": "",
+        "frameworks": [],
+        "providerShortName": null,
+        "signingIdentity": null,
+        "minimumSystemVersion": "11.0"
+      },
+      "resources": [],
+      "shortDescription": "VoIP Desktop Application",
+      "targets": "all",
+      "windows": {
+        "certificateThumbprint": null,
+        "digestAlgorithm": "sha256",
+        "timestampUrl": ""
+      }
+    },
+    "security": {
+      "csp": "default-src 'self'; connect-src ipc: http://localhost:4000"
+    },
+    "updater": {
+      "active": false
+    },
+    "windows": [
+      {
+        "height": 600,
+        "resizable": true,
+        "title": "RUSTALK",
+        "width": 800,
+        "minWidth": 600,
+        "minHeight": 400,
+        "center": true
+      }
+    ]
+  }
+}

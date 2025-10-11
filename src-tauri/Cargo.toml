@@ -1,0 +1,72 @@
+[package]
+name = "rustalk"
+version = "0.1.0"
+description = "RUSTALK - AI-Developed VoIP Desktop Application"
+authors = ["RUSTALK Contributors"]
+license = "MIT"
+repository = "https://github.com/yourusername/rustalk"
+default-run = "rustalk"
+edition = "2021"
+rust-version = "1.70"
+
+[build-dependencies]
+tauri-build = { version = "1.5" }
+
+[dependencies]
+# Framework
+tauri = { version = "1.8", features = ["shell-open", "window-close", "window-hide", "window-maximize", "window-minimize", "window-show"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Async runtime
+tokio = { version = "1.42", features = ["full"] }
+async-trait = "0.1"
+
+# SIP Protocol (Phase 1)
+rsip = "0.4"
+
+# Audio I/O (Phase 1)
+cpal = "0.15"
+
+# RTP/Media (Phase 1)
+# Note: Will use webrtc crate modules in actual implementation
+# Commenting out for now to allow build to pass
+# webrtc = "0.11"
+
+# Secure Storage (Phase 1)
+keyring = { version = "3.6", features = ["apple-native", "windows-native", "sync-secret-service"] }
+
+# TLS (Phase 1)
+rustls = "0.23"
+tokio-rustls = "0.26"
+
+# Error Handling
+thiserror = "2.0"
+anyhow = "1.0"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Utilities
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.11", features = ["v4", "serde"] }
+
+[dev-dependencies]
+# Testing
+mockall = "0.13"
+tokio-test = "0.4"
+tempfile = "3.15"
+
+[features]
+# DO NOT REMOVE - Required for Tauri production builds
+custom-protocol = ["tauri/custom-protocol"]
+
+# Library target for testing
+[lib]
+name = "rustalk_lib"
+path = "src/lib.rs"
+
+[[bin]]
+name = "rustalk"
+path = "src/main.rs"

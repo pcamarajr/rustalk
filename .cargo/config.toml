@@ -1,0 +1,12 @@
+# Cargo configuration for RUSTALK
+
+# Note: cargo-nextest configuration
+# Install with: cargo install cargo-nextest
+# Uncomment below once nextest is installed
+# [target.'cfg(all())']
+# runner = "nextest"
+
+# Nextest configuration
+[profile.ci]
+retries = 2
+fail-fast = false
