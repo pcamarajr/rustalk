@@ -44,16 +44,18 @@ RUN apt-get update && apt-get install -y \
 	portaudio19-dev \
 	&& rm -rf /var/lib/apt/lists/*
 
-# Install Rust development tools
-RUN cargo install cargo-nextest cargo-llvm-cov cargo-audit --locked
-
-# Install Tauri CLI globally
-RUN npm install -g @tauri-apps/cli@latest
-
 # Create non-root user for development
 RUN groupadd -r vscode && useradd -r -g vscode -s /bin/zsh vscode && \
-	mkdir -p /home/vscode /workspace && \
-	chown -R vscode:vscode /home/vscode /workspace
+	mkdir -p /home/vscode /workspace /home/vscode/.ssh && \
+	chown -R vscode:vscode /home/vscode /workspace && \
+	chmod 700 /home/vscode/.ssh
+
+# Install Rust development tools (as root, but make accessible to vscode user)
+RUN cargo install cargo-nextest cargo-llvm-cov cargo-audit --locked && \
+	chmod -R a+w /usr/local/cargo
+
+# Install Tauri CLI globally (as root, accessible to all users via /usr/local/bin)
+RUN npm install -g @tauri-apps/cli@latest
 
 # Set working directory
 WORKDIR /workspace
@@ -61,12 +63,15 @@ WORKDIR /workspace
 # Switch to non-root user
 USER vscode
 
+# Ensure PATH includes npm global bin directory
+ENV PATH="/usr/local/bin:${PATH}"
+
 # Verify installations
 RUN rustc --version && \
 	cargo --version && \
 	node --version && \
 	npm --version && \
-	cargo tauri --version || echo "Tauri CLI will be available after project initialization"
+	(tauri --version || echo "Tauri CLI will be available after project initialization")
 
 # Default shell
 SHELL ["/bin/zsh", "-c"]

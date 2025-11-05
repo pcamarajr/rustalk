@@ -54,10 +54,15 @@
   },
   "postCreateCommand": "bash .devcontainer/setup.sh",
   "remoteEnv": {
-    "PATH": "/home/vscode/.cargo/bin:${containerEnv:PATH}"
+    "PATH": "/home/vscode/.cargo/bin:${containerEnv:PATH}",
+    "SSH_AUTH_SOCK": "/home/vscode/.1password-agent.sock"
   },
   "mounts": [
-    "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached"
+    "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.gitconfig,target=/home/vscode/.gitconfig,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.zshrc,target=/home/vscode/.zshrc,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock,target=/home/vscode/.1password-agent.sock,type=bind,consistency=cached"
   ]
 }
 

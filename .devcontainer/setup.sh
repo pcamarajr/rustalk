@@ -135,6 +135,70 @@ else
 	echo -e "${YELLOW}⚠ Not found (not required for macOS/Windows builds)${NC}"
 fi
 
+# Install Oh My Zsh
+echo -e "\n${BLUE}=== Installing Oh My Zsh ===${NC}\n"
+
+if [ ! -d "$HOME/.oh-my-zsh" ]; then
+	echo -n "Oh My Zsh: "
+	sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+	if [ -d "$HOME/.oh-my-zsh" ]; then
+		echo -e "${GREEN}✓ Installed${NC}"
+	else
+		echo -e "${YELLOW}⚠ Installation failed${NC}"
+	fi
+else
+	echo -e "${GREEN}✓ Oh My Zsh already installed${NC}"
+fi
+
+# Setup SSH directory and permissions
+echo -e "\n${BLUE}=== Configuring SSH ===${NC}\n"
+
+if [ -d "$HOME/.ssh" ]; then
+	# Fix SSH directory permissions
+	chmod 700 "$HOME/.ssh" 2>/dev/null || true
+	find "$HOME/.ssh" -type f -exec chmod 600 {} \; 2>/dev/null || true
+	find "$HOME/.ssh" -type d -exec chmod 700 {} \; 2>/dev/null || true
+	
+	echo -e "${GREEN}✓ SSH directory permissions fixed${NC}"
+	
+	# Configure SSH to use 1Password agent
+	if [ -S "$HOME/.1password-agent.sock" ]; then
+		# Create or update SSH config to use 1Password agent
+		if [ ! -f "$HOME/.ssh/config" ]; then
+			touch "$HOME/.ssh/config"
+			chmod 600 "$HOME/.ssh/config"
+		fi
+		
+		# Check if IdentityAgent is already configured
+		if ! grep -q "IdentityAgent.*1password-agent" "$HOME/.ssh/config" 2>/dev/null; then
+			cat >> "$HOME/.ssh/config" <<EOF
+
+# 1Password SSH Agent
+Host *
+  IdentityAgent ~/.1password-agent.sock
+  AddKeysToAgent yes
+EOF
+			chmod 600 "$HOME/.ssh/config"
+			echo -e "${GREEN}✓ SSH config updated to use 1Password agent${NC}"
+		else
+			echo -e "${GREEN}✓ SSH config already configured for 1Password${NC}"
+		fi
+		
+		# Test SSH agent connectivity
+		echo -n "SSH Agent: "
+		if ssh-add -l &>/dev/null; then
+			echo -e "${GREEN}✓ Connected (keys available)${NC}"
+		else
+			echo -e "${YELLOW}⚠ Agent socket exists but no keys loaded${NC}"
+		fi
+	else
+		echo -e "${YELLOW}⚠ 1Password SSH agent socket not found${NC}"
+		echo -e "${YELLOW}  Make sure 1Password desktop app is running and SSH agent is enabled${NC}"
+	fi
+else
+	echo -e "${YELLOW}⚠ SSH directory not mounted${NC}"
+fi
+
 # Summary
 echo -e "\n${GREEN}✅ Development environment ready!${NC}\n"
 
