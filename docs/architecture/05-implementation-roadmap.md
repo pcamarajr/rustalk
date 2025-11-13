@@ -213,6 +213,21 @@ Phase 8: Production Polish        █████░░░░░░░░░░�
 
 - **Design System:** [07-design-system.md](07-design-system.md) - Use for all styling guidelines
 - **UI Design:** [08-ui-design.md](08-ui-design.md) - Use for screen layouts and component specifications
+- **Svelte Patterns:** [../../development/svelte-patterns.md](../../development/svelte-patterns.md) - **CRITICAL**: Read before implementing to avoid Svelte 5 runes mode issues
+
+### Implementation Notes
+
+**⚠️ IMPORTANT - Svelte 5 Runes Mode Requirements:**
+
+Before implementing Phase 2 components, review [svelte-patterns.md](../../development/svelte-patterns.md) to avoid common pitfalls:
+
+- **Always use `$derived`** instead of `$:` for reactive statements
+- **Use `on:click`** (not `onclick`) for event handlers
+- **Use `{@render children()}`** instead of `<slot />` for component children
+- **Add `Record<string, any>`** to component props to allow event handlers
+- **Use `:global()`** for CSS classes passed as props
+
+These patterns were discovered during Phase 2 implementation and are critical for avoiding runtime errors.
 
 ---
 

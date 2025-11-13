@@ -105,6 +105,12 @@ The architecture documentation includes comprehensive design and UI specificatio
 
 These documents are referenced throughout implementation, especially in Phase 2 (UI Foundation).
 
+## Development Best Practices
+
+**⚠️ CRITICAL - Before Implementing UI Components:**
+
+- **[../development/svelte-patterns.md](../development/svelte-patterns.md)** - **MUST READ** - Svelte 5 runes mode patterns, common pitfalls, and best practices learned from Phase 2 implementation. This guide will save significant debugging time.
+
 ## Next Steps
 
 1. **Review architecture:** Read [00-overview.md](00-overview.md)
