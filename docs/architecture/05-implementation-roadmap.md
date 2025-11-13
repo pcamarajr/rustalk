@@ -9,7 +9,7 @@
 
 ```
 Phase 0: Dev Container            ███░░░░░░░░░░░░░  0.5 weeks (20h)
-Phase 1: Hello World              ███░░░░░░░░░░░░░  0.5 weeks (20h)
+Phase 1: Hello World              ███░░░░░░░░░░░░░  0.5 weeks (20h) COMPLETED
 Phase 2: UI with Mocks            ██████░░░░░░░░░░  1.5 weeks (60h)
 Phase 3: Core Infrastructure      ████████░░░░░░░░  2.4 weeks (94h)
 Phase 4: Registration + Audio     ████░░░░░░░░░░░░  1.7 weeks (66h)
@@ -81,7 +81,7 @@ Phase 8: Production Polish        █████░░░░░░░░░░�
 
   - Files: `src-tauri/`, `src/`, `package.json`, `Cargo.toml`
   - Setup: Run `npm create tauri-app@latest` with SvelteKit template
-  - Structure: Follow Tauri v1.x best practices
+  - Structure: Follow Tauri v2.x best practices
   - Tests: Verify project builds successfully
 
 - **INIT-1.2** (6h): Setup basic build and test infrastructure
@@ -117,11 +117,11 @@ Phase 8: Production Polish        █████░░░░░░░░░░�
 
 ### Completion Criteria
 
-- [ ] Tauri + SvelteKit project initialized
-- [ ] Hello World UI displays and calls Tauri command
-- [ ] Tauri command returns message successfully
-- [ ] macOS app builds and runs
-- [ ] Basic CI workflow passes
+- [x] Tauri + SvelteKit project initialized
+- [x] Hello World UI displays and calls Tauri command
+- [x] Tauri command returns message successfully
+- [x] macOS app builds and runs
+- [x] Basic CI workflow configured
 
 ---
 
