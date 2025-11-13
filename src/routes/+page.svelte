@@ -1,5 +1,7 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/core";
+  import { Button } from "$lib/components/ui/button/index.js";
+  import { Input } from "$lib/components/ui/input/index.js";
 
   let name = $state("");
   let greetMsg = $state("");
@@ -18,7 +20,7 @@
     Welcome to Tauri + Svelte
   </h1>
 
-  <div class="flex justify-center gap-6 mb-4">
+  <div class="flex justify-center gap-6 mb-4 container mx-auto">
     <a
       href="https://vite.dev"
       target="_blank"
@@ -53,26 +55,23 @@
       />
     </a>
   </div>
-  <p class="text-gray-600 mb-6">
+  <p class="text-gray-600 mb-6 container mx-auto">
     Click on the Tauri, Vite, and SvelteKit logos to learn more.
   </p>
 
-  <form class="flex justify-center gap-2 mb-4" onsubmit={greet}>
-    <input
+  <form
+    class="flex justify-center gap-2 mb-4 container mx-auto"
+    onsubmit={greet}
+  >
+    <Input
       id="greet-input"
       type="text"
       placeholder="Enter a name..."
       bind:value={name}
-      class="rounded-lg border border-gray-200 px-4 py-3 text-base font-medium text-gray-900 bg-white shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
     />
-    <button
-      type="submit"
-      class="rounded-lg border border-transparent px-4 py-3 text-base font-medium text-white bg-primary hover:bg-primary-hover active:bg-primary-dark cursor-pointer transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-    >
-      Greet
-    </button>
+    <Button type="submit">Greet</Button>
   </form>
   {#if greetMsg}
-    <p class="text-gray-700 font-medium">{greetMsg}</p>
+    <p class="text-gray-700 font-medium container mx-auto">{greetMsg}</p>
   {/if}
 </main>
