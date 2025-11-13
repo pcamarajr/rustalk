@@ -1,0 +1,103 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  RUST_BACKTRACE: 1
+
+jobs:
+  # Frontend checks
+  frontend-check:
+    name: Frontend Check
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run TypeScript check
+        run: npm run check
+
+      - name: Run lint
+        run: npm run lint
+
+  # Backend (Rust) checks
+  backend-check:
+    name: Backend Check
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Check formatting
+        working-directory: src-tauri
+        run: cargo fmt --all -- --check
+
+      - name: Run clippy
+        working-directory: src-tauri
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: Run tests
+        working-directory: src-tauri
+        run: cargo test
+
+  # Build verification (macOS only for Phase 1)
+  build-macos:
+    name: Build macOS
+    runs-on: macos-latest
+    needs: [frontend-check, backend-check]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Build Tauri app
+        run: npm run tauri:build
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-app
+          path: src-tauri/target/release/bundle/
+          retention-days: 7

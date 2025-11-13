@@ -312,7 +312,7 @@ let password = entry.get_password()?;
 # Cargo.toml dependencies (estimated)
 [dependencies]
 # Framework
-tauri = "1.x"
+tauri = "2"
 tokio = { version = "1", features = ["full"] }
 
 # SIP
