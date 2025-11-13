@@ -15,7 +15,7 @@
     "test": "echo \"Tests not yet implemented\" && exit 0",
     "lint": "svelte-check --tsconfig ./tsconfig.json"
   },
-  "license": "MIT",
+  "license": "Apache-2.0",
   "dependencies": {
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-opener": "^2"
