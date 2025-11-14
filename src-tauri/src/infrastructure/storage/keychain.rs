@@ -19,7 +19,7 @@ fn map_keyring_error(error: keyring::Error, operation: &str) -> CredentialStoreE
             }
         }
         keyring::Error::Ambiguous(msg) => CredentialStoreError::StorageError {
-            message: format!("{}: Ambiguous entry - {:?}", operation, msg),
+            message: format!("{}: Ambiguous entry - {}", operation, msg),
         },
         keyring::Error::PlatformFailure(msg) => CredentialStoreError::StorageError {
             message: format!("{}: Platform failure - {}", operation, msg),
