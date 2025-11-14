@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { Button } from "$lib/components/ui/button/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
   import {
@@ -89,6 +90,8 @@
   function handleCall() {
     if (!isCallDisabled) {
       console.log("DEBUG:[DIALER/CALL] Initiating call to:", phoneNumber);
+      // Navigate to active call screen
+      goto("/active-call");
       // TODO: Connect to call store in UI-2.6
     }
   }
