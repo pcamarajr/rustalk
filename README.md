@@ -1,20 +1,31 @@
 # RUSTALK
 
-[![CI](https://img.shields.io/badge/CI-Phase%201%20Complete-green)](.github/workflows/ci.yml)
+[![CI](https://img.shields.io/badge/CI-Phase%202%20Complete-green)](.github/workflows/ci.yml)
 
 Open-source white-label VoIP desktop application built with Rust and Tauri.
 
 ## Project Status
 
-**Phase 1 Complete** ✅ - Hello World with Frontend-Backend Communication
+**Phase 2 Complete** ✅ - UI Foundation with Mock Actions
 
 ### Completed Features
+
+**Phase 1:**
 
 - ✅ Tauri v2.x + SvelteKit project structure
 - ✅ Working frontend-backend IPC communication
 - ✅ Production macOS build (.app + .dmg)
 - ✅ GitHub Actions CI workflow
 - ✅ Basic build infrastructure
+
+**Phase 2:**
+
+- ✅ Complete design system with CSS variables and reusable components
+- ✅ All main screens implemented (dialer, settings, active call, incoming call, contacts, history)
+- ✅ State management with Svelte stores (call, auth, audio, contacts, history)
+- ✅ Navigation and routing between all screens
+- ✅ Mock actions for dialer, call controls, and call state transitions
+- ✅ UI components library (buttons, inputs, cards, dialogs, etc.)
 
 ## Quick Start
 
@@ -75,8 +86,8 @@ See detailed architecture documentation in [`docs/architecture/`](docs/architect
 ```
 Phase 0: Dev Container            ✅ (Skipped - using local environment)
 Phase 1: Hello World              ✅ Complete (~0.5 weeks)
-Phase 2: UI with Mocks            🔄 Next (~1.5 weeks)
-Phase 3: Core Infrastructure      📋 Planned (~2.4 weeks)
+Phase 2: UI with Mocks            ✅ Complete (~1.5 weeks)
+Phase 3: Core Infrastructure      🔄 Next (~2.4 weeks)
 Phase 4: Registration + Audio     📋 Planned (~1.7 weeks)
 Phase 5: Call Flows               📋 Planned (~3.3 weeks)
 Phase 6: Call Controls            📋 Planned (~0.6 weeks)
@@ -86,32 +97,51 @@ Phase 8: Production Polish        📋 Planned (~1.3 weeks)
 
 **Total Estimated Duration**: ~12 weeks for MVP
 
-## Current Phase: Phase 1 Complete ✅
+## Current Phase: Phase 2 Complete ✅
 
 ### What Works
 
+**Foundation:**
+
 - Tauri app launches successfully
 - Frontend (SvelteKit) communicates with backend (Rust) via IPC
-- `greet` command demonstrates working frontend-to-backend communication
 - macOS app bundle builds and runs
 - CI workflow configured for automated testing
 
-### Demo the Hello World App
+**UI & Navigation:**
 
-1. Enter a name in the input field
-2. Click "Greet" button
-3. Backend (Rust) responds with greeting message
-4. Message displays in the UI
+- Complete design system with CSS variables and component library
+- All main screens functional (dialer, settings, active call, incoming call, contacts, history)
+- Navigation between screens via sidebar
+- State management with Svelte stores (call state, auth state, audio devices, contacts, history)
 
-## Next Steps: Phase 2
+**Mock Functionality:**
 
-Phase 2 will implement:
+- Dialer pad with number input
+- Mock call initiation and state transitions (Idle → Ringing → Active → Ended)
+- Call controls UI (mute, hold, end call buttons)
+- Incoming call notification UI
+- Settings screens with audio device selection UI
+- Contacts and call history with mock data
 
-- Complete UI foundation with design system
-- All main screens (dialer, settings, active call, incoming call)
-- State management with mock data
-- Navigation and routing
-- No real SIP/audio yet (mock actions only)
+### Demo the UI
+
+1. Navigate between screens using the sidebar
+2. Enter a phone number in the dialer
+3. Click "Call" to trigger a mock call flow
+4. View call state transitions in the active call screen
+5. Browse mock contacts and call history
+6. Explore settings and audio device selection (UI only, no real audio yet)
+
+## Next Steps: Phase 3
+
+Phase 3 will implement:
+
+- Secure credential storage (macOS Keychain integration)
+- Audio device enumeration (macOS CoreAudio via `cpal`)
+- SIP transport layer with TLS support
+- Platform abstractions for security and audio
+- Input validation for all Tauri commands
 
 ## Project Goals
 
