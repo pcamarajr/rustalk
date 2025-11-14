@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Dialer from "$lib/components/Dialer.svelte";
+  import { Dialer } from "$lib/components/dialer";
   import { page } from "$app/stores";
 
   // Get number from query parameter
@@ -7,5 +7,5 @@
 </script>
 
 <div class="container mx-auto max-w-md px-4 py-6">
-  <Dialer initialNumber={initialNumber} />
+  <Dialer {initialNumber} />
 </div>

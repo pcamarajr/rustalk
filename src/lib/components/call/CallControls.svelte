@@ -9,25 +9,14 @@
     MoreVertical,
   } from "lucide-svelte";
   import { callStore } from "$lib/stores/callStore";
+  import KeypadDialog from "./KeypadDialog.svelte";
 
-  // Get call state from store
-  let isMuted = $state(false);
-  let isOnHold = $state(false);
+  // Get call state from store using $derived
+  let currentCall = $derived.by(() => $callStore);
+  let isMuted = $derived(currentCall?.isMuted ?? false);
+  let isOnHold = $derived(currentCall?.isOnHold ?? false);
   let showKeypad = $state(false);
   let showMoreMenu = $state(false);
-
-  $effect(() => {
-    const unsubscribe = callStore.subscribe((call) => {
-      if (call) {
-        isMuted = call.isMuted;
-        isOnHold = call.isOnHold;
-      } else {
-        isMuted = false;
-        isOnHold = false;
-      }
-    });
-    return unsubscribe;
-  });
 
   function handleMute() {
     callStore.toggleMute();
@@ -38,9 +27,8 @@
   }
 
   function handleKeypad() {
-    showKeypad = !showKeypad;
-    console.log("DEBUG:[CALL/KEYPAD]", showKeypad ? "Opened" : "Closed");
-    // TODO: Open DTMF keypad overlay in Phase 5
+    showKeypad = true;
+    console.log("DEBUG:[CALL/KEYPAD] Opening keypad dialog");
   }
 
   function handleMore() {
@@ -112,3 +100,5 @@
     <span class="text-xs font-medium">More</span>
   </button>
 </div>
+
+<KeypadDialog bind:open={showKeypad} />
