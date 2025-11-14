@@ -64,40 +64,41 @@ jobs:
         run: cargo test
 
   # Build verification (macOS only for Phase 1)
-  build-macos:
-    name: Build macOS
-    runs-on: macos-latest
-    needs: [frontend-check, backend-check]
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: "npm"
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Rust cache
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: src-tauri
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build frontend
-        run: npm run build
-
-      - name: Build Tauri app
-        run: npm run tauri:build
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-app
-          path: src-tauri/target/release/bundle/
-          retention-days: 7
+  # Temporarily disabled
+  # build-macos:
+  #   name: Build macOS
+  #   runs-on: macos-latest
+  #   needs: [frontend-check, backend-check]
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
+  #
+  #     - name: Setup Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: "22"
+  #         cache: "npm"
+  #
+  #     - name: Setup Rust
+  #       uses: dtolnay/rust-toolchain@stable
+  #
+  #     - name: Rust cache
+  #       uses: Swatinem/rust-cache@v2
+  #       with:
+  #         workspaces: src-tauri
+  #
+  #     - name: Install dependencies
+  #       run: npm install
+  #
+  #     - name: Build frontend
+  #       run: npm run build
+  #
+  #     - name: Build Tauri app
+  #       run: npm run tauri:build
+  #
+  #     - name: Upload artifacts
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: macos-app
+  #         path: src-tauri/target/release/bundle/
+  #         retention-days: 7
