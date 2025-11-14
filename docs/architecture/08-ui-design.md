@@ -9,6 +9,15 @@
 - White-label friendly (easily themeable)
 - Cross-platform consistency (Windows, macOS, Linux)
 
+## Component Architecture
+
+**⚠️ IMPORTANT:** All screens and components must follow the **Islands Architecture** pattern. See [09-islands-architecture.md](09-islands-architecture.md) for details.
+
+- **Pages are simple shells** that compose multiple independent island components
+- **Each island is self-contained** with its own state and logic
+- **Large sections are broken into smaller sub-islands** for maintainability
+- **Components are organized by feature** in logical folder structures
+
 ## Color System (Customizable via White-Label)
 
 ```

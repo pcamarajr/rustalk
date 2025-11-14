@@ -54,6 +54,7 @@ External Systems (SIP Server, Audio Devices, Keychain)
 
 - **Styling Guidelines:** Reference [07-design-system.md](07-design-system.md) for CSS variables, components, and patterns
 - **Screen Layouts:** Reference [08-ui-design.md](08-ui-design.md) for detailed UI specifications and screen layouts
+- **Component Architecture:** Reference [09-islands-architecture.md](09-islands-architecture.md) for Islands Architecture pattern - **all new screens and components must follow this pattern**
 
 ### Key Components
 
