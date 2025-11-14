@@ -8,21 +8,33 @@
     Grid3x3,
     MoreVertical,
   } from "lucide-svelte";
+  import { callStore } from "$lib/stores/callStore";
 
-  // Self-contained state for each control
+  // Get call state from store
   let isMuted = $state(false);
   let isOnHold = $state(false);
   let showKeypad = $state(false);
   let showMoreMenu = $state(false);
 
+  $effect(() => {
+    const unsubscribe = callStore.subscribe((call) => {
+      if (call) {
+        isMuted = call.isMuted;
+        isOnHold = call.isOnHold;
+      } else {
+        isMuted = false;
+        isOnHold = false;
+      }
+    });
+    return unsubscribe;
+  });
+
   function handleMute() {
-    isMuted = !isMuted;
-    console.log("DEBUG:[CALL/MUTE]", isMuted ? "Muted" : "Unmuted");
+    callStore.toggleMute();
   }
 
   function handleHold() {
-    isOnHold = !isOnHold;
-    console.log("DEBUG:[CALL/HOLD]", isOnHold ? "On Hold" : "Resumed");
+    callStore.toggleHold();
   }
 
   function handleKeypad() {

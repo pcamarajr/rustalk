@@ -9,6 +9,7 @@
     PhoneOutgoing,
     PhoneMissed,
   } from "lucide-svelte";
+  import { callStore, isCallActive } from "$lib/stores/callStore";
 
   interface Props {
     initialNumber?: string;
@@ -104,18 +105,31 @@
   function handleCall() {
     if (!isCallDisabled) {
       console.log("DEBUG:[DIALER/CALL] Initiating call to:", phoneNumber);
-      // Navigate to active call screen
-      goto("/active-call");
-      // TODO: Connect to call store in UI-2.6
+      // Format number with +1 prefix if not already formatted
+      const formattedNumber = phoneNumber.startsWith("+") 
+        ? phoneNumber 
+        : `+1${phoneNumber}`;
+      callStore.initiateCall(formattedNumber);
     }
   }
 
   function handleSimulateIncomingCall() {
     console.log("DEBUG:[DIALER/SIMULATE] Simulating incoming call");
-    // Navigate to incoming call screen for testing
+    // Use a mock number for incoming call simulation
+    const mockNumber = "+15551234567";
+    callStore.simulateIncomingCall(mockNumber);
     goto("/incoming-call");
-    // TODO: Connect to call store in UI-2.6, then to Tauri event in Phase 5
   }
+
+  // Watch for call state changes and navigate when call becomes active
+  $effect(() => {
+    const unsubscribe = isCallActive.subscribe((active) => {
+      if (active) {
+        goto("/active-call");
+      }
+    });
+    return unsubscribe;
+  });
 
   function handleNumberInput(event: Event) {
     const target = event.target as HTMLInputElement;

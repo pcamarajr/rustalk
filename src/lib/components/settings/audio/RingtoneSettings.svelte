@@ -8,17 +8,41 @@
     SelectTrigger,
   } from "$lib/components/ui/select";
   import { Label } from "$lib/components/ui/label";
+  import { audioStore } from "$lib/stores/audioStore";
 
-  // Self-contained state
-  let ringtones = $state([
-    { id: "ring1", name: "Default Ringtone" },
-    { id: "ring2", name: "Classic" },
-    { id: "ring3", name: "Modern" },
-    { id: "ring4", name: "Soft" },
-  ]);
-  let selectedRingtone = $state("ring1");
-  let ringtoneVolume = $state([80]);
+  // Get ringtones from store
+  let ringtones = $state<Array<{ id: string; name: string }>>([]);
+  let selectedRingtone = $state("");
+  let ringtoneVolume = $state(80);
   let isPlayingRingtone = $state(false);
+
+  $effect(() => {
+    const unsubscribeRingtones = audioStore.ringtones.subscribe(
+      (ringtoneList) => {
+        if (ringtoneList && ringtoneList.length > 0) {
+          ringtones = ringtoneList.map((r) => ({ id: r.id, name: r.name }));
+          if (!selectedRingtone) {
+            selectedRingtone = ringtones[0].id;
+          }
+        }
+      }
+    );
+    const unsubscribeSelected = audioStore.selectedRingtone.subscribe(
+      (ringtone) => {
+        if (ringtone) {
+          selectedRingtone = ringtone.id;
+        }
+      }
+    );
+    const unsubscribeVolume = audioStore.ringtoneVolume.subscribe((volume) => {
+      ringtoneVolume = volume;
+    });
+    return () => {
+      unsubscribeRingtones();
+      unsubscribeSelected();
+      unsubscribeVolume();
+    };
+  });
 
   function handlePlayRingtone() {
     console.log("DEBUG:[SETTINGS/AUDIO] Play ringtone clicked");
@@ -32,7 +56,15 @@
     <Bell class="h-5 w-5 text-gray-600" />
     <Label class="text-base font-semibold">Ringtone</Label>
   </div>
-  <Select type="single">
+  <Select
+    type="single"
+    value={selectedRingtone}
+    onValueChange={(value) => {
+      if (value) {
+        audioStore.setRingtone(value);
+      }
+    }}
+  >
     <SelectTrigger class="w-full">
       {ringtones.find((r) => r.id === selectedRingtone)?.name ||
         "Select ringtone"}
@@ -64,23 +96,21 @@
         <div class="flex-1 relative flex items-center">
           <input
             type="range"
-            bind:value={ringtoneVolume[0]}
+            value={ringtoneVolume}
             min={0}
             max={100}
             step={1}
             oninput={(e) => {
-              ringtoneVolume = [
-                Number((e.target as HTMLInputElement).value),
-              ];
+              const volume = Number((e.target as HTMLInputElement).value);
+              audioStore.setRingtoneVolume(volume);
             }}
             class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
           />
         </div>
         <span class="text-xs text-gray-700 w-12 text-right"
-          >{ringtoneVolume[0]}%</span
+          >{ringtoneVolume}%</span
         >
       </div>
     </div>
   </div>
 </div>
-

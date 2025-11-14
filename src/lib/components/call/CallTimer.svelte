@@ -1,5 +1,17 @@
 <script lang="ts">
-  // Self-contained timer state
+  import { callStore } from "$lib/stores/callStore";
+
+  // Get call start time from store
+  let callStartTime = $state<Date | null>(null);
+
+  $effect(() => {
+    const unsubscribe = callStore.subscribe((call) => {
+      callStartTime = call?.startTime || null;
+    });
+    return unsubscribe;
+  });
+
+  // Calculate duration from start time
   let callDuration = $state(0);
 
   // Format duration as MM:SS or HH:MM:SS
@@ -14,10 +26,16 @@
     return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
   });
 
-  // Update timer every second
+  // Update timer every second when call is active
   $effect(() => {
+    if (!callStartTime) {
+      callDuration = 0;
+      return;
+    }
+
     const interval = setInterval(() => {
-      callDuration += 1;
+      const now = new Date();
+      callDuration = Math.floor((now.getTime() - callStartTime!.getTime()) / 1000);
     }, 1000);
 
     // Cleanup on component destroy

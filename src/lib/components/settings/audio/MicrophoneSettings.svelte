@@ -9,29 +9,69 @@
   } from "$lib/components/ui/select";
   import { Label } from "$lib/components/ui/label";
   import { Separator } from "$lib/components/ui/separator";
+  import { audioStore } from "$lib/stores/audioStore";
 
-  // Self-contained state
-  let microphones = $state([
-    { id: "mic1", name: "Built-in Microphone" },
-    { id: "mic2", name: "USB Microphone" },
-    { id: "mic3", name: "Bluetooth Headset" },
-  ]);
-  let selectedMicrophone = $state("mic1");
+  // Get devices from store
+  let microphones = $state<Array<{ id: string; name: string }>>([]);
+  let selectedMicrophone = $state("");
   let isTestingMicrophone = $state(false);
   let microphoneLevel = $state([45]); // Mock audio level
+  let testInterval = $state<ReturnType<typeof setInterval> | null>(null);
+
+  $effect(() => {
+    const unsubscribeDevices = audioStore.inputDevices.subscribe((devices) => {
+      if (devices && devices.length > 0) {
+        microphones = devices.map((d) => ({ id: d.id, name: d.name }));
+        if (!selectedMicrophone) {
+          selectedMicrophone = microphones[0].id;
+        }
+      }
+    });
+    const unsubscribeSelected = audioStore.selectedInputDevice.subscribe(
+      (device) => {
+        if (device) {
+          selectedMicrophone = device.id;
+        }
+      }
+    );
+    return () => {
+      unsubscribeDevices();
+      unsubscribeSelected();
+    };
+  });
+
+  // Cleanup interval when component unmounts or when testing stops
+  $effect(() => {
+    if (!isTestingMicrophone && testInterval) {
+      clearInterval(testInterval);
+      testInterval = null;
+    }
+    return () => {
+      if (testInterval) {
+        clearInterval(testInterval);
+        testInterval = null;
+      }
+    };
+  });
 
   function handleTestMicrophone() {
     console.log("DEBUG:[SETTINGS/AUDIO] Test microphone clicked");
     isTestingMicrophone = !isTestingMicrophone;
     if (isTestingMicrophone) {
+      // Clear any existing interval
+      if (testInterval) {
+        clearInterval(testInterval);
+      }
       // Mock: simulate audio level changes
-      const interval = setInterval(() => {
-        if (!isTestingMicrophone) {
-          clearInterval(interval);
-          return;
-        }
+      testInterval = setInterval(() => {
         microphoneLevel = [Math.floor(Math.random() * 100)];
       }, 100);
+    } else {
+      // Stop testing - cleanup handled by $effect
+      if (testInterval) {
+        clearInterval(testInterval);
+        testInterval = null;
+      }
     }
   }
 </script>
@@ -41,7 +81,15 @@
     <Mic class="h-5 w-5 text-gray-600" />
     <Label class="text-base font-semibold">Microphone</Label>
   </div>
-  <Select type="single">
+  <Select
+    type="single"
+    value={selectedMicrophone}
+    onValueChange={(value) => {
+      if (value) {
+        audioStore.setInputDevice(value);
+      }
+    }}
+  >
     <SelectTrigger class="w-full">
       {microphones.find((m) => m.id === selectedMicrophone)?.name ||
         "Select microphone"}
@@ -83,4 +131,3 @@
     {/if}
   </div>
 </div>
-

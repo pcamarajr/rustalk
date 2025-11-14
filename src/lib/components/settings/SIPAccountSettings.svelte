@@ -9,11 +9,21 @@
     CardTitle,
   } from "$lib/components/ui/card";
   import { Label } from "$lib/components/ui/label";
+  import { authStore } from "$lib/stores/authStore";
 
-  // Self-contained state
+  // Get SIP credentials from store
   let sipServer = $state("sip.example.com");
   let sipPort = $state("5060");
   let sipProtocol = $state<"UDP" | "TCP" | "TLS">("UDP");
+
+  $effect(() => {
+    const unsubscribe = authStore.sipCredentials.subscribe((creds) => {
+      sipServer = creds.server;
+      sipPort = creds.port;
+      sipProtocol = creds.protocol;
+    });
+    return unsubscribe;
+  });
 
   function handleEditConnection() {
     console.log("DEBUG:[SETTINGS/SIP] Edit connection clicked");

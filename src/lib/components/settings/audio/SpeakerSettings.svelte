@@ -9,16 +9,33 @@
   } from "$lib/components/ui/select";
   import { Label } from "$lib/components/ui/label";
   import { Separator } from "$lib/components/ui/separator";
+  import { audioStore } from "$lib/stores/audioStore";
 
-  // Self-contained state
-  let speakers = $state([
-    { id: "spk1", name: "Built-in Speaker" },
-    { id: "spk2", name: "USB Headphones" },
-    { id: "spk3", name: "Bluetooth Speaker" },
-  ]);
-  let selectedSpeaker = $state("spk1");
+  // Get devices from store
+  let speakers = $state<Array<{ id: string; name: string }>>([]);
+  let selectedSpeaker = $state("");
   let speakerVolume = $state([75]);
   let isTestingSpeaker = $state(false);
+
+  $effect(() => {
+    const unsubscribeDevices = audioStore.outputDevices.subscribe((devices) => {
+      if (devices && devices.length > 0) {
+        speakers = devices.map((d) => ({ id: d.id, name: d.name }));
+        if (!selectedSpeaker) {
+          selectedSpeaker = speakers[0].id;
+        }
+      }
+    });
+    const unsubscribeSelected = audioStore.selectedOutputDevice.subscribe((device) => {
+      if (device) {
+        selectedSpeaker = device.id;
+      }
+    });
+    return () => {
+      unsubscribeDevices();
+      unsubscribeSelected();
+    };
+  });
 
   function handleTestSpeaker() {
     console.log("DEBUG:[SETTINGS/AUDIO] Test speaker clicked");
@@ -32,7 +49,15 @@
     <Volume2 class="h-5 w-5 text-gray-600" />
     <Label class="text-base font-semibold">Speaker</Label>
   </div>
-  <Select type="single">
+  <Select
+    type="single"
+    value={selectedSpeaker}
+    onValueChange={(value) => {
+      if (value) {
+        audioStore.setOutputDevice(value);
+      }
+    }}
+  >
     <SelectTrigger class="w-full">
       {speakers.find((s) => s.id === selectedSpeaker)?.name || "Select speaker"}
     </SelectTrigger>

@@ -8,15 +8,50 @@
     CardHeader,
     CardTitle,
   } from "$lib/components/ui/card";
+  import { authStore } from "$lib/stores/authStore";
 
-  // Self-contained state
+  // Get user info and registration state from store
   let userName = $state("John Doe");
   let userEmail = $state("john.doe@example.com");
   let connectionStatus = $state<"connected" | "disconnected">("connected");
 
+  // Get registration state to show current status
+  let registrationState = $state<
+    "unregistered" | "registering" | "registered" | "failed"
+  >("unregistered");
+
+  $effect(() => {
+    const unsubscribeUserInfo = authStore.userInfo.subscribe((info) => {
+      userName = info.name;
+      userEmail = info.email;
+    });
+    const unsubscribeRegistration = authStore.registrationState.subscribe(
+      (state) => {
+        registrationState = state;
+        // Connection status is "connected" only when registered
+        connectionStatus =
+          state === "registered" ? "connected" : "disconnected";
+      }
+    );
+    return () => {
+      unsubscribeUserInfo();
+      unsubscribeRegistration();
+    };
+  });
+
   function handleEditProfile() {
     console.log("DEBUG:[SETTINGS/ACCOUNT] Edit profile clicked");
     // TODO: Open edit profile dialog
+  }
+
+  function handleRegister() {
+    console.log("DEBUG:[SETTINGS/ACCOUNT] Register button clicked");
+    authStore.register();
+  }
+
+  function handleUnregister() {
+    console.log("DEBUG:[SETTINGS/ACCOUNT] Unregister button clicked");
+    authStore.unregister();
   }
 </script>
 
@@ -49,21 +84,44 @@
         <span
           class="w-2 h-2 rounded-full {connectionStatus === 'connected'
             ? 'bg-green-500'
-            : 'bg-gray-400'}"
+            : registrationState === 'registering'
+              ? 'bg-yellow-500 animate-pulse'
+              : 'bg-gray-400'}"
         ></span>
         <span class="text-sm font-medium text-gray-900">
-          {connectionStatus === "connected" ? "Connected" : "Disconnected"}
+          {connectionStatus === "connected"
+            ? "Connected"
+            : registrationState === "registering"
+              ? "Registering..."
+              : registrationState === "failed"
+                ? "Failed"
+                : "Disconnected"}
         </span>
       </div>
     </div>
 
-    <Button
-      variant="outline"
-      onclick={handleEditProfile}
-      class="w-full sm:w-auto"
-    >
-      <SquarePen class="h-4 w-4 mr-2" />
-      Edit Profile
-    </Button>
+    <div class="flex gap-2">
+      {#if registrationState === "unregistered" || registrationState === "failed"}
+        <Button variant="default" onclick={handleRegister} class="flex-1">
+          Register
+        </Button>
+      {:else if registrationState === "registering"}
+        <Button variant="outline" disabled class="flex-1">
+          Registering...
+        </Button>
+      {:else if registrationState === "registered"}
+        <Button variant="destructive" onclick={handleUnregister} class="flex-1">
+          Unregister
+        </Button>
+      {/if}
+      <Button
+        variant="outline"
+        onclick={handleEditProfile}
+        class="w-full sm:w-auto"
+      >
+        <SquarePen class="h-4 w-4 mr-2" />
+        Edit Profile
+      </Button>
+    </div>
   </CardContent>
 </Card>

@@ -1,7 +1,23 @@
 <script lang="ts">
-  // Self-contained state for contact information
-  let contactName = $state("Sarah Johnson");
-  let phoneNumber = $state("+1 (555) 987-6543");
+  import { callStore } from "$lib/stores/callStore";
+
+  // Use store subscription for reactivity
+  let currentCall = $state<{ name: string | null; number: string } | null>(null);
+
+  $effect(() => {
+    const unsubscribe = callStore.subscribe((call) => {
+      if (call) {
+        currentCall = { name: call.name, number: call.number };
+      } else {
+        currentCall = null;
+      }
+    });
+    return unsubscribe;
+  });
+
+  // Default values if no call
+  let contactName = $derived(currentCall?.name || "Unknown");
+  let phoneNumber = $derived(currentCall?.number || "");
 
   // Generate initials from contact name
   let initials = $derived.by(() => {

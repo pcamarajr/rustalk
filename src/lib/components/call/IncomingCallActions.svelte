@@ -1,15 +1,21 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { Button } from "$lib/components/ui/button/index.js";
   import { Phone, PhoneOff } from "lucide-svelte";
+  import { callStore, isCallActive } from "$lib/stores/callStore";
 
   function handleAnswer() {
     console.log("DEBUG:[CALL/ANSWER] Answering call");
-    // TODO: Connect to call store in UI-2.6, then to Tauri command in Phase 5
+    callStore.answerCall();
+    // Navigate to active call when answered
+    goto("/active-call");
   }
 
   function handleDecline() {
     console.log("DEBUG:[CALL/DECLINE] Declining call");
-    // TODO: Connect to call store in UI-2.6, then to Tauri command in Phase 5
+    callStore.declineCall();
+    // Navigate back to dialer
+    goto("/");
   }
 </script>
 
