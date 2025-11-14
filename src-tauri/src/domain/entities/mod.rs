@@ -2,4 +2,4 @@
 
 pub mod credentials;
 
-pub use credentials::Credentials;
+pub use credentials::{Credentials, TransportProtocol};
