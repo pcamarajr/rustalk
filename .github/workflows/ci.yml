@@ -64,7 +64,7 @@ jobs:
         run: cargo test
 
   # Build verification (macOS only for Phase 1)
-  # Temporarily disabled
+  # Temporarily disabled - Re-enable when build resources are available or Phase 1 build verification is needed
   # build-macos:
   #   name: Build macOS
   #   runs-on: macos-latest
