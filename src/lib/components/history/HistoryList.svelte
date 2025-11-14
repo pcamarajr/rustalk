@@ -1,12 +1,17 @@
 <script lang="ts">
   import { Card, CardContent } from "$lib/components/ui/card";
   import HistoryItem from "./HistoryItem.svelte";
-  import { historyStore, type CallHistoryEntry } from "$lib/stores/historyStore";
+  import {
+    historyStore,
+    type CallHistoryEntry,
+    type TypeFilter,
+    type DateFilter,
+  } from "$lib/stores/historyStore";
   import { formatRelativeDate } from "$lib/utils";
 
   // Subscribe to filter state
-  let typeFilter = $state("all");
-  let dateFilter = $state("all");
+  let typeFilter = $state<TypeFilter>("all");
+  let dateFilter = $state<DateFilter>("all");
 
   $effect(() => {
     const unsubscribeType = historyStore.typeFilter.subscribe((value) => {
@@ -26,7 +31,10 @@
   let entries = $state<CallHistoryEntry[]>([]);
 
   $effect(() => {
-    const filteredStore = historyStore.getFilteredHistory(typeFilter, dateFilter);
+    const filteredStore = historyStore.getFilteredHistory(
+      typeFilter,
+      dateFilter
+    );
     const unsubscribe = filteredStore.subscribe((value) => {
       entries = value;
     });
@@ -91,4 +99,3 @@
     {/each}
   </div>
 {/if}
-

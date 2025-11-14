@@ -40,7 +40,7 @@
   const { initiateCall } = useCallNavigation();
 
   let showDeleteConfirm = $state(false);
-  let editDialogRef: EditContactDialog | null = null;
+  let editDialogRef = $state<EditContactDialog | null>(null);
   let isEditDialogOpen = $state(false);
 
   // Expose open method
