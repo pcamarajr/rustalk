@@ -19,7 +19,7 @@ fn map_keyring_error(error: keyring::Error, operation: &str) -> CredentialStoreE
             }
         }
         keyring::Error::Ambiguous(msg) => CredentialStoreError::StorageError {
-            message: format!("{}: Ambiguous entry - {}", operation, msg),
+            message: format!("{}: Ambiguous entry - {:?}", operation, msg),
         },
         keyring::Error::PlatformFailure(msg) => CredentialStoreError::StorageError {
             message: format!("{}: Platform failure - {}", operation, msg),
@@ -64,25 +64,23 @@ impl CredentialStore for KeychainCredentialStore {
         Self::validate_key(key)?;
 
         let key = key.to_string();
-        let credentials_json = serde_json::to_string(credentials).map_err(|e| {
-            CredentialStoreError::StorageError {
+        let credentials_json =
+            serde_json::to_string(credentials).map_err(|e| CredentialStoreError::StorageError {
                 message: format!("Failed to serialize credentials: {}", e),
-            }
-        })?;
+            })?;
 
         let service = SERVICE_NAME.to_string();
         let credentials_json_clone = credentials_json.clone();
 
         tokio::task::spawn_blocking(move || {
-            let entry = Entry::new(&service, &key).map_err(|e| {
-                CredentialStoreError::StorageError {
+            let entry =
+                Entry::new(&service, &key).map_err(|e| CredentialStoreError::StorageError {
                     message: format!("Failed to create keyring entry: {}", e),
-                }
-            })?;
+                })?;
 
-            entry.set_password(&credentials_json_clone).map_err(|e| {
-                map_keyring_error(e, "save")
-            })
+            entry
+                .set_password(&credentials_json_clone)
+                .map_err(|e| map_keyring_error(e, "save"))
         })
         .await
         .map_err(|e| CredentialStoreError::StorageError {
@@ -97,21 +95,17 @@ impl CredentialStore for KeychainCredentialStore {
         let service = SERVICE_NAME.to_string();
 
         tokio::task::spawn_blocking(move || {
-            let entry = Entry::new(&service, &key).map_err(|e| {
-                CredentialStoreError::StorageError {
+            let entry =
+                Entry::new(&service, &key).map_err(|e| CredentialStoreError::StorageError {
                     message: format!("Failed to create keyring entry: {}", e),
-                }
-            })?;
+                })?;
 
             match entry.get_password() {
-                Ok(password_json) => {
-                    serde_json::from_str(&password_json).map_err(|e| {
-                        CredentialStoreError::StorageError {
-                            message: format!("Failed to deserialize credentials: {}", e),
-                        }
+                Ok(password_json) => serde_json::from_str(&password_json)
+                    .map_err(|e| CredentialStoreError::StorageError {
+                        message: format!("Failed to deserialize credentials: {}", e),
                     })
-                    .map(Some)
-                }
+                    .map(Some),
                 Err(keyring::Error::NoEntry) => Ok(None),
                 Err(e) => Err(map_keyring_error(e, "load")),
             }
@@ -129,11 +123,10 @@ impl CredentialStore for KeychainCredentialStore {
         let service = SERVICE_NAME.to_string();
 
         tokio::task::spawn_blocking(move || {
-            let entry = Entry::new(&service, &key).map_err(|e| {
-                CredentialStoreError::StorageError {
+            let entry =
+                Entry::new(&service, &key).map_err(|e| CredentialStoreError::StorageError {
                     message: format!("Failed to create keyring entry: {}", e),
-                }
-            })?;
+                })?;
 
             match entry.delete_password() {
                 Ok(()) => Ok(()),
@@ -366,4 +359,3 @@ mod tests {
         store.delete(&key).await.unwrap();
     }
 }
-

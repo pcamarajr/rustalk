@@ -2,4 +2,3 @@
 // Implements domain traits with concrete platform services
 
 pub mod storage;
-

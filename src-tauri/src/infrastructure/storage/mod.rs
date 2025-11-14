@@ -5,4 +5,3 @@ pub mod keychain;
 
 #[cfg(target_os = "macos")]
 pub use keychain::KeychainCredentialStore;
-
