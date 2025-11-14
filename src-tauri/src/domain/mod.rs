@@ -6,5 +6,5 @@ pub mod errors;
 pub mod traits;
 
 pub use entities::Credentials;
-pub use errors::CredentialStoreError;
+pub use errors::{CommandError, CredentialStoreError};
 pub use traits::CredentialStore;
