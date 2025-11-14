@@ -4,610 +4,424 @@
 
 This design system provides a comprehensive set of guidelines, components, and patterns for building the Rustalk VoIP application interface. It ensures consistency across all screens and makes white-labeling straightforward.
 
+## Technology Stack
+
+The design system is implemented using:
+
+- **Tailwind CSS** - Utility-first CSS framework for rapid UI development
+- **shadcn-svelte** - High-quality component library built on Radix UI primitives
+- **Lucide Icons** - Modern icon library with consistent design
+- **CSS Custom Properties** - For white-label color theming at build time
+
+This combination provides:
+
+- ✅ Fast development with utility classes
+- ✅ Accessible, well-tested components
+- ✅ Simple white-labeling via build-time configuration
+- ✅ Consistent design language
+
 ---
 
 ## Foundation
 
-### Colors
+### Design Tokens
 
-#### Primary Palette
+We use **Tailwind CSS defaults** for most design tokens (spacing, typography scale, shadows, border radius, etc.). This keeps the design system simple and leverages Tailwind's well-tested defaults.
+
+**Reference Tailwind's default scale:**
+
+- **Spacing**: Use Tailwind's spacing scale (`p-1`, `p-2`, `p-4`, `gap-3`, etc.) - 4px base
+- **Typography**: Use Tailwind's text utilities (`text-xs`, `text-sm`, `text-base`, `text-lg`, etc.)
+- **Font Weights**: Use Tailwind's font utilities (`font-normal`, `font-medium`, `font-semibold`, `font-bold`)
+- **Colors**: Use Tailwind's color palette (`gray-50` through `gray-900`, `green-500`, `red-500`, etc.)
+- **Shadows**: Use Tailwind's shadow utilities (`shadow-sm`, `shadow`, `shadow-lg`, etc.)
+- **Border Radius**: Use Tailwind's rounded utilities (`rounded-sm`, `rounded`, `rounded-lg`, `rounded-full`, etc.)
+
+### Custom Tokens
+
+We only define custom tokens for:
+
+#### Primary Colors (White-Labelable)
+
+These colors are customizable via the white-label TOML config:
+
 ```css
---primary-50:  #EFF6FF;
---primary-100: #DBEAFE;
---primary-200: #BFDBFE;
---primary-300: #93C5FD;
---primary-400: #60A5FA;
---primary-500: #3B82F6; /* Primary brand color */
---primary-600: #2563EB;
---primary-700: #1D4ED8;
---primary-800: #1E40AF;
---primary-900: #1E3A8A;
+--brand-primary: #3b82f6; /* Customizable */
+--brand-primary-hover: #2563eb; /* Customizable */
+--brand-primary-dark: #1d4ed8; /* Customizable */
 ```
 
-#### Neutral Palette
-```css
---gray-50:  #F9FAFB;
---gray-100: #F3F4F6;
---gray-200: #E5E7EB;
---gray-300: #D1D5DB;
---gray-400: #9CA3AF;
---gray-500: #6B7280;
---gray-600: #4B5563;
---gray-700: #374151;
---gray-800: #1F2937;
---gray-900: #111827;
+**Usage in Tailwind:**
+
+```svelte
+<Button class="bg-primary hover:bg-primary-hover">Call</Button>
 ```
 
-#### Semantic Colors
+#### Call State Colors (Domain-Specific)
+
+These are specific to VoIP call states and should remain consistent:
+
 ```css
-/* Success */
---success-50:  #F0FDF4;
---success-500: #10B981;
---success-600: #059669;
-
-/* Error/Danger */
---error-50:  #FEF2F2;
---error-500: #EF4444;
---error-600: #DC2626;
-
-/* Warning */
---warning-50:  #FFFBEB;
---warning-500: #F59E0B;
---warning-600: #D97706;
-
-/* Info */
---info-50:  #EFF6FF;
---info-500: #3B82F6;
---info-600: #2563EB;
+--calling: #3b82f6; /* Blue - use bg-blue-500 */
+--ringing: #10b981; /* Green - use bg-green-500 */
+--active: #10b981; /* Green - use bg-green-500 */
+--holding: #f59e0b; /* Amber - use bg-amber-500 */
+--ended: #6b7280; /* Gray - use bg-gray-500 */
+--failed: #ef4444; /* Red - use bg-red-500 */
+--missed: #ef4444; /* Red - use bg-red-500 */
 ```
 
-#### Call State Colors
-```css
---calling:   #3B82F6; /* Blue */
---ringing:   #10B981; /* Green */
---active:    #10B981; /* Green */
---holding:   #F59E0B; /* Amber */
---ended:     #6B7280; /* Gray */
---failed:    #EF4444; /* Red */
---missed:    #EF4444; /* Red */
+**Usage in Tailwind:**
+
+```svelte
+<div class="bg-green-500">Active Call</div>
+<div class="bg-red-500">Failed Call</div>
 ```
 
-### Typography
+#### Typography
 
-#### Font Stack
+**Font Stack (White-Labelable)**
+
+The font family can be customized via white-label config:
+
 ```css
-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 
-             'Helvetica Neue', Arial, sans-serif, 'Apple Color Emoji', 
-             'Segoe UI Emoji', 'Segoe UI Symbol';
+font-family: var(
+  --brand-font-family,
+  -apple-system,
+  BlinkMacSystemFont,
+  "Segoe UI",
+  Roboto,
+  "Helvetica Neue",
+  Arial,
+  sans-serif
+);
 ```
 
-#### Font Sizes
-```css
---text-xs:   0.75rem;  /* 12px */
---text-sm:   0.875rem; /* 14px */
---text-base: 1rem;     /* 16px */
---text-lg:   1.125rem; /* 18px */
---text-xl:   1.25rem;  /* 20px */
---text-2xl:  1.5rem;   /* 24px */
---text-3xl:  1.875rem; /* 30px */
---text-4xl:  2.25rem;  /* 36px */
-```
+**Font sizes, weights, and line heights** use Tailwind defaults:
 
-#### Font Weights
-```css
---font-normal:    400;
---font-medium:    500;
---font-semibold:  600;
---font-bold:      700;
-```
-
-#### Line Heights
-```css
---leading-tight:  1.25;
---leading-normal: 1.5;
---leading-relaxed: 1.625;
-```
-
-### Spacing
-
-#### Scale (based on 4px)
-```css
---space-0:  0;
---space-1:  0.25rem;  /* 4px */
---space-2:  0.5rem;   /* 8px */
---space-3:  0.75rem;  /* 12px */
---space-4:  1rem;     /* 16px */
---space-5:  1.25rem;  /* 20px */
---space-6:  1.5rem;   /* 24px */
---space-8:  2rem;     /* 32px */
---space-10: 2.5rem;   /* 40px */
---space-12: 3rem;     /* 48px */
---space-16: 4rem;     /* 64px */
-```
-
-### Border Radius
-```css
---radius-sm:   0.25rem; /* 4px */
---radius-base: 0.5rem;  /* 8px */
---radius-lg:   0.75rem; /* 12px */
---radius-xl:   1rem;    /* 16px */
---radius-full: 9999px;  /* Circular */
-```
-
-### Shadows
-```css
---shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
---shadow:    0 1px 3px 0 rgba(0, 0, 0, 0.1), 
-             0 1px 2px 0 rgba(0, 0, 0, 0.06);
---shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 
-             0 2px 4px -1px rgba(0, 0, 0, 0.06);
---shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 
-             0 4px 6px -2px rgba(0, 0, 0, 0.05);
---shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 
-             0 10px 10px -5px rgba(0, 0, 0, 0.04);
-```
+- Font sizes: `text-xs`, `text-sm`, `text-base`, `text-lg`, `text-xl`, `text-2xl`, etc.
+- Font weights: `font-normal`, `font-medium`, `font-semibold`, `font-bold`
+- Line heights: `leading-tight`, `leading-normal`, `leading-relaxed`
 
 ---
 
 ## Components
 
+Components are built using **shadcn-svelte**, which provides accessible, customizable components based on Radix UI primitives. All components use Tailwind CSS utilities and can be customized via CSS custom properties for white-labeling.
+
 ### Buttons
 
+Use the `Button` component from shadcn-svelte with Tailwind utility classes.
+
 #### Primary Button
-```css
-.btn-primary {
-  background: var(--primary-500);
-  color: white;
-  padding: 12px 24px;
-  border-radius: var(--radius-base);
-  font-weight: var(--font-semibold);
-  font-size: var(--text-base);
-  border: none;
-  cursor: pointer;
-  transition: all 200ms ease-in-out;
-}
 
-.btn-primary:hover {
-  background: var(--primary-600);
-}
+```svelte
+<script>
+  import { Button } from '$lib/components/ui/button';
+  import { Phone } from 'lucide-svelte';
+</script>
 
-.btn-primary:active {
-  background: var(--primary-700);
-}
-
-.btn-primary:disabled {
-  background: var(--gray-300);
-  cursor: not-allowed;
-  opacity: 0.6;
-}
+<Button on:click={handleCall} class="bg-primary hover:bg-primary-hover text-white">
+  <Phone class="mr-2 h-4 w-4" />
+  Call
+</Button>
 ```
 
 #### Secondary Button
-```css
-.btn-secondary {
-  background: transparent;
-  color: var(--gray-700);
-  padding: 12px 24px;
-  border-radius: var(--radius-base);
-  font-weight: var(--font-medium);
-  font-size: var(--text-base);
-  border: 1px solid var(--gray-300);
-  cursor: pointer;
-  transition: all 200ms ease-in-out;
-}
 
-.btn-secondary:hover {
-  background: var(--gray-50);
-  border-color: var(--gray-400);
-}
+```svelte
+<Button variant="outline" on:click={handleCancel}>
+  Cancel
+</Button>
 ```
 
 #### Icon Button
-```css
-.btn-icon {
-  width: 48px;
-  height: 48px;
-  background: var(--gray-100);
-  color: var(--gray-700);
-  border-radius: var(--radius-full);
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 200ms ease-in-out;
-}
 
-.btn-icon:hover {
-  background: var(--gray-200);
-}
-
-.btn-icon:active {
-  background: var(--gray-300);
-  transform: scale(0.95);
-}
+```svelte
+<Button variant="ghost" size="icon" class="h-12 w-12">
+  <Phone class="h-5 w-5" />
+</Button>
 ```
 
 #### Call Action Buttons
-```css
-/* Answer/Accept */
-.btn-accept {
-  background: var(--success-500);
-  color: white;
-  padding: 20px;
-  border-radius: var(--radius-lg);
-  font-weight: var(--font-semibold);
-}
 
-.btn-accept:hover {
-  background: var(--success-600);
-}
+```svelte
+<script>
+  import { Button } from '$lib/components/ui/button';
+  import { Phone, PhoneOff } from 'lucide-svelte';
+</script>
 
-/* Decline/End */
-.btn-decline {
-  background: var(--error-500);
-  color: white;
-  padding: 20px;
-  border-radius: var(--radius-lg);
-  font-weight: var(--font-semibold);
-}
+<!-- Answer/Accept -->
+<Button class="bg-green-500 hover:bg-green-600 text-white rounded-lg p-5">
+  <Phone class="h-6 w-6" />
+</Button>
 
-.btn-decline:hover {
-  background: var(--error-600);
-}
+<!-- Decline/End -->
+<Button class="bg-red-500 hover:bg-red-600 text-white rounded-lg p-5">
+  <PhoneOff class="h-6 w-6" />
+</Button>
 ```
 
 ### Inputs
 
+Use the `Input` and `Select` components from shadcn-svelte.
+
 #### Text Input
-```css
-.input-text {
-  width: 100%;
-  padding: 12px 16px;
-  border: 1px solid var(--gray-300);
-  border-radius: var(--radius-base);
-  font-size: var(--text-base);
-  color: var(--gray-900);
-  background: white;
-  transition: all 200ms ease-in-out;
-}
 
-.input-text:focus {
-  outline: none;
-  border-color: var(--primary-500);
-  box-shadow: 0 0 0 3px var(--primary-100);
-}
+```svelte
+<script>
+  import { Input } from '$lib/components/ui/input';
+  import { Label } from '$lib/components/ui/label';
+</script>
 
-.input-text:disabled {
-  background: var(--gray-50);
-  cursor: not-allowed;
-}
-
-.input-text.error {
-  border-color: var(--error-500);
-}
-
-.input-text.error:focus {
-  box-shadow: 0 0 0 3px var(--error-50);
-}
+<Label for="username">Username</Label>
+<Input
+  id="username"
+  type="text"
+  placeholder="Enter username"
+  class="w-full"
+/>
 ```
 
 #### Phone Number Input
-```css
-.input-phone {
-  width: 100%;
-  padding: 16px 48px 16px 16px;
-  border: 1px solid var(--gray-300);
-  border-radius: var(--radius-lg);
-  font-size: var(--text-2xl);
-  font-weight: var(--font-light);
-  text-align: center;
-  color: var(--gray-900);
-  background: white;
-  letter-spacing: 0.05em;
-}
 
-.input-phone::placeholder {
-  color: var(--gray-400);
-  font-weight: var(--font-normal);
-}
+```svelte
+<Input
+  type="tel"
+  placeholder="Enter phone number"
+  class="text-2xl text-center tracking-wide py-4 px-12 rounded-lg"
+/>
 ```
 
 #### Select Dropdown
-```css
-.select {
-  appearance: none;
-  padding: 12px 40px 12px 16px;
-  border: 1px solid var(--gray-300);
-  border-radius: var(--radius-base);
-  font-size: var(--text-base);
-  color: var(--gray-900);
-  background: white url("data:...") no-repeat right 12px center;
-  background-size: 16px;
-  cursor: pointer;
-}
 
-.select:focus {
-  outline: none;
-  border-color: var(--primary-500);
-  box-shadow: 0 0 0 3px var(--primary-100);
-}
+```svelte
+<script>
+  import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '$lib/components/ui/select';
+</script>
+
+<Select>
+  <SelectTrigger class="w-full">
+    <SelectValue placeholder="Select an option" />
+  </SelectTrigger>
+  <SelectContent>
+    <SelectItem value="option1">Option 1</SelectItem>
+    <SelectItem value="option2">Option 2</SelectItem>
+  </SelectContent>
+</Select>
 ```
 
 ### Cards
 
-#### Base Card
-```css
-.card {
-  background: white;
-  border: 1px solid var(--gray-200);
-  border-radius: var(--radius-lg);
-  padding: var(--space-4);
-  box-shadow: var(--shadow-sm);
-  transition: all 200ms ease-in-out;
-}
+Use Tailwind utility classes for cards, or the `Card` component from shadcn-svelte.
 
-.card:hover {
-  border-color: var(--gray-300);
-  box-shadow: var(--shadow);
-}
+#### Base Card
+
+```svelte
+<div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:border-gray-300 hover:shadow transition-all">
+  <!-- Card content -->
+</div>
 ```
 
 #### Contact Card
-```css
-.card-contact {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3);
-  background: white;
-  border: 1px solid var(--gray-200);
-  border-radius: var(--radius-lg);
-  cursor: pointer;
-  transition: all 200ms ease-in-out;
-}
 
-.card-contact:hover {
-  border-color: var(--gray-300);
-  background: var(--gray-50);
-}
+```svelte
+<script>
+  import { Card } from '$lib/components/ui/card';
+  import { Button } from '$lib/components/ui/button';
+  import { Phone } from 'lucide-svelte';
+</script>
+
+<Card class="flex items-center gap-3 p-3 cursor-pointer hover:bg-gray-50">
+  <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-semibold">
+    SJ
+  </div>
+  <div class="flex-1">
+    <div class="font-semibold text-gray-900">Sarah Johnson</div>
+    <div class="text-sm text-gray-500">+1 (555) 987-6543</div>
+  </div>
+  <Button variant="ghost" size="icon">
+    <Phone class="h-5 w-5" />
+  </Button>
+</Card>
 ```
 
 #### Call History Item
-```css
-.card-history {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--space-3);
-  background: white;
-  border: 1px solid var(--gray-200);
-  border-radius: var(--radius-base);
-}
 
-.card-history:hover {
-  border-color: var(--gray-300);
-}
+```svelte
+<Card class="flex items-center justify-between p-3 hover:border-gray-300">
+  <div class="flex items-center gap-3">
+    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-sm font-semibold">SJ</div>
+    <div>
+      <div class="font-medium">Sarah Johnson</div>
+      <div class="text-sm text-gray-500">+1 (555) 987-6543</div>
+    </div>
+  </div>
+  <div class="text-sm text-gray-500">02:45</div>
+</Card>
 ```
 
 ### Avatars
 
-#### Base Avatar
-```css
-.avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-full);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: var(--font-semibold);
-  color: white;
-  overflow: hidden;
-}
+Use Tailwind utility classes for avatars.
 
-.avatar-sm { width: 32px; height: 32px; font-size: var(--text-sm); }
-.avatar-md { width: 40px; height: 40px; font-size: var(--text-base); }
-.avatar-lg { width: 64px; height: 64px; font-size: var(--text-2xl); }
-.avatar-xl { width: 96px; height: 96px; font-size: var(--text-4xl); }
+#### Base Avatar
+
+```svelte
+<!-- Small -->
+<div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-sm font-semibold">
+  SJ
+</div>
+
+<!-- Medium -->
+<div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-semibold">
+  SJ
+</div>
+
+<!-- Large -->
+<div class="w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-2xl font-semibold">
+  SJ
+</div>
+
+<!-- Extra Large -->
+<div class="w-24 h-24 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-4xl font-semibold">
+  SJ
+</div>
 ```
 
 #### Avatar with Gradient
-```css
-.avatar-gradient-blue {
-  background: linear-gradient(135deg, #60A5FA 0%, #2563EB 100%);
-}
 
-.avatar-gradient-green {
-  background: linear-gradient(135deg, #34D399 0%, #059669 100%);
-}
+```svelte
+<!-- Blue gradient -->
+<div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600">SJ</div>
 
-.avatar-gradient-purple {
-  background: linear-gradient(135deg, #A78BFA 0%, #7C3AED 100%);
-}
+<!-- Green gradient -->
+<div class="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-green-600">SJ</div>
+
+<!-- Purple gradient -->
+<div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-purple-600">SJ</div>
 ```
 
 ### Badges
 
+Use the `Badge` component from shadcn-svelte.
+
 #### Status Badge
-```css
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  padding: 4px 12px;
-  border-radius: var(--radius-full);
-  font-size: var(--text-xs);
-  font-weight: var(--font-medium);
-}
 
-.badge-success {
-  background: var(--success-50);
-  color: var(--success-600);
-}
+```svelte
+<script>
+  import { Badge } from '$lib/components/ui/badge';
+</script>
 
-.badge-error {
-  background: var(--error-50);
-  color: var(--error-600);
-}
+<!-- Success -->
+<Badge variant="default" class="bg-green-50 text-green-600 hover:bg-green-50">
+  Active
+</Badge>
 
-.badge-warning {
-  background: var(--warning-50);
-  color: var(--warning-600);
-}
+<!-- Error -->
+<Badge variant="destructive">
+  Failed
+</Badge>
 
-.badge-info {
-  background: var(--info-50);
-  color: var(--info-600);
-}
+<!-- Warning -->
+<Badge class="bg-amber-50 text-amber-600 hover:bg-amber-50">
+  Warning
+</Badge>
+
+<!-- Info -->
+<Badge class="bg-blue-50 text-blue-600 hover:bg-blue-50">
+  Info
+</Badge>
 ```
 
 ### Dial Pad
 
+Use Tailwind utilities for dial pad buttons.
+
 #### Dial Button
-```css
-.dial-button {
-  width: 100%;
-  height: 64px;
-  background: white;
-  border: 1px solid var(--gray-200);
-  border-radius: var(--radius-lg);
-  cursor: pointer;
-  transition: all 150ms ease-in-out;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
 
-.dial-button:hover {
-  background: var(--gray-50);
-}
-
-.dial-button:active {
-  background: var(--gray-100);
-  transform: scale(0.96);
-}
-
-.dial-button-number {
-  font-size: var(--text-2xl);
-  font-weight: var(--font-medium);
-  color: var(--gray-900);
-}
-
-.dial-button-letters {
-  font-size: var(--text-xs);
-  color: var(--gray-500);
-  margin-top: 2px;
-}
+```svelte
+<button
+  class="w-full h-16 bg-white border border-gray-200 rounded-lg cursor-pointer transition-all hover:bg-gray-50 active:bg-gray-100 active:scale-[0.96] flex flex-col items-center justify-center"
+  on:click={() => handleDial('1')}
+>
+  <div class="text-2xl font-medium text-gray-900">1</div>
+  <div class="text-xs text-gray-500 mt-0.5"></div>
+</button>
 ```
 
 ### Navigation
 
+Use Tailwind utilities for sidebar navigation.
+
 #### Sidebar Navigation
-```css
-.sidebar {
-  width: 64px;
-  background: white;
-  border-right: 1px solid var(--gray-200);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: var(--space-4) 0;
-  gap: var(--space-4);
-}
 
-.sidebar-item {
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-lg);
-  color: var(--gray-600);
-  cursor: pointer;
-  transition: all 200ms ease-in-out;
-}
+```svelte
+<script>
+  import { Home } from 'lucide-svelte';
 
-.sidebar-item:hover {
-  background: var(--gray-100);
-}
+  let active = $state('home');
 
-.sidebar-item.active {
-  background: var(--primary-100);
-  color: var(--primary-600);
-}
+  function setActive(item) {
+    active = item;
+  }
+</script>
+
+<nav class="w-16 bg-white border-r border-gray-200 flex flex-col items-center py-4 gap-4">
+  <button
+    class="w-12 h-12 rounded-lg text-gray-600 hover:bg-gray-100 transition-all flex items-center justify-center {active === 'home' ? 'bg-primary-100 text-primary-600' : ''}"
+    on:click={() => setActive('home')}
+  >
+    <Home class="h-5 w-5" />
+  </button>
+  <!-- More nav items -->
+</nav>
 ```
 
 ### Toast Notifications
 
-```css
-.toast {
-  min-width: 300px;
-  padding: var(--space-4);
-  background: white;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-  display: flex;
-  align-items: start;
-  gap: var(--space-3);
-}
+Use the `Toast` component from shadcn-svelte with the toast store.
 
-.toast-success {
-  border-left: 4px solid var(--success-500);
-}
+```svelte
+<script>
+  import { toast } from '$lib/components/ui/toast';
+  import { useToast } from '$lib/components/ui/toast/use-toast';
 
-.toast-error {
-  border-left: 4px solid var(--error-500);
-}
+  const { toast: showToast } = useToast();
 
-.toast-warning {
-  border-left: 4px solid var(--warning-500);
-}
-
-.toast-info {
-  border-left: 4px solid var(--info-500);
-}
+  function showSuccess() {
+    showToast({
+      title: "Success",
+      description: "Call connected successfully",
+    });
+  }
+</script>
 ```
 
-### Modals
+### Modals / Dialogs
 
-```css
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
+Use the `Dialog` component from shadcn-svelte.
 
-.modal {
-  background: white;
-  border-radius: var(--radius-xl);
-  padding: var(--space-6);
-  max-width: 500px;
-  width: 90%;
-  box-shadow: var(--shadow-xl);
-}
+```svelte
+<script>
+  import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '$lib/components/ui/dialog';
+  import { Button } from '$lib/components/ui/button';
 
-.modal-header {
-  font-size: var(--text-xl);
-  font-weight: var(--font-semibold);
-  color: var(--gray-900);
-  margin-bottom: var(--space-4);
-}
+  let open = $state(false);
+</script>
 
-.modal-footer {
-  display: flex;
-  gap: var(--space-3);
-  justify-content: flex-end;
-  margin-top: var(--space-6);
-}
+<Dialog bind:open>
+  <DialogContent>
+    <DialogHeader>
+      <DialogTitle>Confirm Action</DialogTitle>
+    </DialogHeader>
+    <p>Are you sure you want to proceed?</p>
+    <DialogFooter>
+      <Button variant="outline" on:click={() => open = false}>Cancel</Button>
+      <Button on:click={handleConfirm}>Confirm</Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
 ```
 
 ---
@@ -616,84 +430,68 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
 
 ### Call States Visual Indicators
 
-```css
-/* Ringing Animation */
-@keyframes pulse-ring {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.1); opacity: 0.8; }
-}
+Use Tailwind animation utilities and custom CSS for animations.
 
-.calling-indicator {
-  animation: pulse-ring 2s ease-in-out infinite;
-}
+```svelte
+<!-- Ringing Animation -->
+<div class="animate-pulse scale-110">
+  <Phone class="h-6 w-6 text-blue-500" />
+</div>
 
-/* Active Call Indicator */
-.active-call-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: var(--radius-full);
-  background: var(--success-500);
-  animation: pulse 2s ease-in-out infinite;
-}
+<!-- Active Call Indicator -->
+<div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+```
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
+Custom animations can be added to `tailwind.config.js`:
+
+```js
+// tailwind.config.js
+module.exports = {
+  theme: {
+    extend: {
+      keyframes: {
+        "pulse-ring": {
+          "0%, 100%": { transform: "scale(1)", opacity: "1" },
+          "50%": { transform: "scale(1.1)", opacity: "0.8" },
+        },
+      },
+      animation: {
+        "pulse-ring": "pulse-ring 2s ease-in-out infinite",
+      },
+    },
+  },
+};
 ```
 
 ### Audio Level Visualizer
 
-```css
-.audio-visualizer {
-  display: flex;
-  align-items: flex-end;
-  gap: 4px;
-  height: 32px;
-}
-
-.audio-bar {
-  flex: 1;
-  background: var(--primary-500);
-  border-radius: 2px 2px 0 0;
-  transition: height 100ms ease-in-out;
-}
+```svelte
+<div class="flex items-end gap-1 h-8">
+  {#each audioLevels as level}
+    <div
+      class="flex-1 bg-primary rounded-t transition-all"
+      style="height: {level}%"
+    ></div>
+  {/each}
+</div>
 ```
 
 ### Loading States
 
-```css
-/* Skeleton Loader */
-.skeleton {
-  background: linear-gradient(
-    90deg,
-    var(--gray-200) 25%,
-    var(--gray-100) 50%,
-    var(--gray-200) 75%
-  );
-  background-size: 200% 100%;
-  animation: loading 1.5s ease-in-out infinite;
-  border-radius: var(--radius-base);
-}
+Use the `Skeleton` component from shadcn-svelte or Tailwind utilities.
 
-@keyframes loading {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
+```svelte
+<script>
+  import { Skeleton } from '$lib/components/ui/skeleton';
+  import { Loader2 } from 'lucide-svelte';
+</script>
 
-/* Spinner */
-.spinner {
-  width: 24px;
-  height: 24px;
-  border: 3px solid var(--gray-200);
-  border-top-color: var(--primary-500);
-  border-radius: var(--radius-full);
-  animation: spin 1s linear infinite;
-}
+<!-- Skeleton Loader -->
+<Skeleton class="h-4 w-full" />
+<Skeleton class="h-4 w-3/4 mt-2" />
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
+<!-- Spinner -->
+<Loader2 class="h-6 w-6 animate-spin text-primary" />
 ```
 
 ---
@@ -701,53 +499,51 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
 ## Layout
 
 ### Container Sizes
-```css
-.container-sm  { max-width: 320px; }
-.container-md  { max-width: 480px; }
-.container-lg  { max-width: 640px; }
-.container-xl  { max-width: 800px; }
+
+Use Tailwind's `max-w-*` utilities:
+
+```svelte
+<div class="max-w-xs">  <!-- 320px --> </div>
+<div class="max-w-sm">  <!-- 384px --> </div>
+<div class="max-w-md">  <!-- 448px --> </div>
+<div class="max-w-lg">  <!-- 512px --> </div>
+<div class="max-w-xl">  <!-- 576px --> </div>
+<div class="max-w-2xl"> <!-- 672px --> </div>
 ```
 
 ### App Window
-```css
-.app-window {
-  width: 400px;
-  height: 600px;
-  background: white;
-  border-radius: 12px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
 
-.app-window-expanded {
-  width: 800px;
-  height: 768px;
-}
+```svelte
+<!-- Compact window -->
+<div class="w-[400px] h-[600px] bg-white rounded-xl overflow-hidden flex flex-col">
+  <!-- App content -->
+</div>
+
+<!-- Expanded window -->
+<div class="w-[800px] h-[768px] bg-white rounded-xl overflow-hidden flex flex-col">
+  <!-- App content -->
+</div>
 ```
 
 ### Grid Layouts
-```css
-/* 2-column grid for contacts */
-.grid-contacts {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--space-4);
-}
 
-/* 3-column grid for dial pad */
-.grid-dialpad {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-3);
-}
+Use Tailwind's grid utilities:
 
-/* 4-column grid for call controls */
-.grid-controls {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--space-3);
-}
+```svelte
+<!-- 2-column grid for contacts -->
+<div class="grid grid-cols-2 gap-4">
+  <!-- Contact items -->
+</div>
+
+<!-- 3-column grid for dial pad -->
+<div class="grid grid-cols-3 gap-3">
+  <!-- Dial buttons -->
+</div>
+
+<!-- 4-column grid for call controls -->
+<div class="grid grid-cols-4 gap-3">
+  <!-- Control buttons -->
+</div>
 ```
 
 ---
@@ -755,49 +551,42 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
 ## Accessibility
 
 ### Focus States
-```css
-*:focus-visible {
-  outline: 2px solid var(--primary-500);
-  outline-offset: 2px;
-}
 
-button:focus-visible {
-  outline: 2px solid var(--primary-500);
-  outline-offset: 2px;
-}
+Use Tailwind's focus utilities with the primary color:
+
+```svelte
+<button class="focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2">
+  Button
+</button>
 ```
 
 ### Screen Reader Only
-```css
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border-width: 0;
-}
+
+Use Tailwind's `sr-only` utility:
+
+```svelte
+<span class="sr-only">Screen reader only text</span>
 ```
 
 ### Reduced Motion
-```css
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-}
+
+Tailwind automatically respects `prefers-reduced-motion`. For custom animations, use the `motion-safe:` and `motion-reduce:` variants:
+
+```svelte
+<div class="motion-safe:animate-pulse motion-reduce:animate-none">
+  Animated content
+</div>
 ```
 
 ---
 
 ## White-Label Customization
 
+White-labeling is handled at **build time** via a TOML configuration file. A Vite plugin processes the config and generates CSS custom properties that Tailwind uses for theming.
+
 ### Configuration Format (TOML)
+
+Create a `white-label.toml` file in the project root:
 
 ```toml
 [branding]
@@ -820,37 +609,72 @@ font_family = "Inter, system-ui, sans-serif"
 font_url = "https://fonts.googleapis.com/css2?family=Inter"
 ```
 
-### CSS Variables for Theming
+### Build-Time Processing
+
+A Vite plugin reads the TOML config and generates CSS custom properties:
 
 ```css
+/* Generated at build time: src/lib/styles/theme.css */
 :root {
-  /* Customizable via white-label config */
-  --brand-primary: var(--primary-500);
-  --brand-primary-hover: var(--primary-600);
-  --brand-primary-dark: var(--primary-700);
-  
-  /* Can be overridden */
-  --brand-font-family: var(--font-family);
-}
-
-/* Override theme */
-[data-theme="custom"] {
-  --brand-primary: #8B5CF6; /* Purple */
-  --brand-primary-hover: #7C3AED;
-  --brand-primary-dark: #6D28D9;
+  --brand-primary: #3b82f6;
+  --brand-primary-hover: #2563eb;
+  --brand-primary-dark: #1d4ed8;
+  --brand-font-family: Inter, system-ui, sans-serif;
 }
 ```
+
+### Tailwind Configuration
+
+Tailwind is configured to use these CSS variables:
+
+```js
+// tailwind.config.js
+module.exports = {
+  theme: {
+    extend: {
+      colors: {
+        primary: {
+          DEFAULT: "var(--brand-primary)",
+          hover: "var(--brand-primary-hover)",
+          dark: "var(--brand-primary-dark)",
+        },
+      },
+    },
+  },
+};
+```
+
+### Usage in Components
+
+Components automatically use the white-label colors:
+
+```svelte
+<!-- This button uses the brand primary color from TOML config -->
+<Button class="bg-primary hover:bg-primary-hover">
+  Call
+</Button>
+```
+
+### Build Process
+
+1. User edits `white-label.toml` with their brand colors
+2. Run `npm run build` or `npm run tauri:build`
+3. Vite plugin processes TOML → generates CSS variables
+4. Tailwind utilities reference the generated variables
+5. Final build includes the custom brand colors
 
 ---
 
 ## Animation Guidelines
 
 ### Durations
+
 - **Fast**: 150ms - Micro-interactions (button press, hover)
 - **Normal**: 200ms - Standard transitions (color, opacity)
 - **Slow**: 300ms - Layout changes, modals
 
 ### Easing Functions
+
 ```css
 --ease-in: cubic-bezier(0.4, 0, 1, 1);
 --ease-out: cubic-bezier(0, 0, 0.2, 1);
@@ -868,10 +692,18 @@ font_url = "https://fonts.googleapis.com/css2?family=Inter"
 --screen-lg: 1024px;
 --screen-xl: 1280px;
 
-@media (min-width: 640px) { /* sm */ }
-@media (min-width: 768px) { /* md */ }
-@media (min-width: 1024px) { /* lg */ }
-@media (min-width: 1280px) { /* xl */ }
+@media (min-width: 640px) {
+  /* sm */
+}
+@media (min-width: 768px) {
+  /* md */
+}
+@media (min-width: 1024px) {
+  /* lg */
+}
+@media (min-width: 1280px) {
+  /* xl */
+}
 ```
 
 ---
@@ -879,44 +711,142 @@ font_url = "https://fonts.googleapis.com/css2?family=Inter"
 ## Usage Examples
 
 ### Complete Button Implementation
-```jsx
-<button className="btn-primary" onClick={handleCall}>
-  <PhoneIcon />
+
+```svelte
+<script>
+  import { Button } from '$lib/components/ui/button';
+  import { Phone } from 'lucide-svelte';
+
+  function handleCall() {
+    // Call logic
+  }
+</script>
+
+<Button on:click={handleCall} class="bg-primary hover:bg-primary-hover text-white">
+  <Phone class="mr-2 h-4 w-4" />
   <span>Call</span>
-</button>
+</Button>
 ```
 
 ### Contact Card
-```jsx
-<div className="card-contact">
-  <div className="avatar avatar-md avatar-gradient-blue">
+
+```svelte
+<script>
+  import { Card } from '$lib/components/ui/card';
+  import { Button } from '$lib/components/ui/button';
+  import { Phone } from 'lucide-svelte';
+</script>
+
+<Card class="flex items-center gap-3 p-3 cursor-pointer hover:bg-gray-50">
+  <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-semibold">
     SJ
   </div>
-  <div className="flex-1">
-    <div className="font-semibold text-gray-900">Sarah Johnson</div>
-    <div className="text-sm text-gray-500">+1 (555) 987-6543</div>
+  <div class="flex-1">
+    <div class="font-semibold text-gray-900">Sarah Johnson</div>
+    <div class="text-sm text-gray-500">+1 (555) 987-6543</div>
   </div>
-  <button className="btn-icon">
-    <PhoneIcon />
-  </button>
-</div>
+  <Button variant="ghost" size="icon">
+    <Phone class="h-5 w-5" />
+  </Button>
+</Card>
 ```
 
 ### Call State Indicator
-```jsx
-<div className="flex items-center gap-2">
-  <div className="active-call-dot"></div>
-  <span className="text-sm font-mono text-gray-700">02:45</span>
+
+```svelte
+<div class="flex items-center gap-2">
+  <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+  <span class="text-sm font-mono text-gray-700">02:45</span>
 </div>
 ```
 
 ---
 
-## Implementation Notes
+## Implementation Guide
 
-1. **Use CSS Custom Properties** for theming - makes white-labeling simple
-2. **Component-first approach** - Build reusable React components
-3. **Tailwind CSS compatible** - Design system aligns with Tailwind utilities
-4. **Dark mode ready** - Color variables can be swapped for dark theme
-5. **Responsive by default** - All components work on different screen sizes
-6. **Accessibility built-in** - ARIA labels, keyboard navigation, focus states
+### Setup Steps
+
+1. **Install Dependencies**
+
+   ```bash
+   npm install -D tailwindcss postcss autoprefixer
+   npm install -D @tailwindcss/typography
+   npx shadcn-svelte@latest init
+   npm install lucide-svelte
+   ```
+
+2. **Initialize Tailwind**
+
+   ```bash
+   npx tailwindcss init -p
+   ```
+
+3. **Configure Tailwind** (`tailwind.config.js`)
+
+   ```js
+   import { fontFamily } from "tailwindcss/defaultTheme";
+
+   /** @type {import('tailwindcss').Config} */
+   export default {
+     content: ["./src/**/*.{html,js,svelte,ts}"],
+     theme: {
+       extend: {
+         colors: {
+           primary: {
+             DEFAULT: "var(--brand-primary)",
+             hover: "var(--brand-primary-hover)",
+             dark: "var(--brand-primary-dark)",
+           },
+         },
+         fontFamily: {
+           sans: ["var(--brand-font-family)", ...fontFamily.sans],
+         },
+       },
+     },
+     plugins: [],
+   };
+   ```
+
+4. **Add Tailwind to Global CSS** (`src/app.css`)
+
+   ```css
+   @tailwind base;
+   @tailwind components;
+   @tailwind utilities;
+
+   @layer base {
+     :root {
+       --brand-primary: #3b82f6;
+       --brand-primary-hover: #2563eb;
+       --brand-primary-dark: #1d4ed8;
+       --brand-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+         Roboto, sans-serif;
+     }
+   }
+   ```
+
+5. **Import CSS in Layout** (`src/routes/+layout.svelte`)
+
+   ```svelte
+   <script>
+     import '../app.css';
+   </script>
+   ```
+
+6. **Add shadcn Components**
+   ```bash
+   npx shadcn-svelte@latest add button
+   npx shadcn-svelte@latest add input
+   npx shadcn-svelte@latest add card
+   # ... add other components as needed
+   ```
+
+### Implementation Notes
+
+1. **CSS Custom Properties** - Used for white-label theming at build time
+2. **Component Library** - shadcn-svelte provides accessible, customizable components
+3. **Tailwind CSS** - Utility-first approach for rapid development
+4. **Icons** - Lucide icons for consistent iconography
+5. **Responsive by Default** - Tailwind utilities work across screen sizes
+6. **Accessibility Built-in** - shadcn components include ARIA labels and keyboard navigation
+7. **Build-Time Theming** - White-label colors injected during build process

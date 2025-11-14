@@ -14,6 +14,7 @@
 4. **[06-technology-decisions.md](06-technology-decisions.md)** - Technology stack research and rationale
 5. **[07-design-system.md](07-design-system.md)** - Design system guidelines, components, and patterns
 6. **[08-ui-design.md](08-ui-design.md)** - UI design specifications and screen layouts
+7. **[09-islands-architecture.md](09-islands-architecture.md)** - Islands Architecture pattern for component organization (**Required**)
 
 ### Additional Documentation (Coming Soon)
 
@@ -102,8 +103,15 @@ The architecture documentation includes comprehensive design and UI specificatio
 
 - **[07-design-system.md](07-design-system.md)** - Complete design system with colors, typography, components, and patterns
 - **[08-ui-design.md](08-ui-design.md)** - Detailed UI specifications for all screens and user flows
+- **[09-islands-architecture.md](09-islands-architecture.md)** - Islands Architecture pattern - **required for all new screens and components**
 
 These documents are referenced throughout implementation, especially in Phase 2 (UI Foundation).
+
+## Development Best Practices
+
+**⚠️ CRITICAL - Before Implementing UI Components:**
+
+- **[../development/svelte-patterns.md](../development/svelte-patterns.md)** - **MUST READ** - Svelte 5 runes mode patterns, common pitfalls, and best practices learned from Phase 2 implementation. This guide will save significant debugging time.
 
 ## Next Steps
 

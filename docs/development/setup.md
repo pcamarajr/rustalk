@@ -183,6 +183,10 @@ After the container is set up:
 2. **Phase 2**: Build UI foundation with design system
 3. See [05-implementation-roadmap.md](../architecture/05-implementation-roadmap.md) for full development plan
 
+## Development Guides
+
+- **[Svelte Patterns Guide](./svelte-patterns.md)** - **READ THIS FIRST** - Critical patterns for Svelte 5 runes mode to avoid common pitfalls
+
 ## Getting Help
 
 If you encounter issues not covered here:
