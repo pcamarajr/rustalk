@@ -134,7 +134,7 @@ Comprehensive code review checklist to ensure code quality, framework compliance
 #### Info (Nice to Have)
 
 - [ ] Follows component patterns from `docs/development/svelte-patterns.md`
-- [ ] Dialog state management follows documented patterns
+- [ ] Dialog state management follows documented patterns (`docs/development/svelte-patterns.md#dialog-and-state-management-patterns`)
 - [ ] Uses composables from `src/lib/hooks/` for shared functionality
 
 **Common Pitfalls to Check:**

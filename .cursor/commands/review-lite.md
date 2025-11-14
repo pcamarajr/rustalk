@@ -12,6 +12,7 @@ Lightweight code review checklist for staged files or specific commits. Focuses 
 - **Svelte 5**: https://svelte.dev/llms.txt
 - **Rust**: https://doc.rust-lang.org/stable/
 - **Tauri v2**: https://v2.tauri.app/llms.txt
+- **Project Docs**: `docs/architecture/09-islands-architecture.md`, `docs/development/svelte-patterns.md`
 
 ---
 
@@ -34,11 +35,11 @@ Lightweight code review checklist for staged files or specific commits. Focuses 
 - [ ] Uses `$effect` for side effects with cleanup
 - [ ] CSS scoping: Uses `:global()` for prop-based classes
 - [ ] Uses shadcn-svelte components from `$lib/components/ui/`
-- [ ] Follows dialog state management patterns
+- [ ] Follows dialog state management patterns (`docs/development/svelte-patterns.md#dialog-and-state-management-patterns`)
 
 #### Info (Nice to Have)
 
-- [ ] Component follows Islands Architecture pattern
+- [ ] Component follows Islands Architecture pattern (`docs/architecture/09-islands-architecture.md`)
 - [ ] Uses composables from `src/lib/hooks/` for shared functionality
 - [ ] Accessibility attributes present (aria-label, etc.)
 
