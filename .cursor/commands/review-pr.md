@@ -55,10 +55,14 @@ fi
    gh pr view <PR_NUMBER> --json number,title,state
    ```
 
-### Step 4: Get PR Diff
+### Step 4: Get PR Diff and Metadata
 
 ```bash
+# Get PR diff
 gh pr diff <PR_NUMBER> > /tmp/pr-diff.txt
+
+# Get PR metadata (title, description, commits) for README checks
+gh pr view <PR_NUMBER> --json title,body,commits > /tmp/pr-metadata.json
 ```
 
 Analyze the diff to identify:
@@ -67,12 +71,23 @@ Analyze the diff to identify:
 - Line numbers for each change
 - Code patterns that need review
 
+Extract PR metadata for README validation:
+
+- PR title and description (for phase completion detection)
+- Commit messages (for additional phase completion indicators)
+- Changed files (to check if README.md was modified)
+
 ### Step 5: Automatic Code Analysis
 
-Analyze the PR diff against the review criteria below. For each issue found:
+Analyze the PR diff and metadata against the review criteria below. For each issue found:
 
 1. **Line-specific issues** → Prepare inline comments with file path and line number
 2. **Category-level issues** → Prepare general PR comments grouped by category
+
+**IMPORTANT - README Validation**:
+
+- **ALWAYS** verify README.md reflects the current application state
+- If code changes affect documented information but README wasn't updated → **BLOCKER** (see section 10 below)
 
 **CRITICAL REQUIREMENT**: Every issue (blocker, warning, or suggestion) MUST include:
 
@@ -103,6 +118,7 @@ Analyze the PR diff against the review criteria below. For each issue found:
 - Design System & UI Compliance
 - Testing & Documentation
 - Performance & Optimization
+- README & Documentation Updates
 
 ### Step 6: Post Comments to GitHub
 
@@ -477,6 +493,35 @@ fi
 
 - Code splitting considered for large features
 - Lazy loading where appropriate
+
+---
+
+### 10. README & Documentation Updates
+
+**Reference**: `README.md`, `docs/`
+
+#### Blockers (Must Fix)
+
+**CRITICAL**: The README must accurately reflect the current state of the application. If code changes affect information documented in the README, the README MUST be updated accordingly.
+
+**Common scenarios that require README updates**:
+- Phase completion (roadmap status, current phase section, next steps)
+- New features or capabilities added
+- Project status changes (badges, CI status)
+- Technology stack changes
+- Architecture or setup instructions modified
+
+**Validation**: Analyze PR title, description, commits, and code changes. If changes affect documented information in README but README wasn't updated → **BLOCKER**. Post inline comments on `README.md` with specific line numbers and required changes.
+
+#### Warnings (Should Fix)
+
+- Minor documentation inconsistencies
+- Missing updates to related documentation files in `docs/` directory
+
+#### Suggestions (Nice to Have)
+
+- README includes examples or screenshots of new features
+- Documentation is comprehensive and easy to follow
 
 ---
 
