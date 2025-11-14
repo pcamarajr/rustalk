@@ -1,5 +1,5 @@
 // Domain layer - Core business entities and traits
-// This layer has zero external dependencies (except async-trait and thiserror for errors)
+// This layer has minimal external dependencies (async-trait, thiserror, serde)
 
 pub mod entities;
 pub mod errors;
