@@ -137,7 +137,7 @@ Phase 8: Production Polish        📋 Planned (~1.3 weeks)
 
 Phase 3 will implement:
 
-- Secure credential storage (macOS Keychain integration)
+- ✅ Secure credential storage (macOS Keychain integration) - **Completed**
 - Audio device enumeration (macOS CoreAudio via `cpal`)
 - SIP transport layer with TLS support
 - Platform abstractions for security and audio
