@@ -1,84 +1,84 @@
 // CredentialStore trait - Abstraction for secure credential storage
 // Platform-specific implementations will be in infrastructure layer
 
-use async_trait::async_trait;
 use crate::domain::entities::Credentials;
 use crate::domain::errors::CredentialStoreError;
+use async_trait::async_trait;
 
 /// Trait for secure credential storage operations
-/// 
+///
 /// This trait abstracts platform-specific credential storage implementations
 /// (e.g., macOS Keychain, Windows Credential Manager). All operations are async
 /// to support non-blocking I/O operations.
 #[async_trait]
 pub trait CredentialStore: Send + Sync {
     /// Save credentials for a given account key
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `key` - Unique identifier for the account (e.g., username or account ID)
     /// * `credentials` - The credentials to store
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// * `Ok(())` if credentials were saved successfully
     /// * `Err(CredentialStoreError)` if storage failed
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// * `CredentialStoreError::StorageError` - Platform storage system error
     /// * `CredentialStoreError::InvalidKey` - Key is invalid or empty
     async fn save(&self, key: &str, credentials: &Credentials) -> Result<(), CredentialStoreError>;
 
     /// Load credentials for a given account key
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `key` - Unique identifier for the account
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// * `Ok(Some(Credentials))` if credentials were found
     /// * `Ok(None)` if no credentials exist for the key
     /// * `Err(CredentialStoreError)` if retrieval failed
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// * `CredentialStoreError::StorageError` - Platform storage system error
     /// * `CredentialStoreError::InvalidKey` - Key is invalid or empty
     async fn load(&self, key: &str) -> Result<Option<Credentials>, CredentialStoreError>;
 
     /// Delete credentials for a given account key
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `key` - Unique identifier for the account
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// * `Ok(())` if credentials were deleted (or didn't exist)
     /// * `Err(CredentialStoreError)` if deletion failed
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// * `CredentialStoreError::StorageError` - Platform storage system error
     /// * `CredentialStoreError::InvalidKey` - Key is invalid or empty
     async fn delete(&self, key: &str) -> Result<(), CredentialStoreError>;
 
     /// Check if credentials exist for a given account key
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `key` - Unique identifier for the account
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// * `Ok(true)` if credentials exist
     /// * `Ok(false)` if no credentials exist
     /// * `Err(CredentialStoreError)` if check failed
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// * `CredentialStoreError::StorageError` - Platform storage system error
     /// * `CredentialStoreError::InvalidKey` - Key is invalid or empty
     async fn exists(&self, key: &str) -> Result<bool, CredentialStoreError>;
@@ -107,7 +107,11 @@ mod tests {
 
     #[async_trait]
     impl CredentialStore for MockCredentialStore {
-        async fn save(&self, key: &str, credentials: &Credentials) -> Result<(), CredentialStoreError> {
+        async fn save(
+            &self,
+            key: &str,
+            credentials: &Credentials,
+        ) -> Result<(), CredentialStoreError> {
             if key.is_empty() {
                 return Err(CredentialStoreError::InvalidKey {
                     key: key.to_string(),
@@ -269,4 +273,3 @@ mod tests {
         assert_ne!(loaded1, loaded2);
     }
 }
-

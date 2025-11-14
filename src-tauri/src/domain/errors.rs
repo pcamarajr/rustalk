@@ -38,10 +38,7 @@ mod tests {
         let error = CredentialStoreError::StorageError {
             message: "Keychain access denied".to_string(),
         };
-        assert_eq!(
-            error.to_string(),
-            "Storage error: Keychain access denied"
-        );
+        assert_eq!(error.to_string(), "Storage error: Keychain access denied");
     }
 
     #[test]
@@ -50,10 +47,7 @@ mod tests {
             key: "".to_string(),
             reason: "Key cannot be empty".to_string(),
         };
-        assert_eq!(
-            error.to_string(),
-            "Invalid key '': Key cannot be empty"
-        );
+        assert_eq!(error.to_string(), "Invalid key '': Key cannot be empty");
     }
 
     #[test]
@@ -61,10 +55,7 @@ mod tests {
         let error = CredentialStoreError::NotFound {
             key: "account1".to_string(),
         };
-        assert_eq!(
-            error.to_string(),
-            "Credentials not found for key: account1"
-        );
+        assert_eq!(error.to_string(), "Credentials not found for key: account1");
     }
 
     #[test]
@@ -83,4 +74,3 @@ mod tests {
         assert_ne!(error1, error3);
     }
 }
-
