@@ -1,7 +1,7 @@
 # Svelte 5 Runes Mode - Development Patterns & Best Practices
 
-**Last Updated**: 2025-11-13  
-**Based on**: Phase 2 Implementation Learnings  
+**Last Updated**: 2025-11-14  
+**Based on**: Phase 2 Implementation Learnings + Contacts Page Refactoring  
 **Svelte Version**: 5.x (Runes Mode)
 
 This document captures critical patterns and common pitfalls discovered during Phase 2 implementation to ensure smooth development in future phases.
@@ -17,8 +17,9 @@ This document captures critical patterns and common pitfalls discovered during P
 5. [Slots vs Children Snippets](#slots-vs-children-snippets)
 6. [CSS Scoping with Props](#css-scoping-with-props)
 7. [Store Subscriptions](#store-subscriptions)
-8. [Common Pitfalls](#common-pitfalls)
-9. [Advanced Patterns](#advanced-patterns)
+8. [Dialog and State Management Patterns](#dialog-and-state-management-patterns)
+9. [Common Pitfalls](#common-pitfalls)
+10. [Advanced Patterns](#advanced-patterns)
 
 ---
 
@@ -180,24 +181,29 @@ Runs without tracking dependencies (useful for one-time setup):
 
 ## Event Handlers
 
-### ❌ **DO NOT USE** - HTML onclick Attribute
+### ✅ **USE** - onclick Attribute (Svelte 5)
+
+In Svelte 5, use the `onclick` attribute (not `on:click`) for event handlers. This works for both Svelte components and native HTML elements.
 
 ```svelte
-<!-- ❌ This doesn't work with Svelte components -->
+<!-- ✅ Use onclick for Svelte 5 event handlers -->
 <Button onclick={handleClick}>Click me</Button>
 <Card onclick={() => doSomething()}>Content</Card>
+
+<!-- ✅ For native HTML elements, use onclick -->
+<button onclick={handleClick}>Native Button</button>
+<div onclick={handleClick}>Clickable div</div>
 ```
 
-### ✅ **USE** - Svelte Event Syntax
+### ❌ **DO NOT USE** - Legacy on:click Syntax
 
 ```svelte
-<!-- ✅ Use on:click for Svelte event handlers -->
+<!-- ❌ Legacy Svelte 4 syntax - deprecated in Svelte 5 -->
 <Button on:click={handleClick}>Click me</Button>
 <Card on:click={() => doSomething()}>Content</Card>
-
-<!-- ✅ For native HTML elements, both work but prefer on:click -->
-<button on:click={handleClick}>Native Button</button>
 ```
+
+**Note**: The `on:click` syntax from Svelte 4 is deprecated in Svelte 5. Always use `onclick` instead. See the [Svelte 5 Migration Guide](https://svelte.dev/docs/svelte/v5-migration-guide) for details.
 
 ### Event Handler Forwarding
 
@@ -209,7 +215,7 @@ When creating reusable components that need to forward events:
   type ButtonProps = {
     variant?: "primary" | "secondary";
     disabled?: boolean;
-  } & Record<string, any>;  // This allows on:click, on:focus, etc.
+  } & Record<string, any>;  // This allows onclick, onfocus, etc.
 
   let {
     variant = "primary",
@@ -684,10 +690,498 @@ For Svelte 5 stores created with runes, use `$derived` with the `$` prefix for a
 </script>
 ```
 
+### Stores That Return Derived Stores
+
+**⚠️ CRITICAL** - When a store has methods that return Readable stores (like `contactsStore.getFavorites()`), you cannot use the `$` prefix directly on the method call.
+
+#### ❌ **DO NOT USE** - Incorrect Pattern
+
+```svelte
+<script lang="ts">
+  import { contactsStore } from '$lib/stores/contactsStore';
+
+  // ❌ ERROR: $contactsStore().getFavorites is not a function
+  // The $ prefix tries to get the value of contactsStore, but getFavorites is a method
+  let favorites = $derived($contactsStore.getFavorites());
+</script>
+```
+
+#### ✅ **USE** - Correct Pattern with $effect
+
+When a store method returns a Readable store, subscribe to it in `$effect`:
+
+```svelte
+<script lang="ts">
+  import { contactsStore } from '$lib/stores/contactsStore';
+  import type { Contact } from '$lib/stores/contactsStore';
+
+  // ✅ Create local state
+  let favorites = $state<Contact[]>([]);
+
+  // ✅ Subscribe to the store returned by getFavorites()
+  $effect(() => {
+    const store = contactsStore.getFavorites(); // Returns a Readable<Contact[]>
+    const unsubscribe = store.subscribe((value) => {
+      favorites = value;
+    });
+    return unsubscribe; // Cleanup subscription
+  });
+</script>
+
+{#if favorites.length > 0}
+  {#each favorites as contact (contact.id)}
+    <!-- Render contact -->
+  {/each}
+{/if}
+```
+
+#### ✅ **USE** - Alternative: Direct Store Usage (if method returns store directly)
+
+If the method returns a store that you can reference directly:
+
+```svelte
+<script lang="ts">
+  import { favoriteContacts } from '$lib/stores/contactsStore';
+
+  // ✅ If favoriteContacts is exported directly as a store
+  // You can use $ prefix for auto-subscription
+  let favorites = $derived($favoriteContacts);
+</script>
+```
+
+#### Pattern Summary
+
+- **Store methods that return stores**: Use `$effect` with subscription and cleanup
+- **Directly exported stores**: Can use `$derived($store)` for auto-subscription
+- **Always cleanup**: Return unsubscribe function from `$effect` to prevent memory leaks
+
 ### Store Type Detection
 
 - **Legacy stores**: Use `writable()`, `readable()`, `derived()` from `svelte/store` → Use `$effect` with cleanup
 - **Rune-based stores**: Created with `$state` or `$derived` → Use `$derived($store.value)` for auto-subscription
+- **Store methods returning stores**: Methods like `getFavorites()`, `getAllContacts()` → Use `$effect` with subscription
+
+---
+
+## Dialog and State Management Patterns
+
+**Last Updated**: 2025-11-14  
+**Status**: Active Standard
+
+This section documents the established patterns for managing dialog state and component-level state management in RUSTALK. These patterns ensure components are self-contained, maintainable, and follow the Islands Architecture principles.
+
+### Core Principles
+
+1. **Self-Contained Dialogs**: Dialogs manage their own visibility state internally
+2. **Component-Managed State**: Components handle their own state, not parent components
+3. **Shared Utilities**: Common functionality (like navigation) is extracted to composables
+4. **Minimal Page State**: Pages should be simple shells that compose components
+
+---
+
+### Dialog Pattern: DialogTrigger with Self-Contained State
+
+Dialogs should use the DialogTrigger pattern and manage their own open state internally.
+
+**✅ Correct Pattern:**
+
+```svelte
+<!-- AddContactDialog.svelte -->
+<script lang="ts">
+  import { Dialog, DialogContent, DialogTrigger } from "$lib/components/ui/dialog";
+  import type { Snippet } from "svelte";
+
+  interface Props {
+    trigger?: Snippet;
+  }
+
+  let { trigger }: Props = $props();
+
+  // Manage dialog open state internally
+  let open = $state(false);
+</script>
+
+<Dialog bind:open>
+  {#if trigger}
+    <DialogTrigger>
+      {@render trigger()}
+    </DialogTrigger>
+  {:else}
+    <DialogTrigger>
+      <Button>Default Trigger</Button>
+    </DialogTrigger>
+  {/if}
+  <DialogContent>
+    <!-- Dialog content -->
+  </DialogContent>
+</Dialog>
+```
+
+**Usage:**
+
+```svelte
+<!-- In page component -->
+<AddContactDialog>
+  {#snippet trigger()}
+    <Button>
+      <Plus class="h-4 w-4 mr-2" />
+      Add Contact
+    </Button>
+  {/snippet}
+</AddContactDialog>
+```
+
+**❌ Avoid:**
+
+```svelte
+<!-- ❌ Wrong - parent manages dialog state -->
+<script lang="ts">
+  let showDialog = $state(false);
+</script>
+
+<Button onclick={() => showDialog = true}>Add Contact</Button>
+<AddContactDialog bind:open={showDialog} />
+```
+
+---
+
+### Dialog Pattern: Self-Contained with open() Method
+
+For dialogs that need to be opened programmatically (e.g., from another component), expose an `open()` method.
+
+**✅ Correct Pattern:**
+
+```svelte
+<!-- EditContactDialog.svelte -->
+<script lang="ts">
+  interface Props {
+    contact: Contact;
+    onOpenChange?: (open: boolean) => void;
+  }
+
+  let { contact, onOpenChange }: Props = $props();
+
+  // Manage dialog open state internally
+  let open = $state(false);
+
+  // Expose open method for programmatic opening
+  export function openDialog() {
+    open = true;
+  }
+
+  function handleOpenChange(newOpen: boolean) {
+    open = newOpen;
+    onOpenChange?.(newOpen);
+  }
+</script>
+
+<Dialog bind:open onOpenChange={handleOpenChange}>
+  <DialogContent
+    onclick={(e) => e.stopPropagation()}
+  >
+    <!-- Dialog content -->
+    <DialogFooter>
+      <Button
+        onclick={(e) => {
+          e.stopPropagation();
+          handleCancel();
+        }}
+      >
+        Cancel
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
+```
+
+**Usage with bind:this:**
+
+```svelte
+<!-- In parent component -->
+<script lang="ts">
+  let editDialogRef: EditContactDialog | null = null;
+
+  function handleEdit() {
+    editDialogRef?.openDialog();
+  }
+</script>
+
+<Button onclick={handleEdit}>Edit</Button>
+<EditContactDialog bind:this={editDialogRef} contact={contact} />
+```
+
+**Important Notes:**
+
+- Always use `stopPropagation()` on DialogContent and button handlers when dialogs are nested inside other modals
+- Use `onOpenChange` callback to notify parent when dialog state changes (useful for preventing parent modal from closing)
+- Pass data objects directly when parent already has them (avoids unnecessary fetching delays)
+
+---
+
+### Component State Management: Component-Managed Search
+
+Search state should be managed by the search component itself, shared via stores when needed.
+
+**✅ Correct Pattern:**
+
+```svelte
+<!-- ContactSearchBar.svelte -->
+<script lang="ts">
+  import { contactsStore } from "$lib/stores/contactsStore";
+
+  // Manage search query state internally
+  let searchQuery = $state("");
+
+  // Sync with store for sharing with other components
+  $effect(() => {
+    const unsubscribe = contactsStore.searchQuery.subscribe((value) => {
+      searchQuery = value;
+    });
+    return unsubscribe;
+  });
+
+  function handleInput(event: Event) {
+    const target = event.target as HTMLInputElement;
+    searchQuery = target.value;
+    // Update store (debounced in real implementation)
+    contactsStore.searchQuery.set(searchQuery);
+  }
+</script>
+
+<Input value={searchQuery} oninput={handleInput} />
+```
+
+**Store Implementation:**
+
+```typescript
+// contactsStore.ts
+const { subscribe: subscribeSearchQuery, set: setSearchQuery } =
+  writable<string>("");
+
+export const searchQueryStore = {
+  subscribe: subscribeSearchQuery,
+  set: setSearchQuery,
+};
+
+export const contactsStore = {
+  // ... other methods
+  searchQuery: searchQueryStore,
+};
+```
+
+**❌ Avoid:**
+
+```svelte
+<!-- ❌ Wrong - parent manages search state -->
+<script lang="ts">
+  let searchQuery = $state("");
+  function handleSearch(query: string) {
+    searchQuery = query;
+  }
+</script>
+
+<ContactSearchBar onSearch={handleSearch} />
+<ContactList {searchQuery} />
+```
+
+---
+
+### Shared Functionality: Composable Pattern
+
+Common functionality that's used across multiple components should be extracted to composables in `src/lib/hooks/`.
+
+**✅ Correct Pattern:**
+
+```typescript
+// src/lib/hooks/useCallNavigation.ts
+import { goto } from "$app/navigation";
+
+/**
+ * Composable for handling call navigation
+ *
+ * @returns A function that navigates to the dialer with the given number
+ */
+export function useCallNavigation() {
+  function initiateCall(number: string) {
+    console.log("DEBUG:[CALL/NAVIGATION] Initiating call to:", number);
+    goto(`/?number=${encodeURIComponent(number)}`);
+  }
+
+  return {
+    initiateCall,
+  };
+}
+```
+
+**Usage:**
+
+```svelte
+<script lang="ts">
+  import { useCallNavigation } from "$lib/hooks/useCallNavigation";
+
+  const { initiateCall } = useCallNavigation();
+
+  function handleCall(number: string) {
+    initiateCall(number);
+  }
+</script>
+
+<Button onclick={() => handleCall(phoneNumber)}>Call</Button>
+```
+
+**Benefits:**
+
+- Reusable across components
+- Easy to extend for future functionality (e.g., real call handling)
+- Keeps components focused on their primary responsibility
+
+---
+
+### Page Component Pattern: Simple Shell
+
+Pages should be minimal shells that compose components. They should not manage dialog states or component-level state.
+
+**✅ Correct Pattern:**
+
+```svelte
+<!-- +page.svelte -->
+<script lang="ts">
+  import ContactSearchBar from "$lib/components/contacts/ContactSearchBar.svelte";
+  import ContactList from "$lib/components/contacts/ContactList.svelte";
+  import AddContactDialog from "$lib/components/contacts/AddContactDialog.svelte";
+</script>
+
+<div class="flex flex-col h-full">
+  <div class="p-6">
+    <AddContactDialog>
+      {#snippet trigger()}
+        <Button>Add Contact</Button>
+      {/snippet}
+    </AddContactDialog>
+  </div>
+
+  <div class="flex-1 p-6">
+    <ContactSearchBar />
+    <ContactList />
+  </div>
+</div>
+```
+
+**❌ Avoid:**
+
+```svelte
+<!-- ❌ Wrong - page manages too much state -->
+<script lang="ts">
+  let showAddDialog = $state(false);
+  let showEditDialog = $state(false);
+  let selectedContact = $state<Contact | null>(null);
+  let searchQuery = $state("");
+
+  function handleAddContact() {
+    showAddDialog = true;
+  }
+  // ... many more handlers
+</script>
+```
+
+---
+
+### Nested Dialog Pattern: Event Propagation
+
+When dialogs are nested (e.g., EditDialog inside ContactDetails modal), prevent event propagation to avoid conflicts.
+
+**✅ Correct Pattern:**
+
+```svelte
+<!-- EditContactDialog inside ContactDetails modal -->
+<Dialog bind:open onOpenChange={handleOpenChange}>
+  <DialogContent
+    class="max-w-md"
+    onclick={(e) => e.stopPropagation()}
+  >
+    <!-- Content -->
+    <DialogFooter>
+      <Button
+        onclick={(e) => {
+          e.stopPropagation();
+          handleCancel();
+        }}
+      >
+        Cancel
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
+```
+
+**Parent Modal Protection:**
+
+```svelte
+<!-- ContactDetails.svelte -->
+<script lang="ts">
+  let isEditDialogOpen = $state(false);
+
+  function handleClose() {
+    // Don't close if edit dialog is open
+    if (isEditDialogOpen) {
+      return;
+    }
+    open = false;
+  }
+
+  function handleEditDialogOpenChange(open: boolean) {
+    isEditDialogOpen = open;
+  }
+</script>
+
+{#if open}
+  <div onclick={handleClose}>
+    <!-- Content -->
+    <EditContactDialog
+      onOpenChange={handleEditDialogOpenChange}
+    />
+  </div>
+{/if}
+```
+
+---
+
+### Data Passing Pattern: Direct Props vs ID
+
+**Use direct props** when parent already has the data (faster, no loading delay):
+
+```svelte
+<!-- ✅ Fast - no fetch needed -->
+<EditContactDialog contact={contactData} />
+```
+
+**Use ID** when component should be fully self-contained and fetch its own data:
+
+```svelte
+<!-- ✅ Self-contained - fetches own data -->
+<ContactDetails contactId={contact.id} />
+```
+
+**Decision Criteria:**
+
+- If parent already has the data → Pass directly (better UX, instant)
+- If component should be reusable without parent data → Use ID (more flexible)
+
+---
+
+### Summary Checklist
+
+When creating dialogs or managing component state:
+
+- [ ] Dialog manages its own `open` state internally
+- [ ] Use DialogTrigger pattern for user-triggered dialogs
+- [ ] Expose `open()` method for programmatically-triggered dialogs
+- [ ] Use `stopPropagation()` for nested dialogs
+- [ ] Use `onOpenChange` callback to track dialog state in parent
+- [ ] Component-managed state (search, filters) uses stores for sharing
+- [ ] Shared functionality extracted to composables in `hooks/`
+- [ ] Page components are simple shells with minimal state
+- [ ] Pass data directly when parent has it (avoid unnecessary fetching)
 
 ---
 
@@ -707,9 +1201,66 @@ $: computed = value * 2;
 let computed = $derived(value * 2);
 ```
 
-### 2. Event Handler Type Errors
+### 2. Store Methods That Return Stores
 
-**Problem**: TypeScript errors when passing `on:click` to components.
+**Problem**: Trying to use `$` prefix on store method calls causes runtime errors.
+
+**Error**: `TypeError: $contactsStore().getFavorites is not a function`
+
+**Solution**: Use `$effect` to subscribe to stores returned by methods.
+
+```svelte
+// ❌ Wrong - causes runtime error
+let favorites = $derived($contactsStore.getFavorites());
+
+// ✅ Correct - subscribe in $effect
+let favorites = $state<Contact[]>([]);
+$effect(() => {
+  const store = contactsStore.getFavorites();
+  const unsubscribe = store.subscribe((value) => {
+    favorites = value;
+  });
+  return unsubscribe;
+});
+```
+
+See [Stores That Return Derived Stores](#stores-that-return-derived-stores) section for detailed examples.
+
+### 3. Dialog Accessibility
+
+**Problem**: Dialogs/modals without keyboard support trigger lint warnings and accessibility issues.
+
+**Solution**: Always add `tabindex` and keyboard event handlers for interactive dialogs.
+
+```svelte
+<!-- ❌ Missing accessibility attributes -->
+<div
+  role="dialog"
+  aria-modal="true"
+  onclick={handleClose}
+>
+  <!-- Content -->
+</div>
+
+<!-- ✅ Correct - includes keyboard support -->
+<div
+  role="dialog"
+  aria-modal="true"
+  tabindex="-1"
+  onclick={handleClose}
+  onkeydown={(e) => {
+    if (e.key === "Escape") {
+      handleClose();
+    }
+  }}
+>
+  <!-- Content -->
+</div>
+```
+
+### 4. Event Handler Type Errors
+
+**Problem**: TypeScript errors when passing `onclick` to components.
 
 **Solution**: Add `Record<string, any>` or explicit event handler types to component props.
 
@@ -726,7 +1277,7 @@ type Props = {
 } & Record<string, any>;
 ```
 
-### 3. CSS Not Applying to Prop Classes
+### 5. CSS Not Applying to Prop Classes
 
 **Problem**: CSS classes passed as props don't get styled.
 
@@ -741,7 +1292,7 @@ type Props = {
 </style>
 ```
 
-### 4. Slot Deprecation Warnings
+### 6. Slot Deprecation Warnings
 
 **Problem**: Using `<slot />` shows deprecation warnings.
 
@@ -757,7 +1308,7 @@ type Props = {
 {/if}
 ```
 
-### 5. Reactive Statement in Runes Mode
+### 7. Reactive Statement in Runes Mode
 
 **Problem**: `$:` statements cause "not allowed in runes mode" errors.
 
@@ -928,7 +1479,7 @@ it('handles click events', async () => {
   let clicked = false;
   const handleClick = () => { clicked = true; };
 
-  render(Button, { on:click: handleClick }, { default: () => 'Click' });
+  render(Button, { onclick: handleClick }, { default: () => 'Click' });
   const button = screen.getByRole('button');
   await user.click(button);
   expect(clicked).toBe(true);
@@ -1016,7 +1567,7 @@ import Button from "./Button.svelte";
 
 it('forwards events correctly', async () => {
   const handleClick = vi.fn();
-  render(Button, { on:click: handleClick }, { default: () => 'Click' });
+  render(Button, { onclick: handleClick }, { default: () => 'Click' });
 
   const button = screen.getByRole('button');
   await fireEvent.click(button);
@@ -1224,7 +1775,7 @@ When creating a new Svelte component, ensure:
 - [ ] Use `$derived` instead of `$:` for computed values
 - [ ] Use `$state` for mutable state
 - [ ] Use `$effect` for side effects (with cleanup if needed)
-- [ ] Use `on:click` (not `onclick`) for event handlers
+- [ ] Use `onclick` (not `on:click`) for event handlers
 - [ ] Add type-safe event handlers to props (Method 3 recommended)
 - [ ] Use `{@render children()}` instead of `<slot />` (with `{#if}` check)
 - [ ] Use `:global()` for CSS classes passed as props
@@ -1241,7 +1792,7 @@ When creating a new Svelte component, ensure:
 If you encounter legacy Svelte code:
 
 1. **Reactive Statements**: `$:` → `$derived` (for computed) or `$effect` (for side effects)
-2. **Event Handlers**: `onclick` → `on:click`
+2. **Event Handlers**: `on:click` → `onclick`
 3. **Slots**: `<slot />` → `{@render children()}` (with `{#if}` check)
 4. **Props**: Add type-safe event handler support
 5. **CSS**: Use `:global()` for prop classes, `class:` directive for dynamic classes

@@ -181,6 +181,14 @@ When creating a new screen or component, ask:
 4. **Is the page becoming too large (>300 lines)?** → Extract islands
 5. **Will this component be reused elsewhere?** → Make it an island
 
+## Related Patterns
+
+For detailed patterns on implementing self-contained components, see:
+
+- **Dialog Patterns**: [Dialog and State Management Patterns](../../development/svelte-patterns.md#dialog-and-state-management-patterns) - How to create self-contained dialogs
+- **State Management**: [Dialog and State Management Patterns](../../development/svelte-patterns.md#dialog-and-state-management-patterns) - Component-managed state patterns
+- **Composables**: [Dialog and State Management Patterns](../../development/svelte-patterns.md#shared-functionality-composable-pattern) - Extracting shared functionality
+
 ## Benefits
 
 ### 1. Maintainability

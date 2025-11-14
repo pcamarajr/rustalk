@@ -10,8 +10,22 @@
     PhoneMissed,
   } from "lucide-svelte";
 
+  interface Props {
+    initialNumber?: string;
+  }
+
+  let { initialNumber = "" }: Props = $props();
+
   // Phone number state (stored as digits only)
-  let phoneNumber = $state("");
+  // Initialize with initialNumber if provided
+  let phoneNumber = $state(initialNumber ? initialNumber.replace(/\D/g, "") : "");
+
+  // Update phone number when initialNumber prop changes
+  $effect(() => {
+    if (initialNumber) {
+      phoneNumber = initialNumber.replace(/\D/g, "");
+    }
+  });
 
   // Format phone number for display
   let formattedNumber = $derived.by(() => {
