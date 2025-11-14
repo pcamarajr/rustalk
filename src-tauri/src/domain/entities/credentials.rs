@@ -182,7 +182,9 @@ mod tests {
 
         let result = creds.validate();
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("leading or trailing whitespace"));
+        assert!(result
+            .unwrap_err()
+            .contains("leading or trailing whitespace"));
     }
 
     #[test]
@@ -212,7 +214,9 @@ mod tests {
 
         let result = creds.validate();
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("Port must be between 1 and 65535"));
+        assert!(result
+            .unwrap_err()
+            .contains("Port must be between 1 and 65535"));
     }
 
     #[test]
