@@ -18,7 +18,9 @@ use crate::domain::errors::CommandError;
 /// # Example
 ///
 /// ```rust
-/// validate_non_empty_string("name", &name)?;
+/// use crate::commands::validate_non_empty_string;
+/// let name = "Alice";
+/// validate_non_empty_string("name", name)?;
 /// ```
 pub fn validate_non_empty_string(field: &str, value: &str) -> Result<(), CommandError> {
     if value.trim().is_empty() {
@@ -47,7 +49,9 @@ pub fn validate_non_empty_string(field: &str, value: &str) -> Result<(), Command
 /// # Example
 ///
 /// ```rust
-/// validate_string_length("username", &username, 3, 20)?;
+/// use crate::commands::validate_string_length;
+/// let username = "testuser";
+/// validate_string_length("username", username, 3, 20)?;
 /// ```
 pub fn validate_string_length(
     field: &str,
@@ -107,6 +111,7 @@ pub fn validate_phone_number(number: &str) -> Result<(), CommandError> {
 /// # Example
 ///
 /// ```rust
+/// use crate::commands::validate_port;
 /// validate_port(8080)?;
 /// ```
 pub fn validate_port(port: u16) -> Result<(), CommandError> {
@@ -141,6 +146,7 @@ pub fn validate_port(port: u16) -> Result<(), CommandError> {
 /// # Example
 ///
 /// ```rust
+/// use crate::commands::validate_hostname;
 /// validate_hostname("example.com")?;
 /// ```
 pub fn validate_hostname(hostname: &str) -> Result<(), CommandError> {
@@ -217,7 +223,8 @@ mod tests {
     fn test_validate_string_length_valid() {
         assert!(validate_string_length("username", "test", 3, 20).is_ok());
         assert!(validate_string_length("username", "abc", 3, 20).is_ok()); // min boundary
-        assert!(validate_string_length("username", "abcdefghijklmnopqrst", 3, 20).is_ok()); // max boundary
+        assert!(validate_string_length("username", "abcdefghijklmnopqrst", 3, 20).is_ok());
+        // max boundary
     }
 
     #[test]
@@ -366,4 +373,3 @@ mod tests {
         assert!(validate_string_length("field", "abcd", 3, 3).is_err());
     }
 }
-

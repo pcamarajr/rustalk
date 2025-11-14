@@ -1,7 +1,7 @@
 // Integration tests for the greet command validation
 
+use rustalk_lib::commands::greet;
 use rustalk_lib::domain::CommandError;
-use rustalk_lib::greet;
 
 #[test]
 fn test_greet_command_valid_input() {
@@ -61,4 +61,3 @@ fn test_greet_command_unicode() {
     let message = result.unwrap();
     assert!(message.contains("José"));
 }
-
