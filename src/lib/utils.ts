@@ -28,3 +28,126 @@ export function formatPhoneNumber(number: string): string {
   }
   return number;
 }
+
+/**
+ * Formats call duration in seconds to MM:SS or HH:MM:SS format
+ * @param seconds - Duration in seconds
+ * @returns Formatted duration string
+ */
+export function formatDuration(seconds: number): string {
+  if (seconds === 0) return "0:00";
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  }
+  return `${minutes}:${secs.toString().padStart(2, "0")}`;
+}
+
+/**
+ * Formats a date to a relative time string (Today, Yesterday) or formatted date
+ * @param date - Date object
+ * @returns Formatted date string
+ */
+export function formatRelativeDate(date: Date): string {
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  
+  const isToday =
+    date.getDate() === today.getDate() &&
+    date.getMonth() === today.getMonth() &&
+    date.getFullYear() === today.getFullYear();
+  
+  const isYesterday =
+    date.getDate() === yesterday.getDate() &&
+    date.getMonth() === yesterday.getMonth() &&
+    date.getFullYear() === yesterday.getFullYear();
+  
+  if (isToday) {
+    return "Today";
+  } else if (isYesterday) {
+    return "Yesterday";
+  } else {
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: date.getFullYear() !== today.getFullYear() ? "numeric" : undefined,
+    });
+  }
+}
+
+/**
+ * Formats a date to time string (HH:MM AM/PM)
+ * @param date - Date object
+ * @returns Formatted time string
+ */
+export function formatTime(date: Date): string {
+  return date.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
+/**
+ * Gets the appropriate icon component for a call direction
+ * @param direction - The call direction
+ * @returns The icon component name (for use with dynamic imports)
+ */
+export function getDirectionIconName(
+  direction: "incoming" | "outgoing" | "missed"
+): "PhoneIncoming" | "PhoneOutgoing" | "PhoneMissed" | "Phone" {
+  switch (direction) {
+    case "incoming":
+      return "PhoneIncoming";
+    case "outgoing":
+      return "PhoneOutgoing";
+    case "missed":
+      return "PhoneMissed";
+    default:
+      return "Phone";
+  }
+}
+
+/**
+ * Gets the Tailwind CSS color class for a call direction icon
+ * @param direction - The call direction
+ * @returns Tailwind CSS color class string
+ */
+export function getDirectionIconColor(
+  direction: "incoming" | "outgoing" | "missed"
+): string {
+  switch (direction) {
+    case "incoming":
+      return "text-green-500";
+    case "outgoing":
+      return "text-blue-500";
+    case "missed":
+      return "text-red-500";
+    default:
+      return "text-gray-500";
+  }
+}
+
+/**
+ * Gets the human-readable label for a call direction
+ * @param direction - The call direction
+ * @returns Label string
+ */
+export function getDirectionLabel(
+  direction: "incoming" | "outgoing" | "missed"
+): string {
+  switch (direction) {
+    case "incoming":
+      return "Incoming";
+    case "outgoing":
+      return "Outgoing";
+    case "missed":
+      return "Missed";
+    default:
+      return "";
+  }
+}
