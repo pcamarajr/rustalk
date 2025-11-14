@@ -96,6 +96,13 @@
     }
   }
 
+  function handleSimulateIncomingCall() {
+    console.log("DEBUG:[DIALER/SIMULATE] Simulating incoming call");
+    // Navigate to incoming call screen for testing
+    goto("/incoming-call");
+    // TODO: Connect to call store in UI-2.6, then to Tauri event in Phase 5
+  }
+
   function handleNumberInput(event: Event) {
     const target = event.target as HTMLInputElement;
     // Strip non-digits and update phoneNumber
@@ -232,6 +239,19 @@
       >Enter a phone number to enable call button</span
     >
   {/if}
+
+  <!-- Mock: Simulate Incoming Call Button (for testing) -->
+  <Button
+    type="button"
+    onclick={handleSimulateIncomingCall}
+    variant="outline"
+    size="lg"
+    class="w-full h-12 text-base font-semibold border-2 border-dashed border-gray-300 hover:border-gray-400 hover:bg-gray-50"
+    aria-label="Simulate incoming call (for testing)"
+  >
+    <PhoneIncoming class="h-5 w-5 mr-2" />
+    Simulate Incoming Call
+  </Button>
 
   <!-- Recent Calls Preview -->
   {#if recentCalls.length > 0}
