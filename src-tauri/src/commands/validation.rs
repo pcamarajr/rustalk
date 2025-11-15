@@ -18,9 +18,12 @@ use crate::domain::errors::CommandError;
 /// # Example
 ///
 /// ```rust
-/// use crate::commands::validate_non_empty_string;
+/// use rustalk_lib::commands::validate_non_empty_string;
+/// # fn main() -> Result<(), rustalk_lib::domain::CommandError> {
 /// let name = "Alice";
 /// validate_non_empty_string("name", name)?;
+/// # Ok(())
+/// # }
 /// ```
 pub fn validate_non_empty_string(field: &str, value: &str) -> Result<(), CommandError> {
     if value.trim().is_empty() {
@@ -49,9 +52,12 @@ pub fn validate_non_empty_string(field: &str, value: &str) -> Result<(), Command
 /// # Example
 ///
 /// ```rust
-/// use crate::commands::validate_string_length;
+/// use rustalk_lib::commands::validate_string_length;
+/// # fn main() -> Result<(), rustalk_lib::domain::CommandError> {
 /// let username = "testuser";
 /// validate_string_length("username", username, 3, 20)?;
+/// # Ok(())
+/// # }
 /// ```
 pub fn validate_string_length(
     field: &str,
@@ -111,8 +117,11 @@ pub fn validate_phone_number(number: &str) -> Result<(), CommandError> {
 /// # Example
 ///
 /// ```rust
-/// use crate::commands::validate_port;
+/// use rustalk_lib::commands::validate_port;
+/// # fn main() -> Result<(), rustalk_lib::domain::CommandError> {
 /// validate_port(8080)?;
+/// # Ok(())
+/// # }
 /// ```
 pub fn validate_port(port: u16) -> Result<(), CommandError> {
     if port == 0 {
@@ -146,8 +155,11 @@ pub fn validate_port(port: u16) -> Result<(), CommandError> {
 /// # Example
 ///
 /// ```rust
-/// use crate::commands::validate_hostname;
+/// use rustalk_lib::commands::validate_hostname;
+/// # fn main() -> Result<(), rustalk_lib::domain::CommandError> {
 /// validate_hostname("example.com")?;
+/// # Ok(())
+/// # }
 /// ```
 pub fn validate_hostname(hostname: &str) -> Result<(), CommandError> {
     validate_non_empty_string("hostname", hostname)?;
