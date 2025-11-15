@@ -519,8 +519,8 @@ mod tests {
 
         assert_eq!(input_level, 0.0);
         assert_eq!(output_level, 0.0);
-        assert!(input_level >= 0.0 && input_level <= 1.0);
-        assert!(output_level >= 0.0 && output_level <= 1.0);
+        assert!((0.0..=1.0).contains(&input_level));
+        assert!((0.0..=1.0).contains(&output_level));
     }
 
     #[tokio::test]
