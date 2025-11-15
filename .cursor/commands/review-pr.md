@@ -162,12 +162,17 @@ Reference: `docs/development/svelte-patterns.md#event-handlers`
 
 #### For General Comments (Category-Level Feedback)
 
-Post one general comment per category that has issues using `gh pr review --comment` (this creates review comments that are part of the review thread):
+**CRITICAL**: Only post a category comment if that category has at least one issue (blocker, warning, or suggestion). If a category has no issues, do NOT post a separate category comment for it. Categories without issues can still be mentioned in the main review summary (Step 7).
+
+For each category that has issues, post one general comment using `gh pr review --comment` (this creates review comments that are part of the review thread):
 
 ```bash
-gh pr review <PR_NUMBER> \
-  --comment \
-  --body "<category_review_text>"
+# Only post if category has issues (blockers, warnings, or suggestions)
+if [ $category_blockers -gt 0 ] || [ $category_warnings -gt 0 ] || [ $category_suggestions -gt 0 ]; then
+  gh pr review <PR_NUMBER> \
+    --comment \
+    --body "<category_review_text>"
+fi
 ```
 
 **Comment Format for General Comments**:
@@ -197,7 +202,9 @@ Found **2 blockers** and **3 warnings** in this category:
 **Reference:** `docs/development/svelte-patterns.md`
 ```
 
-**IMPORTANT**: Never use generic references like "some components" or "various files". Always specify the exact file paths and line numbers (or at minimum, file paths) for each issue.
+**IMPORTANT**:
+- Never use generic references like "some components" or "various files". Always specify the exact file paths and line numbers (or at minimum, file paths) for each issue.
+- **Do NOT post category comments for categories with zero issues.** Categories without issues can be mentioned in the main review summary if needed.
 
 ### Step 7: Submit Final Review
 
@@ -250,8 +257,11 @@ fi
 
 **Review Details:**
 - Inline comments posted for line-specific issues
-- Category review comments posted above for broader feedback
+- Category review comments posted above for categories with issues
+- Categories reviewed: [List all categories reviewed, including those with no issues if relevant]
 ```
+
+**Note**: The summary can mention all categories that were reviewed, including those with no issues. However, only categories with actual issues (blockers, warnings, or suggestions) should have their own dedicated category comment posted in Step 6.
 
 ---
 
@@ -547,6 +557,7 @@ When reviewing code, be critical about decisions that:
 
 - **Inline comments** should be used for specific line/file issues (most cases) → Use `gh pr comment` with `--file` and `--line`
 - **Category comments** should be used for category-level feedback → Use `gh pr review --comment` (creates review comments)
+- **Category comments posting rule**: **ONLY** post category comments for categories that have at least one issue (blocker, warning, or suggestion). Categories with no issues should NOT get their own category comment, but can be mentioned in the main review summary.
 - **Final review submission** → Use `gh pr review` with `--approve`/`--request-changes`/`--comment` (overall decision)
 - **CRITICAL - Be specific**: **ALWAYS** include exact file paths and line numbers for every issue found. Never use generic references.
 - **File references format**: Use backticks for file paths, e.g., `` `src/lib/components/Button.svelte:42` ``
