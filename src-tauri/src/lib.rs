@@ -6,10 +6,10 @@ pub mod domain;
 // Infrastructure layer
 pub mod infrastructure;
 
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
-}
+// Commands module (IPC Boundary Layer)
+pub mod commands;
+
+use commands::greet;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
