@@ -29,6 +29,42 @@ pub enum CredentialStoreError {
     },
 }
 
+/// Errors that can occur during Tauri command execution
+#[derive(Debug, Error, Clone, PartialEq, Eq, serde::Serialize)]
+pub enum CommandError {
+    /// Input validation failures
+    #[error("Validation error for field '{field}': {message}")]
+    ValidationError {
+        /// The field that failed validation
+        field: String,
+        /// Error message describing the validation failure
+        message: String,
+    },
+
+    /// Invalid parameter values
+    #[error("Invalid argument '{argument}': {reason}")]
+    InvalidArgument {
+        /// The argument that is invalid
+        argument: String,
+        /// Reason why the argument is invalid
+        reason: String,
+    },
+
+    /// Required parameters missing
+    #[error("Missing required argument: {argument}")]
+    MissingArgument {
+        /// The argument that is missing
+        argument: String,
+    },
+
+    /// Service layer errors (for future use)
+    #[error("Service error: {message}")]
+    ServiceError {
+        /// Error message from the service layer
+        message: String,
+    },
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -67,6 +103,65 @@ mod tests {
             message: "Error".to_string(),
         };
         let error3 = CredentialStoreError::StorageError {
+            message: "Different".to_string(),
+        };
+
+        assert_eq!(error1, error2);
+        assert_ne!(error1, error3);
+    }
+
+    #[test]
+    fn test_validation_error_display() {
+        let error = CommandError::ValidationError {
+            field: "name".to_string(),
+            message: "Name cannot be empty".to_string(),
+        };
+        assert_eq!(
+            error.to_string(),
+            "Validation error for field 'name': Name cannot be empty"
+        );
+    }
+
+    #[test]
+    fn test_invalid_argument_display() {
+        let error = CommandError::InvalidArgument {
+            argument: "port".to_string(),
+            reason: "Port must be between 1 and 65535".to_string(),
+        };
+        assert_eq!(
+            error.to_string(),
+            "Invalid argument 'port': Port must be between 1 and 65535"
+        );
+    }
+
+    #[test]
+    fn test_missing_argument_display() {
+        let error = CommandError::MissingArgument {
+            argument: "hostname".to_string(),
+        };
+        assert_eq!(error.to_string(), "Missing required argument: hostname");
+    }
+
+    #[test]
+    fn test_service_error_display() {
+        let error = CommandError::ServiceError {
+            message: "Connection failed".to_string(),
+        };
+        assert_eq!(error.to_string(), "Service error: Connection failed");
+    }
+
+    #[test]
+    fn test_command_error_equality() {
+        let error1 = CommandError::ValidationError {
+            field: "name".to_string(),
+            message: "Error".to_string(),
+        };
+        let error2 = CommandError::ValidationError {
+            field: "name".to_string(),
+            message: "Error".to_string(),
+        };
+        let error3 = CommandError::ValidationError {
+            field: "name".to_string(),
             message: "Different".to_string(),
         };
 
