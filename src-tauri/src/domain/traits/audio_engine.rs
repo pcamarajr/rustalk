@@ -239,11 +239,19 @@ mod tests {
         fn new() -> Self {
             // Initialize with some default mock devices
             let input_devices = vec![
-                AudioDevice::new("input-1".to_string(), "Built-in Microphone".to_string(), true),
+                AudioDevice::new(
+                    "input-1".to_string(),
+                    "Built-in Microphone".to_string(),
+                    true,
+                ),
                 AudioDevice::new("input-2".to_string(), "USB Microphone".to_string(), true),
             ];
             let output_devices = vec![
-                AudioDevice::new("output-1".to_string(), "Built-in Speakers".to_string(), false),
+                AudioDevice::new(
+                    "output-1".to_string(),
+                    "Built-in Speakers".to_string(),
+                    false,
+                ),
                 AudioDevice::new("output-2".to_string(), "USB Headphones".to_string(), false),
             ];
 
@@ -521,11 +529,16 @@ mod tests {
 
         // Set initial device
         engine.set_input_device("input-1").await.unwrap();
-        assert_eq!(engine.get_input_device().await.unwrap().unwrap().id, "input-1");
+        assert_eq!(
+            engine.get_input_device().await.unwrap().unwrap().id,
+            "input-1"
+        );
 
         // Switch to different device
         engine.set_input_device("input-2").await.unwrap();
-        assert_eq!(engine.get_input_device().await.unwrap().unwrap().id, "input-2");
+        assert_eq!(
+            engine.get_input_device().await.unwrap().unwrap().id,
+            "input-2"
+        );
     }
 }
-

@@ -138,7 +138,10 @@ mod audio_engine_error_tests {
         let error = AudioEngineError::DeviceEnumerationFailed {
             message: "Permission denied".to_string(),
         };
-        assert_eq!(error.to_string(), "Device enumeration failed: Permission denied");
+        assert_eq!(
+            error.to_string(),
+            "Device enumeration failed: Permission denied"
+        );
     }
 
     #[test]
@@ -162,7 +165,10 @@ mod audio_engine_error_tests {
         let error = AudioEngineError::DeviceSwitchFailed {
             message: "Device unavailable".to_string(),
         };
-        assert_eq!(error.to_string(), "Device switch failed: Device unavailable");
+        assert_eq!(
+            error.to_string(),
+            "Device switch failed: Device unavailable"
+        );
     }
 
     #[test]
@@ -170,7 +176,10 @@ mod audio_engine_error_tests {
         let error = AudioEngineError::InvalidConfiguration {
             message: "Invalid sample rate".to_string(),
         };
-        assert_eq!(error.to_string(), "Invalid configuration: Invalid sample rate");
+        assert_eq!(
+            error.to_string(),
+            "Invalid configuration: Invalid sample rate"
+        );
     }
 
     #[test]
