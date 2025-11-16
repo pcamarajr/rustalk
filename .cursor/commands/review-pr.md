@@ -122,26 +122,33 @@ Analyze the PR diff and metadata against the review criteria below. For each iss
 
 ### Step 6: Post Comments to GitHub
 
-#### For Inline Comments (Line-Specific Issues)
+**CRITICAL**: GitHub CLI's `gh pr comment` does NOT support inline comments (no `--file` or `--line` flags exist). To create inline comments, we must use the GitHub API via `gh api` to create a review with inline comments.
 
-For each line-specific issue found:
+#### Step 6.1: Get PR Head SHA and Prepare Inline Comments
+
+First, get the PR's head commit SHA (required for inline comments):
 
 ```bash
-gh pr comment <PR_NUMBER> \
-  --body "<comment_text>" \
-  --file <file_path> \
-  --line <line_number>
+# Get PR head commit SHA
+PR_HEAD_SHA=$(gh pr view <PR_NUMBER> --json headRefOid -q '.headRefOid')
 ```
+
+For each line-specific issue found, prepare inline comment data with:
+
+- `path`: File path relative to repo root (e.g., `src/lib/components/Button.svelte`)
+- `line`: Line number in the file (must be a line that was changed in the PR)
+- `body`: Comment text
+- `side`: `"RIGHT"` (for the new version of the file) or `"LEFT"` (for the old version)
 
 **Comment Format for Inline Comments**:
 
 - Start with issue severity: `**🚫 Blocker:**`, `**⚠️ Warning:**`, or `**💡 Suggestion:**`
-- **MUST include**: Specific file path and line number (already provided via `--file` and `--line` flags)
+- **MUST include**: Specific file path and line number in the comment body
 - Describe the issue clearly
 - Provide fix suggestion
 - Reference documentation when applicable
 
-**Example Inline Comment**:
+**Example Inline Comment Body**:
 
 ````
 **🚫 Blocker:** Uses legacy Svelte syntax
@@ -160,11 +167,68 @@ Reference: `docs/development/svelte-patterns.md#event-handlers`
 
 ````
 
-#### For General Comments (Category-Level Feedback)
+#### Step 6.2: Create Review with Inline Comments
+
+**IMPORTANT**: All inline comments must be submitted as part of a single review. You cannot add inline comments separately.
+
+**CRITICAL - Line Number Requirements**:
+- The `line` number must correspond to a line that was **changed** in the PR diff
+- Use `side: "RIGHT"` for comments on the new version of the file (after changes)
+- Use `side: "LEFT"` for comments on the old version of the file (before changes)
+- Line numbers are 1-indexed (first line is 1, not 0)
+- If a line wasn't changed, inline comments cannot be placed on it (use general comments instead)
+
+Collect all inline comments and create a review using the GitHub API:
+
+```bash
+# Prepare review payload with inline comments
+# Build JSON array of comments programmatically
+COMMENTS_JSON=$(jq -n \
+  --argjson comments "$(jq -n '[{"path":"src/lib/components/Button.svelte","line":42,"side":"RIGHT","body":"**🚫 Blocker:** Uses legacy Svelte syntax\n\nThis line uses `on:click` which is deprecated in Svelte 5. Please use `onclick` instead."},{"path":"src/lib/components/Dialog.svelte","line":15,"side":"RIGHT","body":"**⚠️ Warning:** Consider using `$derived` instead of `$state` for computed values."}]')" \
+  '{body:"",event:"COMMENT",comments:$comments}')
+
+# Alternative: Create JSON file if jq is not available
+cat > /tmp/review-payload.json <<EOF
+{
+  "body": "",
+  "event": "COMMENT",
+  "comments": [
+    {
+      "path": "src/lib/components/Button.svelte",
+      "line": 42,
+      "side": "RIGHT",
+      "body": "**🚫 Blocker:** Uses legacy Svelte syntax\n\nThis line uses \`on:click\` which is deprecated in Svelte 5. Please use \`onclick\` instead."
+    },
+    {
+      "path": "src/lib/components/Dialog.svelte",
+      "line": 15,
+      "side": "RIGHT",
+      "body": "**⚠️ Warning:** Consider using \`$derived\` instead of \`$state\` for computed values."
+    }
+  ]
+}
+EOF
+
+# Submit review with inline comments
+gh api repos/{owner}/{repo}/pulls/<PR_NUMBER>/reviews \
+  --method POST \
+  --input /tmp/review-payload.json \
+  --field commit_id="$PR_HEAD_SHA"
+```
+
+**Note**:
+- The `event` field can be `"COMMENT"`, `"APPROVE"`, or `"REQUEST_CHANGES"` (but for inline comments, typically use `"COMMENT"` and submit final review in Step 7)
+- The `commit_id` must be the head commit SHA of the PR (use `headRefOid` from `gh pr view`)
+- All inline comments must be in a single API call
+- If there are no inline comments, skip this step
+- Escape newlines in comment bodies as `\n` when building JSON
+- Use backticks in markdown by escaping them as `\`` in JSON strings
+
+#### Step 6.3: Post Category-Level Comments (Optional)
 
 **CRITICAL**: Only post a category comment if that category has at least one issue (blocker, warning, or suggestion). If a category has no issues, do NOT post a separate category comment for it. Categories without issues can still be mentioned in the main review summary (Step 7).
 
-For each category that has issues, post one general comment using `gh pr review --comment` (this creates review comments that are part of the review thread):
+For each category that has issues, post one general comment using `gh pr review --comment`:
 
 ```bash
 # Only post if category has issues (blockers, warnings, or suggestions)
@@ -208,7 +272,7 @@ Found **2 blockers** and **3 warnings** in this category:
 
 ### Step 7: Submit Final Review
 
-After posting all inline comments and category review comments, automatically submit the final review with overall decision:
+After posting all inline comments (Step 6.2) and category review comments (Step 6.3), automatically submit the final review with overall decision:
 
 **Decision Logic**:
 
@@ -216,7 +280,10 @@ After posting all inline comments and category review comments, automatically su
 - **If only warnings/suggestions** → `--comment` (or `--approve` with comments if minor)
 - **If no issues found** → `--approve`
 
-**Note**: Category comments are posted using `gh pr review --comment` in Step 6. This final step submits the overall review decision (approve/request-changes/comment) with a summary.
+**Note**:
+- Inline comments are posted via `gh api` in Step 6.2 (creates a review with inline comments)
+- Category comments are posted using `gh pr review --comment` in Step 6.3
+- This final step submits the overall review decision (approve/request-changes/comment) with a summary, which will appear as the main review comment
 
 ```bash
 # Create review summary
@@ -555,10 +622,17 @@ When reviewing code, be critical about decisions that:
 
 ## Implementation Notes
 
-- **Inline comments** should be used for specific line/file issues (most cases) → Use `gh pr comment` with `--file` and `--line`
+- **Inline comments** should be used for specific line/file issues (most cases) → Use `gh api` to POST to `/repos/{owner}/{repo}/pulls/{pull_number}/reviews` with inline comments in the payload (see Step 6.2)
+  - **CRITICAL**: `gh pr comment` does NOT support inline comments (no `--file` or `--line` flags exist)
+  - All inline comments must be submitted in a single review API call
+  - Requires the PR head commit SHA (`headRefOid`)
 - **Category comments** should be used for category-level feedback → Use `gh pr review --comment` (creates review comments)
 - **Category comments posting rule**: **ONLY** post category comments for categories that have at least one issue (blocker, warning, or suggestion). Categories with no issues should NOT get their own category comment, but can be mentioned in the main review summary.
 - **Final review submission** → Use `gh pr review` with `--approve`/`--request-changes`/`--comment` (overall decision)
+- **Review workflow**:
+  1. Post inline comments via `gh api` (Step 6.2) - creates a review with inline comments
+  2. Post category comments via `gh pr review --comment` (Step 6.3) - adds general review comments
+  3. Submit final review decision via `gh pr review` (Step 7) - sets overall review status (approve/request-changes/comment)
 - **CRITICAL - Be specific**: **ALWAYS** include exact file paths and line numbers for every issue found. Never use generic references.
 - **File references format**: Use backticks for file paths, e.g., `` `src/lib/components/Button.svelte:42` ``
 - **Multiple files**: When multiple files have the same issue, list each one explicitly: `` `file1.svelte:10`, `file2.svelte:25`, `file3.svelte:8` ``
