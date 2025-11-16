@@ -72,13 +72,22 @@ gh api repos/{owner}/{repo}/pulls/<PR_NUMBER>/reviews > /tmp/pr-reviews.json
 
 **Parse comments to extract**:
 
-- Comment ID
-- Comment body/text
-- File path (for inline comments)
-- Line number (for inline comments)
-- Comment author
-- Comment URL
-- Review ID (if part of a review)
+- Comment ID (from `id` field)
+- Comment body/text (from `body` field)
+- File path (for inline comments, from `path` field)
+- Line number (for inline comments, from `line` field)
+- Comment author (from `user.login` field)
+- Comment URL: Construct as `https://github.com/{owner}/{repo}/pull/{PR_NUMBER}#discussion_r{COMMENT_ID}` where `COMMENT_ID` is the numeric `id` field
+- Review ID (if part of a review, from `pull_request_review_id` field)
+- Thread ID (for resolving review threads, from `thread_id` field or `thread.id` field)
+- Thread GraphQL Node ID (for resolving via GraphQL, from `thread.node_id` field or construct from thread ID)
+
+**Note**:
+
+- For inline PR review comments, the URL format is: `https://github.com/{owner}/{repo}/pull/{PR_NUMBER}#discussion_r{COMMENT_ID}`
+- The thread's GraphQL node ID is required for the `resolveReviewThread` mutation (found in `thread.node_id` field)
+- If `thread.node_id` is not available in the REST API response, you may need to query the GraphQL API to get it, or use the comment's `node_id` if it represents the thread
+- To get owner and repo, use: `gh repo view --json owner,name -q '.owner.login + "/" + .name'`
 
 ### Step 5: Process Each Comment
 
@@ -183,12 +192,52 @@ Based on web search + codebase analysis, decide:
 
 1. Implement the fix in the codebase
 2. Verify the fix works (check syntax, run linter if available)
-3. Commit the change immediately:
+3. Commit the change immediately with a short message and link to the comment:
    ```bash
    git add <changed_files>
-   git commit -m "fix: address PR review comment #<COMMENT_ID>"
+   git commit -m "fix: address review comment <COMMENT_URL>"
    ```
-4. Move to next comment
+   **Note**:
+   - Replace `<COMMENT_URL>` with the actual comment URL (e.g., `https://github.com/{owner}/{repo}/pull/{PR_NUMBER}#discussion_r{COMMENT_ID}`)
+   - GitHub automatically converts URLs into clickable links in commit messages (no markdown formatting needed)
+   - This creates a cleaner commit message while still providing a clickable link to the comment
+4. Mark the review thread as resolved with a message (if thread ID is available):
+
+   ```bash
+   # First, post a reply comment indicating the issue is resolved
+   # For PR review comments, create a new comment in reply to the original
+   # Get the full commit SHA for autolinking
+   COMMIT_SHA=$(git rev-parse HEAD)
+   COMMIT_SHORT=$(git rev-parse --short HEAD)
+   gh api repos/{owner}/{repo}/pulls/{PR_NUMBER}/comments \
+     --method POST \
+     --field body="✅ Resolved in commit ${COMMIT_SHA}" \
+     --field in_reply_to={COMMENT_ID}
+
+   # Then, use GraphQL API to resolve the review thread
+   # Note: Thread ID needs to be the GraphQL node ID
+   # Get the thread's GraphQL node ID from the comment data (look for thread.node_id)
+   gh api graphql -f query='
+     mutation {
+       resolveReviewThread(input: {threadId: "<THREAD_NODE_ID>"}) {
+         thread {
+           isResolved
+         }
+       }
+     }
+   '
+   ```
+
+   **Note**:
+
+   - Replace `<THREAD_NODE_ID>` with the GraphQL node ID of the thread (not the REST API numeric ID)
+   - The thread's GraphQL node ID can be found in the comment's `thread.node_id` field
+   - If `thread.node_id` is not available, you may need to query the GraphQL API to get the thread's node ID from the comment's node ID
+   - If the comment is not part of a review thread (e.g., general issue comment), skip the resolve step but still post the reply comment
+   - The full commit SHA (`${COMMIT_SHA}`) is used so GitHub automatically converts it into a clickable link to the commit (see [GitHub autolinking docs](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/autolinked-references-and-urls))
+   - Replace `{COMMENT_ID}` with the numeric ID of the comment being replied to
+
+5. Move to next comment
 
 **If REPLY**:
 
@@ -318,13 +367,18 @@ After processing all comments, display a brief status:
 
 ## Commit Message Format
 
-**Standard format**: `fix: address PR review comment #<COMMENT_ID>`
+**Standard format**: `fix: address review comment <COMMENT_URL>`
 
 **Examples**:
-- `fix: address PR review comment #123456789`
-- `fix: address PR review comment #987654321`
+- `fix: address review comment https://github.com/owner/repo/pull/12#discussion_r123456789`
+- `fix: address review comment https://github.com/owner/repo/pull/12#discussion_r987654321`
 
-**Note**: The comment ID is the GitHub comment ID (numeric), not the PR number.
+**Note**:
+- The commit message is clean and concise, with the URL placed directly in the message
+- The comment URL format is: `https://github.com/{owner}/{repo}/pull/{PR_NUMBER}#discussion_r{COMMENT_ID}`
+- GitHub automatically converts URLs into clickable links in commit messages (see [GitHub autolinking docs](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/autolinked-references-and-urls))
+- No markdown formatting needed - just the plain URL
+- For inline PR review comments, the URL format uses `#discussion_r{COMMENT_ID}`
 
 ---
 
