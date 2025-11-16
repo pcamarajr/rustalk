@@ -349,7 +349,14 @@ impl AudioEngine for MacOSAudioEngine {
             })?;
 
         // Store the stream (using blocking lock since Stream is not Send)
-        let mut streams = self.streams.lock().unwrap();
+        // Note: We can't use spawn_blocking here because Stream is not Send.
+        // Instead, we handle PoisonError explicitly to avoid unwrap().
+        let mut streams = self
+            .streams
+            .lock()
+            .map_err(|_| AudioEngineError::StreamStartFailed {
+                message: "Mutex poisoned".to_string(),
+            })?;
         streams.insert(handle.clone(), stream);
 
         Ok(handle)
@@ -464,7 +471,14 @@ impl AudioEngine for MacOSAudioEngine {
             })?;
 
         // Store the stream (using blocking lock since Stream is not Send)
-        let mut streams = self.streams.lock().unwrap();
+        // Note: We can't use spawn_blocking here because Stream is not Send.
+        // Instead, we handle PoisonError explicitly to avoid unwrap().
+        let mut streams = self
+            .streams
+            .lock()
+            .map_err(|_| AudioEngineError::StreamStartFailed {
+                message: "Mutex poisoned".to_string(),
+            })?;
         streams.insert(handle.clone(), stream);
 
         Ok(handle)
@@ -472,7 +486,14 @@ impl AudioEngine for MacOSAudioEngine {
 
     async fn stop_stream(&self, handle: &StreamHandle) -> Result<(), AudioEngineError> {
         // Use blocking lock since Stream is not Send
-        let mut streams = self.streams.lock().unwrap();
+        // Note: We can't use spawn_blocking here because Stream is not Send.
+        // Instead, we handle PoisonError explicitly to avoid unwrap().
+        let mut streams = self
+            .streams
+            .lock()
+            .map_err(|_| AudioEngineError::StreamStopFailed {
+                message: "Mutex poisoned".to_string(),
+            })?;
         let stream = streams
             .remove(handle)
             .ok_or_else(|| AudioEngineError::StreamStopFailed {
