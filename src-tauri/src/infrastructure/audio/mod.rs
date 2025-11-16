@@ -1,9 +1,7 @@
 // Audio infrastructure module - Platform-specific audio implementations
-// This module will contain cpal-based backends in AUD-5.2
+// Contains cpal-based backends for platform-specific audio operations
 
 // Platform-specific module declarations
-// These will be implemented in AUD-5.2 with cpal-based backends
-
 #[cfg(target_os = "macos")]
 pub mod macos;
 
@@ -13,18 +11,12 @@ pub mod windows;
 #[cfg(target_os = "linux")]
 pub mod linux;
 
-// Placeholder for future DeviceManager (AUD-5.2)
-// This will be the main entry point for platform-specific audio implementations
-// pub struct DeviceManager {
-//     // Will be implemented in AUD-5.2
-// }
+// DeviceManager - Main entry point for creating platform-specific audio engines
+pub mod device_manager;
 
-// Re-exports for platform backends (will be added in AUD-5.2)
-// #[cfg(target_os = "macos")]
-// pub use macos::MacOSAudioEngine;
-//
-// #[cfg(target_os = "windows")]
-// pub use windows::WindowsAudioEngine;
-//
-// #[cfg(target_os = "linux")]
-// pub use linux::LinuxAudioEngine;
+// Re-exports for platform backends
+#[cfg(target_os = "macos")]
+pub use macos::MacOSAudioEngine;
+
+// Re-export DeviceManager
+pub use device_manager::create_audio_engine;
