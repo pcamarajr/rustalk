@@ -6,5 +6,5 @@ pub mod errors;
 pub mod traits;
 
 pub use entities::Credentials;
-pub use errors::{AudioEngineError, CommandError, CredentialStoreError};
+pub use errors::{AudioEngineError, CommandError, CredentialStoreError, SipError};
 pub use traits::{AudioEngine, CredentialStore};

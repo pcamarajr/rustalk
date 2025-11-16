@@ -75,6 +75,38 @@ pub enum AudioEngineError {
     },
 }
 
+/// Errors that can occur during SIP operations
+#[derive(Debug, Error, Clone, PartialEq, Eq)]
+pub enum SipError {
+    /// Failed to parse SIP message
+    #[error("Parse error: {message}")]
+    ParseError {
+        /// Error message describing the parse failure
+        message: String,
+    },
+
+    /// Invalid SIP message structure
+    #[error("Invalid message: {reason}")]
+    InvalidMessage {
+        /// Reason why the message is invalid
+        reason: String,
+    },
+
+    /// Unsupported SIP method
+    #[error("Unsupported method: {method}")]
+    UnsupportedMethod {
+        /// The unsupported method name
+        method: String,
+    },
+
+    /// Required header missing
+    #[error("Missing required header: {header}")]
+    MissingHeader {
+        /// The name of the missing header
+        header: String,
+    },
+}
+
 /// Errors that can occur during Tauri command execution
 #[derive(Debug, Error, Clone, PartialEq, Eq, serde::Serialize)]
 pub enum CommandError {
@@ -287,6 +319,59 @@ mod audio_engine_error_tests {
         };
         let error3 = AudioEngineError::DeviceNotFound {
             device_id: "device-2".to_string(),
+        };
+
+        assert_eq!(error1, error2);
+        assert_ne!(error1, error3);
+    }
+}
+
+#[cfg(test)]
+mod sip_error_tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_error_display() {
+        let error = SipError::ParseError {
+            message: "Invalid start line".to_string(),
+        };
+        assert_eq!(error.to_string(), "Parse error: Invalid start line");
+    }
+
+    #[test]
+    fn test_invalid_message_display() {
+        let error = SipError::InvalidMessage {
+            reason: "Missing request line".to_string(),
+        };
+        assert_eq!(error.to_string(), "Invalid message: Missing request line");
+    }
+
+    #[test]
+    fn test_unsupported_method_display() {
+        let error = SipError::UnsupportedMethod {
+            method: "REFER".to_string(),
+        };
+        assert_eq!(error.to_string(), "Unsupported method: REFER");
+    }
+
+    #[test]
+    fn test_missing_header_display() {
+        let error = SipError::MissingHeader {
+            header: "From".to_string(),
+        };
+        assert_eq!(error.to_string(), "Missing required header: From");
+    }
+
+    #[test]
+    fn test_sip_error_equality() {
+        let error1 = SipError::ParseError {
+            message: "Error".to_string(),
+        };
+        let error2 = SipError::ParseError {
+            message: "Error".to_string(),
+        };
+        let error3 = SipError::ParseError {
+            message: "Different".to_string(),
         };
 
         assert_eq!(error1, error2);
