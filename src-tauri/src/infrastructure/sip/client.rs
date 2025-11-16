@@ -57,7 +57,7 @@ impl SipClient {
         // TCP transport is not connected initially
         Self {
             transport: Arc::new(Mutex::new(Box::new(transport))),
-            local_address: "0.0.0.0:0".parse().unwrap(), // Will be set on connect
+            local_address: "0.0.0.0:0".parse().expect("0.0.0.0:0 is a valid SocketAddr"),
             connected: false,
         }
     }
@@ -68,7 +68,7 @@ impl SipClient {
         // TLS transport is not connected initially
         Self {
             transport: Arc::new(Mutex::new(Box::new(transport))),
-            local_address: "0.0.0.0:0".parse().unwrap(), // Will be set on connect
+            local_address: "0.0.0.0:0".parse().expect("0.0.0.0:0 is a valid SocketAddr"),
             connected: false,
         }
     }
