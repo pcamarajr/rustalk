@@ -55,7 +55,7 @@ impl UdpTransport {
 
     /// Create a new UDP transport bound to any available port
     pub async fn bind_any() -> Result<Self, SipError> {
-        Self::bind("0.0.0.0:0".parse().unwrap()).await
+        Self::bind("0.0.0.0:0".parse().expect("0.0.0.0:0 is a valid SocketAddr")).await
     }
 }
 
@@ -109,6 +109,9 @@ pub struct SipCodec {
     buffer: BytesMut,
 }
 
+/// Maximum buffer size to prevent DoS attacks from unbounded buffer growth
+const MAX_BUFFER_SIZE: usize = 65535; // Maximum UDP packet size
+
 impl SipCodec {
     pub fn new() -> Self {
         Self {
@@ -130,6 +133,16 @@ impl Decoder for SipCodec {
     fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
         // Append new data to buffer
         self.buffer.extend_from_slice(src);
+
+        // Check buffer size to prevent DoS attacks from unbounded growth
+        if self.buffer.len() > MAX_BUFFER_SIZE {
+            return Err(SipError::TransportError {
+                message: format!(
+                    "SIP message exceeds maximum size of {} bytes",
+                    MAX_BUFFER_SIZE
+                ),
+            });
+        }
 
         // Look for SIP message delimiter: \r\n\r\n
         let delimiter = b"\r\n\r\n";
