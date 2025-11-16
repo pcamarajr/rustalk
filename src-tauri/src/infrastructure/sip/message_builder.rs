@@ -104,7 +104,10 @@ mod tests {
         let message = SipMessageBuilder::new()
             .method("REGISTER")
             .uri("sip:example.com")
-            .header("Via", "SIP/2.0/UDP client.example.com:5060;branch=z9hG4bK776asdhds")
+            .header(
+                "Via",
+                "SIP/2.0/UDP client.example.com:5060;branch=z9hG4bK776asdhds",
+            )
             .header("Max-Forwards", "70")
             .header("To", "<sip:user@example.com>")
             .header("From", "<sip:user@example.com>;tag=1928301774")
@@ -114,7 +117,7 @@ mod tests {
             .build();
 
         assert!(message.is_ok(), "Should build REGISTER request");
-        
+
         // Verify it can be parsed back
         let bytes = message.unwrap();
         let parsed = parse_message(&bytes);
@@ -134,7 +137,10 @@ mod tests {
         let message = SipMessageBuilder::new()
             .method("INVITE")
             .uri("sip:bob@example.com")
-            .header("Via", "SIP/2.0/UDP client.example.com:5060;branch=z9hG4bK776asdhds")
+            .header(
+                "Via",
+                "SIP/2.0/UDP client.example.com:5060;branch=z9hG4bK776asdhds",
+            )
             .header("Max-Forwards", "70")
             .header("To", "<sip:bob@example.com>")
             .header("From", "<sip:alice@example.com>;tag=1928301774")
@@ -146,7 +152,7 @@ mod tests {
             .build();
 
         assert!(message.is_ok(), "Should build INVITE request with SDP");
-        
+
         let bytes = message.unwrap();
         let parsed = parse_message(&bytes);
         assert!(parsed.is_ok(), "Built message should be parseable");
@@ -157,7 +163,10 @@ mod tests {
         let message = SipMessageBuilder::new()
             .method("BYE")
             .uri("sip:bob@example.com")
-            .header("Via", "SIP/2.0/UDP client.example.com:5060;branch=z9hG4bK776asdhds")
+            .header(
+                "Via",
+                "SIP/2.0/UDP client.example.com:5060;branch=z9hG4bK776asdhds",
+            )
             .header("Max-Forwards", "70")
             .header("To", "<sip:bob@example.com>;tag=a6c85cf")
             .header("From", "<sip:alice@example.com>;tag=1928301774")
@@ -166,7 +175,7 @@ mod tests {
             .build();
 
         assert!(message.is_ok(), "Should build BYE request");
-        
+
         let bytes = message.unwrap();
         let parsed = parse_message(&bytes);
         assert!(parsed.is_ok(), "Built message should be parseable");
@@ -174,9 +183,7 @@ mod tests {
 
     #[test]
     fn test_build_missing_method() {
-        let message = SipMessageBuilder::new()
-            .uri("sip:example.com")
-            .build();
+        let message = SipMessageBuilder::new().uri("sip:example.com").build();
 
         assert!(message.is_err(), "Should fail without method");
         match message.unwrap_err() {
@@ -189,9 +196,7 @@ mod tests {
 
     #[test]
     fn test_build_missing_uri() {
-        let message = SipMessageBuilder::new()
-            .method("REGISTER")
-            .build();
+        let message = SipMessageBuilder::new().method("REGISTER").build();
 
         assert!(message.is_err(), "Should fail without URI");
         match message.unwrap_err() {

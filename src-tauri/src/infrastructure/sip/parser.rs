@@ -56,7 +56,7 @@ mod tests {
 
         let result = parse_request(register_msg);
         assert!(result.is_ok(), "Should parse REGISTER request");
-        
+
         let message = result.unwrap();
         match message {
             SipMessage::Request(request) => {
@@ -88,7 +88,7 @@ mod tests {
 
         let result = parse_request(invite_msg);
         assert!(result.is_ok(), "Should parse INVITE request with SDP");
-        
+
         let message = result.unwrap();
         match message {
             SipMessage::Request(request) => {
@@ -111,7 +111,7 @@ mod tests {
 
         let result = parse_request(bye_msg);
         assert!(result.is_ok(), "Should parse BYE request");
-        
+
         let message = result.unwrap();
         match message {
             SipMessage::Request(request) => {
@@ -134,7 +134,7 @@ mod tests {
 
         let result = parse_response(ok_response);
         assert!(result.is_ok(), "Should parse 200 OK response");
-        
+
         let message = result.unwrap();
         match message {
             SipMessage::Response(response) => {
@@ -157,7 +157,7 @@ mod tests {
 
         let result = parse_response(unauthorized_response);
         assert!(result.is_ok(), "Should parse 401 Unauthorized response");
-        
+
         let message = result.unwrap();
         match message {
             SipMessage::Response(response) => {
@@ -170,10 +170,10 @@ mod tests {
     #[test]
     fn test_parse_malformed_message() {
         let malformed = b"This is not a valid SIP message\r\n\r\n";
-        
+
         let result = parse_message(malformed);
         assert!(result.is_err(), "Should fail to parse malformed message");
-        
+
         match result.unwrap_err() {
             SipError::ParseError { .. } => {}
             _ => panic!("Expected ParseError"),
@@ -191,8 +191,11 @@ mod tests {
             Content-Length: 0\r\n\r\n";
 
         let result = parse_request(response);
-        assert!(result.is_err(), "Should fail when parsing response as request");
-        
+        assert!(
+            result.is_err(),
+            "Should fail when parsing response as request"
+        );
+
         match result.unwrap_err() {
             SipError::InvalidMessage { .. } => {}
             _ => panic!("Expected InvalidMessage"),
@@ -211,12 +214,14 @@ mod tests {
             Content-Length: 0\r\n\r\n";
 
         let result = parse_response(request);
-        assert!(result.is_err(), "Should fail when parsing request as response");
-        
+        assert!(
+            result.is_err(),
+            "Should fail when parsing request as response"
+        );
+
         match result.unwrap_err() {
             SipError::InvalidMessage { .. } => {}
             _ => panic!("Expected InvalidMessage"),
         }
     }
 }
-
