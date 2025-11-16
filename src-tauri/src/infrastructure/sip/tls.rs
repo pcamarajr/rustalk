@@ -2,6 +2,8 @@
 // Provides hostname extraction from SIP URIs and proper TLS certificate validation
 
 use crate::domain::errors::SipError;
+use std::net::IpAddr;
+use std::str::FromStr;
 
 /// Extract hostname from a SIP URI string
 ///
@@ -82,19 +84,13 @@ fn is_ip_address(s: &str) -> bool {
     // Check for IPv4 (simple check: contains dots and all parts are digits)
     if s.contains('.') {
         let parts: Vec<&str> = s.split('.').collect();
-        if parts.len() == 4 {
-            return parts.iter().all(|part| part.parse::<u8>().is_ok());
+        if parts.len() == 4 && parts.iter().all(|part| part.parse::<u8>().is_ok()) {
+            return true;
         }
     }
 
-    // Check for IPv6 (contains colons)
-    if s.contains(':') {
-        // Simple heuristic: if it contains colons and looks like an IPv6 address
-        // This is a basic check; full IPv6 validation is more complex
-        return s.split(':').count() > 1;
-    }
-
-    false
+    // Check for IPv6 using standard library for robust validation
+    IpAddr::from_str(s).is_ok()
 }
 
 /// Create a TLS client configuration with proper root certificates
