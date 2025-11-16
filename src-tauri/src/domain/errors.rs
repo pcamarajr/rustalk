@@ -105,6 +105,42 @@ pub enum SipError {
         /// The name of the missing header
         header: String,
     },
+
+    /// Network connection failure
+    #[error("Connection error: {message}")]
+    ConnectionError {
+        /// Error message describing the connection failure
+        message: String,
+    },
+
+    /// Transport layer error
+    #[error("Transport error: {message}")]
+    TransportError {
+        /// Error message describing the transport failure
+        message: String,
+    },
+
+    /// TLS handshake or certificate error
+    #[error("TLS error: {message}")]
+    TlsError {
+        /// Error message describing the TLS failure
+        message: String,
+    },
+
+    /// Operation timeout
+    #[error("Timeout error: {message}")]
+    TimeoutError {
+        /// Error message describing the timeout
+        message: String,
+    },
+}
+
+impl From<std::io::Error> for SipError {
+    fn from(err: std::io::Error) -> Self {
+        SipError::TransportError {
+            message: format!("IO error: {}", err),
+        }
+    }
 }
 
 /// Errors that can occur during Tauri command execution
