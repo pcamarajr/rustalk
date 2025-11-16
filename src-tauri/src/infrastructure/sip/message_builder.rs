@@ -50,12 +50,12 @@ impl SipMessageBuilder {
     /// Build the SIP message and return raw bytes
     pub fn build(self) -> Result<Vec<u8>, SipError> {
         // Validate required fields for requests
-        let method = self.method.ok_or_else(|| SipError::MissingHeader {
-            header: "Method".to_string(),
+        let method = self.method.ok_or_else(|| SipError::InvalidMessage {
+            reason: "Missing required method".to_string(),
         })?;
 
-        let uri = self.uri.ok_or_else(|| SipError::MissingHeader {
-            header: "Request-URI".to_string(),
+        let uri = self.uri.ok_or_else(|| SipError::InvalidMessage {
+            reason: "Missing required Request-URI".to_string(),
         })?;
 
         // Build the SIP message as a string
@@ -83,6 +83,9 @@ impl SipMessageBuilder {
         }
 
         // Parse the message to validate it, then convert to bytes
+        // Note: We build a string, parse it to validate using rsip's parser (which ensures
+        // proper SIP message structure), then convert back to bytes using rsip's Into<Vec<u8>>
+        // implementation. This approach ensures validation while leveraging rsip's serialization.
         let sip_message = parse_message(message.as_bytes())?;
         let message_bytes: Vec<u8> = sip_message.into();
         Ok(message_bytes)
@@ -187,10 +190,10 @@ mod tests {
 
         assert!(message.is_err(), "Should fail without method");
         match message.unwrap_err() {
-            SipError::MissingHeader { header } => {
-                assert_eq!(header, "Method");
+            SipError::InvalidMessage { reason } => {
+                assert_eq!(reason, "Missing required method");
             }
-            _ => panic!("Expected MissingHeader error"),
+            _ => panic!("Expected InvalidMessage error"),
         }
     }
 
@@ -200,10 +203,10 @@ mod tests {
 
         assert!(message.is_err(), "Should fail without URI");
         match message.unwrap_err() {
-            SipError::MissingHeader { header } => {
-                assert_eq!(header, "Request-URI");
+            SipError::InvalidMessage { reason } => {
+                assert_eq!(reason, "Missing required Request-URI");
             }
-            _ => panic!("Expected MissingHeader error"),
+            _ => panic!("Expected InvalidMessage error"),
         }
     }
 }
