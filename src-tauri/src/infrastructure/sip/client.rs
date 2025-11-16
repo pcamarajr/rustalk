@@ -184,21 +184,16 @@ impl SipClient {
         }
 
         let mut transport = self.transport.lock().await;
-        if let Some(tls_transport) = transport.as_tls() {
-            tls_transport
-                .connect_with_hostname(address, hostname)
-                .await?;
+        let tls_transport = transport.as_tls().expect("Transport should be TLS");
+        tls_transport
+            .connect_with_hostname(address, hostname)
+            .await?;
 
-            // Update local address and connection state
-            self.local_address = tls_transport.local_address()?;
-            self.connected = true;
+        // Update local address and connection state
+        self.local_address = tls_transport.local_address()?;
+        self.connected = true;
 
-            Ok(())
-        } else {
-            Err(SipError::InvalidMessage {
-                reason: "Transport is not TLS".to_string(),
-            })
-        }
+        Ok(())
     }
 
     /// Disconnect from the remote server (for TCP/TLS transports)
