@@ -56,7 +56,12 @@ impl UdpTransport {
 
     /// Create a new UDP transport bound to any available port
     pub async fn bind_any() -> Result<Self, SipError> {
-        Self::bind("0.0.0.0:0".parse().expect("0.0.0.0:0 is a valid SocketAddr")).await
+        Self::bind(
+            "0.0.0.0:0"
+                .parse()
+                .expect("0.0.0.0:0 is a valid SocketAddr"),
+        )
+        .await
     }
 }
 
@@ -340,29 +345,27 @@ impl TlsTransport {
         })?;
 
         // Perform TLS handshake with hostname for certificate validation
-        let server_name = rustls::ServerName::try_from(hostname).map_err(|_| {
-            SipError::TlsError {
+        let server_name =
+            rustls::ServerName::try_from(hostname).map_err(|_| SipError::TlsError {
                 message: format!("Invalid server name for TLS: {}", hostname),
-            }
-        })?;
-
-        let tls_stream = connector
-            .connect(server_name, stream)
-            .await
-            .map_err(|e| SipError::TlsError {
-                message: format!(
-                    "TLS handshake failed for hostname '{}': {}",
-                    hostname, e
-                ),
             })?;
 
-        let remote_addr = tls_stream
-            .get_ref()
-            .0
-            .peer_addr()
-            .map_err(|e| SipError::TransportError {
-                message: format!("Failed to get remote TLS address: {}", e),
-            })?;
+        let tls_stream =
+            connector
+                .connect(server_name, stream)
+                .await
+                .map_err(|e| SipError::TlsError {
+                    message: format!("TLS handshake failed for hostname '{}': {}", hostname, e),
+                })?;
+
+        let remote_addr =
+            tls_stream
+                .get_ref()
+                .0
+                .peer_addr()
+                .map_err(|e| SipError::TransportError {
+                    message: format!("Failed to get remote TLS address: {}", e),
+                })?;
 
         let codec = SipCodec::new();
         let framed = Framed::new(tls_stream, codec);

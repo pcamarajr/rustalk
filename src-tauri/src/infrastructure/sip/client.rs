@@ -86,7 +86,9 @@ impl SipClient {
         Self {
             transport: Arc::new(Mutex::new(TransportWrapper::Tcp(Box::new(transport)))),
             transport_type: TransportType::Tcp,
-            local_address: "0.0.0.0:0".parse().expect("0.0.0.0:0 is a valid SocketAddr"),
+            local_address: "0.0.0.0:0"
+                .parse()
+                .expect("0.0.0.0:0 is a valid SocketAddr"),
             connected: false,
         }
     }
@@ -98,7 +100,9 @@ impl SipClient {
         Self {
             transport: Arc::new(Mutex::new(TransportWrapper::Tls(Box::new(transport)))),
             transport_type: TransportType::Tls,
-            local_address: "0.0.0.0:0".parse().expect("0.0.0.0:0 is a valid SocketAddr"),
+            local_address: "0.0.0.0:0"
+                .parse()
+                .expect("0.0.0.0:0 is a valid SocketAddr"),
             connected: false,
         }
     }
@@ -114,7 +118,10 @@ impl SipClient {
         let message_bytes: Vec<u8> = message.clone().into();
 
         let mut transport = self.transport.lock().await;
-        transport.as_transport().send(&message_bytes, destination).await
+        transport
+            .as_transport()
+            .send(&message_bytes, destination)
+            .await
     }
 
     /// Send raw SIP message bytes
@@ -124,7 +131,10 @@ impl SipClient {
         destination: &SocketAddr,
     ) -> Result<(), SipError> {
         let mut transport = self.transport.lock().await;
-        transport.as_transport().send(message_bytes, destination).await
+        transport
+            .as_transport()
+            .send(message_bytes, destination)
+            .await
     }
 
     /// Receive a SIP message
@@ -175,7 +185,9 @@ impl SipClient {
 
         let mut transport = self.transport.lock().await;
         if let Some(tls_transport) = transport.as_tls() {
-            tls_transport.connect_with_hostname(address, hostname).await?;
+            tls_transport
+                .connect_with_hostname(address, hostname)
+                .await?;
 
             // Update local address and connection state
             self.local_address = tls_transport.local_address()?;

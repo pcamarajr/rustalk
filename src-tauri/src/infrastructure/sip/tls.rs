@@ -19,18 +19,15 @@ pub fn extract_hostname_from_uri(uri: &str) -> Result<String, SipError> {
     // Remove angle brackets if present (e.g., <sip:user@example.com>)
     let uri = uri.trim().trim_start_matches('<').trim_end_matches('>');
 
-    // Check if it's a SIP or SIPS URI
-    if !uri.starts_with("sip:") && !uri.starts_with("sips:") {
+    // Remove the scheme (sip: or sips:)
+    let uri_without_scheme = if let Some(stripped) = uri.strip_prefix("sips:") {
+        stripped
+    } else if let Some(stripped) = uri.strip_prefix("sip:") {
+        stripped
+    } else {
         return Err(SipError::InvalidMessage {
             reason: format!("Invalid SIP URI format: {}", uri),
         });
-    }
-
-    // Remove the scheme (sip: or sips:)
-    let uri_without_scheme = if uri.starts_with("sips:") {
-        &uri[5..]
-    } else {
-        &uri[4..]
     };
 
     // Extract the hostname part
@@ -221,10 +218,7 @@ mod tests {
         let uri = "sip:192.168.1.1";
         let result = extract_hostname_from_uri(uri);
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("IP address"));
+        assert!(result.unwrap_err().to_string().contains("IP address"));
     }
 
     #[test]
@@ -232,10 +226,7 @@ mod tests {
         let uri = "sip:192.168.1.1:5060";
         let result = extract_hostname_from_uri(uri);
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("IP address"));
+        assert!(result.unwrap_err().to_string().contains("IP address"));
     }
 
     #[test]
@@ -285,10 +276,7 @@ mod tests {
         let server = "192.168.1.1";
         let result = extract_hostname_from_credentials(server);
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("IP address"));
+        assert!(result.unwrap_err().to_string().contains("IP address"));
     }
 
     #[test]
@@ -309,4 +297,3 @@ mod tests {
         drop(config);
     }
 }
-
