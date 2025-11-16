@@ -13,15 +13,41 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 
 /// Transport type enumeration
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TransportType {
     Udp,
     Tcp,
     Tls,
 }
 
+/// Internal enum to wrap transports for type-safe downcasting
+enum TransportWrapper {
+    Udp(Box<UdpTransport>),
+    Tcp(Box<TcpTransport>),
+    Tls(Box<TlsTransport>),
+}
+
+impl TransportWrapper {
+    fn as_transport(&mut self) -> &mut dyn SipTransport {
+        match self {
+            TransportWrapper::Udp(t) => t.as_mut(),
+            TransportWrapper::Tcp(t) => t.as_mut(),
+            TransportWrapper::Tls(t) => t.as_mut(),
+        }
+    }
+
+    fn as_tls(&mut self) -> Option<&mut TlsTransport> {
+        match self {
+            TransportWrapper::Tls(t) => Some(t.as_mut()),
+            _ => None,
+        }
+    }
+}
+
 /// SIP client that manages transport and message handling
 pub struct SipClient {
-    transport: Arc<Mutex<Box<dyn SipTransport>>>,
+    transport: Arc<Mutex<TransportWrapper>>,
+    transport_type: TransportType,
     local_address: SocketAddr,
     connected: bool,
 }
@@ -33,7 +59,8 @@ impl SipClient {
         let local_address = transport.local_address()?;
 
         Ok(Self {
-            transport: Arc::new(Mutex::new(Box::new(transport))),
+            transport: Arc::new(Mutex::new(TransportWrapper::Udp(Box::new(transport)))),
+            transport_type: TransportType::Udp,
             local_address,
             connected: false, // UDP is connectionless
         })
@@ -45,7 +72,8 @@ impl SipClient {
         let local_address = transport.local_address()?;
 
         Ok(Self {
-            transport: Arc::new(Mutex::new(Box::new(transport))),
+            transport: Arc::new(Mutex::new(TransportWrapper::Udp(Box::new(transport)))),
+            transport_type: TransportType::Udp,
             local_address,
             connected: false,
         })
@@ -56,8 +84,11 @@ impl SipClient {
         let transport = TcpTransport::new();
         // TCP transport is not connected initially
         Self {
-            transport: Arc::new(Mutex::new(Box::new(transport))),
-            local_address: "0.0.0.0:0".parse().expect("0.0.0.0:0 is a valid SocketAddr"),
+            transport: Arc::new(Mutex::new(TransportWrapper::Tcp(Box::new(transport)))),
+            transport_type: TransportType::Tcp,
+            local_address: "0.0.0.0:0"
+                .parse()
+                .expect("0.0.0.0:0 is a valid SocketAddr"),
             connected: false,
         }
     }
@@ -67,8 +98,11 @@ impl SipClient {
         let transport = TlsTransport::new();
         // TLS transport is not connected initially
         Self {
-            transport: Arc::new(Mutex::new(Box::new(transport))),
-            local_address: "0.0.0.0:0".parse().expect("0.0.0.0:0 is a valid SocketAddr"),
+            transport: Arc::new(Mutex::new(TransportWrapper::Tls(Box::new(transport)))),
+            transport_type: TransportType::Tls,
+            local_address: "0.0.0.0:0"
+                .parse()
+                .expect("0.0.0.0:0 is a valid SocketAddr"),
             connected: false,
         }
     }
@@ -83,8 +117,11 @@ impl SipClient {
         // Convert SipMessage to bytes
         let message_bytes: Vec<u8> = message.clone().into();
 
-        let transport = self.transport.lock().await;
-        transport.send(&message_bytes, destination).await
+        let mut transport = self.transport.lock().await;
+        transport
+            .as_transport()
+            .send(&message_bytes, destination)
+            .await
     }
 
     /// Send raw SIP message bytes
@@ -93,15 +130,18 @@ impl SipClient {
         message_bytes: &[u8],
         destination: &SocketAddr,
     ) -> Result<(), SipError> {
-        let transport = self.transport.lock().await;
-        transport.send(message_bytes, destination).await
+        let mut transport = self.transport.lock().await;
+        transport
+            .as_transport()
+            .send(message_bytes, destination)
+            .await
     }
 
     /// Receive a SIP message
     /// Receives bytes from transport and parses into SipMessage
     pub async fn receive_message(&mut self) -> Result<(SipMessage, SocketAddr), SipError> {
         let mut transport = self.transport.lock().await;
-        let (bytes, source_addr) = transport.receive().await?;
+        let (bytes, source_addr) = transport.as_transport().receive().await?;
 
         // Parse the received bytes
         let message = parse_message(&bytes)?;
@@ -112,10 +152,45 @@ impl SipClient {
     /// Establish a connection (for TCP/TLS transports)
     pub async fn connect(&mut self, address: &SocketAddr) -> Result<(), SipError> {
         let mut transport = self.transport.lock().await;
-        transport.connect(address).await?;
+        transport.as_transport().connect(address).await?;
 
         // Update local address and connection state
-        self.local_address = transport.local_address()?;
+        self.local_address = transport.as_transport().local_address()?;
+        self.connected = true;
+
+        Ok(())
+    }
+
+    /// Establish a TLS connection with hostname for certificate validation
+    ///
+    /// This method should be used for TLS connections when a hostname is available.
+    /// It enables proper TLS certificate validation against the hostname.
+    ///
+    /// # Arguments
+    /// * `address` - The socket address (IP and port) to connect to
+    /// * `hostname` - The hostname to use for TLS certificate validation
+    ///
+    /// # Errors
+    /// Returns `SipError` if the connection fails or if the transport is not TLS.
+    pub async fn connect_tls_with_hostname(
+        &mut self,
+        address: &SocketAddr,
+        hostname: &str,
+    ) -> Result<(), SipError> {
+        if self.transport_type != TransportType::Tls {
+            return Err(SipError::InvalidMessage {
+                reason: "connect_tls_with_hostname can only be used with TLS transport".to_string(),
+            });
+        }
+
+        let mut transport = self.transport.lock().await;
+        let tls_transport = transport.as_tls().expect("Transport should be TLS");
+        tls_transport
+            .connect_with_hostname(address, hostname)
+            .await?;
+
+        // Update local address and connection state
+        self.local_address = tls_transport.local_address()?;
         self.connected = true;
 
         Ok(())
