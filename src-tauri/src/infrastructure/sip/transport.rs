@@ -2,6 +2,7 @@
 // Provides UDP, TCP, and TLS (SIPS) transport implementations using Tokio
 
 use crate::domain::errors::SipError;
+use crate::infrastructure::sip::tls::create_tls_config;
 use async_trait::async_trait;
 use bytes::{Bytes, BytesMut};
 use futures::{SinkExt, StreamExt};
@@ -302,6 +303,76 @@ impl TlsTransport {
             remote_addr: None,
         }
     }
+
+    /// Establish a TLS connection using a hostname for certificate validation
+    ///
+    /// This method should be preferred over `connect()` when a hostname is available,
+    /// as it enables proper TLS certificate validation against the hostname.
+    ///
+    /// # Arguments
+    /// * `address` - The socket address (IP and port) to connect to
+    /// * `hostname` - The hostname to use for TLS certificate validation
+    ///
+    /// # Errors
+    /// Returns `SipError` if:
+    /// - TCP connection fails
+    /// - TLS handshake fails
+    /// - Certificate validation fails
+    /// - Hostname is invalid
+    pub async fn connect_with_hostname(
+        &mut self,
+        address: &SocketAddr,
+        hostname: &str,
+    ) -> Result<(), SipError> {
+        // Create TLS connector with proper certificate validation
+        let config = create_tls_config();
+        let connector = tokio_rustls::TlsConnector::from(Arc::new(config));
+
+        // Connect TCP first
+        let stream = TcpStream::connect(address)
+            .await
+            .map_err(|e| SipError::ConnectionError {
+                message: format!("Failed to connect TCP to {}: {}", address, e),
+            })?;
+
+        let local_addr = stream.local_addr().map_err(|e| SipError::TransportError {
+            message: format!("Failed to get local TCP address: {}", e),
+        })?;
+
+        // Perform TLS handshake with hostname for certificate validation
+        let server_name = rustls::ServerName::try_from(hostname).map_err(|_| {
+            SipError::TlsError {
+                message: format!("Invalid server name for TLS: {}", hostname),
+            }
+        })?;
+
+        let tls_stream = connector
+            .connect(server_name, stream)
+            .await
+            .map_err(|e| SipError::TlsError {
+                message: format!(
+                    "TLS handshake failed for hostname '{}': {}",
+                    hostname, e
+                ),
+            })?;
+
+        let remote_addr = tls_stream
+            .get_ref()
+            .0
+            .peer_addr()
+            .map_err(|e| SipError::TransportError {
+                message: format!("Failed to get remote TLS address: {}", e),
+            })?;
+
+        let codec = SipCodec::new();
+        let framed = Framed::new(tls_stream, codec);
+
+        self.framed = Some(Arc::new(Mutex::new(framed)));
+        self.local_addr = Some(local_addr);
+        self.remote_addr = Some(remote_addr);
+
+        Ok(())
+    }
 }
 
 impl Default for TlsTransport {
@@ -364,71 +435,11 @@ impl SipTransport for TlsTransport {
     }
 
     async fn connect(&mut self, address: &SocketAddr) -> Result<(), SipError> {
-        // Create TLS connector with default root certificates
-        let mut root_store = rustls::RootCertStore::empty();
-        root_store.add_trust_anchors(webpki_roots::TLS_SERVER_ROOTS.iter().map(|ta| {
-            rustls::OwnedTrustAnchor::from_subject_spki_name_constraints(
-                ta.subject.as_ref().to_vec(),
-                ta.subject_public_key_info.as_ref().to_vec(),
-                ta.name_constraints.as_ref().map(|nc| nc.as_ref().to_vec()),
-            )
-        }));
-
-        let config = rustls::ClientConfig::builder()
-            .with_safe_defaults()
-            .with_root_certificates(root_store)
-            .with_no_client_auth();
-
-        let connector = tokio_rustls::TlsConnector::from(Arc::new(config));
-
-        // Connect TCP first
-        let stream = TcpStream::connect(address)
-            .await
-            .map_err(|e| SipError::ConnectionError {
-                message: format!("Failed to connect TCP to {}: {}", address, e),
-            })?;
-
-        let local_addr = stream.local_addr().map_err(|e| SipError::TransportError {
-            message: format!("Failed to get local TCP address: {}", e),
-        })?;
-
-        // Perform TLS handshake
-        // Note: SocketAddr always contains an IP address, not a hostname.
-        // For proper TLS certificate validation, we should use the hostname from the SIP URI.
-        // This is a limitation that will be addressed in SEC-6.6.
-        // For now, we'll use the IP address as the server name (this may cause certificate validation issues).
-        let server_name =
-            rustls::ServerName::try_from(address.ip().to_string().as_str()).map_err(|_| {
-                SipError::TlsError {
-                    message: format!("Invalid server name for TLS: {}", address),
-                }
-            })?;
-
-        let tls_stream =
-            connector
-                .connect(server_name, stream)
-                .await
-                .map_err(|e| SipError::TlsError {
-                    message: format!("TLS handshake failed: {}", e),
-                })?;
-
-        let remote_addr =
-            tls_stream
-                .get_ref()
-                .0
-                .peer_addr()
-                .map_err(|e| SipError::TransportError {
-                    message: format!("Failed to get remote TLS address: {}", e),
-                })?;
-
-        let codec = SipCodec::new();
-        let framed = Framed::new(tls_stream, codec);
-
-        self.framed = Some(Arc::new(Mutex::new(framed)));
-        self.local_addr = Some(local_addr);
-        self.remote_addr = Some(remote_addr);
-
-        Ok(())
+        // Use IP address as fallback (for backward compatibility)
+        // Note: This may cause certificate validation issues.
+        // Prefer using connect_with_hostname() when a hostname is available.
+        let hostname = address.ip().to_string();
+        self.connect_with_hostname(address, &hostname).await
     }
 
     fn local_address(&self) -> Result<SocketAddr, SipError> {
