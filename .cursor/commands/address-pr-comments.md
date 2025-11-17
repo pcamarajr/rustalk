@@ -201,43 +201,9 @@ Based on web search + codebase analysis, decide:
    - Replace `<COMMENT_URL>` with the actual comment URL (e.g., `https://github.com/{owner}/{repo}/pull/{PR_NUMBER}#discussion_r{COMMENT_ID}`)
    - GitHub automatically converts URLs into clickable links in commit messages (no markdown formatting needed)
    - This creates a cleaner commit message while still providing a clickable link to the comment
-4. Mark the review thread as resolved with a message (if thread ID is available):
+   - **DO NOT post any comments yet** - all commits will be pushed first (see Step 6)
 
-   ```bash
-   # First, post a reply comment indicating the issue is resolved
-   # For PR review comments, create a new comment in reply to the original
-   # Get the full commit SHA for autolinking
-   COMMIT_SHA=$(git rev-parse HEAD)
-   COMMIT_SHORT=$(git rev-parse --short HEAD)
-   gh api repos/{owner}/{repo}/pulls/{PR_NUMBER}/comments \
-     --method POST \
-     --field body="✅ Resolved in commit ${COMMIT_SHA}" \
-     --field in_reply_to={COMMENT_ID}
-
-   # Then, use GraphQL API to resolve the review thread
-   # Note: Thread ID needs to be the GraphQL node ID
-   # Get the thread's GraphQL node ID from the comment data (look for thread.node_id)
-   gh api graphql -f query='
-     mutation {
-       resolveReviewThread(input: {threadId: "<THREAD_NODE_ID>"}) {
-         thread {
-           isResolved
-         }
-       }
-     }
-   '
-   ```
-
-   **Note**:
-
-   - Replace `<THREAD_NODE_ID>` with the GraphQL node ID of the thread (not the REST API numeric ID)
-   - The thread's GraphQL node ID can be found in the comment's `thread.node_id` field
-   - If `thread.node_id` is not available, you may need to query the GraphQL API to get the thread's node ID from the comment's node ID
-   - If the comment is not part of a review thread (e.g., general issue comment), skip the resolve step but still post the reply comment
-   - The full commit SHA (`${COMMIT_SHA}`) is used so GitHub automatically converts it into a clickable link to the commit (see [GitHub autolinking docs](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/autolinked-references-and-urls))
-   - Replace `{COMMENT_ID}` with the numeric ID of the comment being replied to
-
-5. Move to next comment
+4. Move to next comment (comments will be posted after all commits are pushed)
 
 **If REPLY**:
 
@@ -245,49 +211,134 @@ Based on web search + codebase analysis, decide:
    - Web search findings
    - Codebase analysis
    - Project context
-2. Post reply to GitHub:
-   ```bash
-   # For inline comments (stored as issue comments)
-   # Note: Inline PR comments are accessible via the issues API
-   # Get the numeric comment ID from the comment data
-   gh api repos/{owner}/{repo}/issues/<PR_NUMBER>/comments \
-     --method POST \
-     --field body="> **Reply to comment #<COMMENT_ID>**
-   ```
-
-<reply_text>"
-
-# For review comments (reply to review)
-
-gh api repos/{owner}/{repo}/pulls/<PR_NUMBER>/reviews/<REVIEW_ID>/comments \
- --method POST \
- --field body="<reply_text>"
-
-```
-**Note**: Inline PR comments are stored as issue comments. To reply:
-- Fetch comments using: `gh pr view <PR_NUMBER> --json comments`
-- Extract the numeric `id` field (not the GraphQL `node_id`)
-- Post a new issue comment that references the original comment ID
+2. **DO NOT post reply yet** - replies will be posted after all commits are pushed (see Step 7)
 3. Move to next comment
 
 **If SKIP**:
 - Log the skip reason
 - Move to next comment
 
-### Step 6: Process All Comments
+### Step 6: Push All Commits to Remote
 
-Continue processing all comments from the PR until all are addressed:
-- Process comments in order (oldest first, or by file/line order for inline comments)
-- Handle both inline comments and general review comments with the same process
-- Track which comments were fixed, replied to, or skipped
+**CRITICAL**: Before posting any comments, push all commits to the remote repository so that commit SHAs are available and links work properly.
 
-### Step 7: Final Status
+```bash
+# Get the current branch name
+BRANCH_NAME=$(git branch --show-current)
+
+# Push all commits to remote
+git push origin ${BRANCH_NAME}
+```
+
+**Note**:
+- This ensures all commit SHAs are available when posting reply comments
+- Commit links in comments will work correctly once commits are on the remote
+- If push fails, display error and stop the process (don't post comments for commits that aren't pushed)
+- Track which commits correspond to which comments for later reference
+
+### Step 7: Post Comments and Resolve Threads
+
+After all commits are pushed, post reply comments and resolve threads for all fixes:
+
+**For each comment that was FIXED**:
+
+1. Get the commit SHA for the fix:
+   ```bash
+   # The commit SHA should be stored when committing in Step 5.5
+   # Or retrieve it from git log by searching for the comment URL in commit message
+   COMMIT_SHA=$(git log -1 --format=%H --grep="discussion_r${COMMENT_ID}")
+   ```
+
+2. Get the PR's GraphQL node ID (needed for thread replies):
+   ```bash
+   # Query GraphQL to get PR node ID
+   PR_NODE_ID=$(gh api graphql -f query="
+     query {
+       repository(owner: \"${OWNER}\", name: \"${REPO}\") {
+         pullRequest(number: ${PR_NUMBER}) {
+           id
+         }
+       }
+     }
+   " -q '.data.repository.pullRequest.id')
+   ```
+
+3. Post reply comment to the review thread using GraphQL API:
+   ```bash
+   # For inline PR review comments, use GraphQL to add a reply to the review thread
+   # Get the thread's GraphQL node ID from the comment data (from Step 4)
+   gh api graphql -f query="
+     mutation {
+       addPullRequestReviewThreadReply(input: {
+         pullRequestId: \"${PR_NODE_ID}\"
+         threadId: \"${THREAD_NODE_ID}\"
+         body: \"✅ Resolved in commit ${COMMIT_SHA}\"
+       }) {
+         comment {
+           id
+         }
+       }
+     }
+   "
+   ```
+
+   **Note**:
+   - Replace `${PR_NODE_ID}` with the GraphQL node ID of the PR (from step 2 above)
+   - Replace `${THREAD_NODE_ID}` with the GraphQL node ID of the thread (from `thread.node_id` field in comment data from Step 4)
+   - Replace `${COMMIT_SHA}` with the full commit SHA (e.g., `3c25b3a1daff4fa3168a770cd49f4cfbff826ed3`)
+   - The full commit SHA is used so GitHub automatically converts it into a clickable link to the commit
+   - If the comment is not part of a review thread (e.g., general issue comment), use the REST API to post a general PR comment instead:
+     ```bash
+     gh api repos/${OWNER}/${REPO}/issues/${PR_NUMBER}/comments \
+       --method POST \
+       --field body="✅ Resolved in commit ${COMMIT_SHA}
+
+Addresses: https://github.com/${OWNER}/${REPO}/pull/${PR_NUMBER}#discussion_r${COMMENT_ID}"
+     ```
+
+4. Resolve the review thread:
+   ```bash
+   gh api graphql -f query="
+     mutation {
+       resolveReviewThread(input: {threadId: \"${THREAD_NODE_ID}\"}) {
+         thread {
+           isResolved
+         }
+       }
+     }
+   "
+   ```
+
+   **Note**:
+   - Replace `${THREAD_NODE_ID}` with the GraphQL node ID of the thread
+   - Only resolve threads for inline PR review comments
+   - General issue comments don't have threads to resolve
+
+**For each comment that needs a REPLY**:
+
+1. Generate a thoughtful reply based on:
+   - Web search findings
+   - Codebase analysis
+   - Project context
+
+2. Post reply to GitHub:
+   - **For inline PR review comments**: Use GraphQL `addPullRequestReviewThreadReply` mutation (same as step 3 above, but with the reply text instead of "Resolved in commit")
+   - **For general issue comments**: Use REST API:
+     ```bash
+     gh api repos/${OWNER}/${REPO}/issues/${PR_NUMBER}/comments \
+       --method POST \
+       --field body="<reply_text>"
+     ```
+
+### Step 8: Final Status
 
 After processing all comments, display a brief status:
 - Total comments processed
 - Number of fixes applied
 - Number of replies posted
 - Number of comments skipped
+- Number of commits pushed
+- Number of threads resolved
 
 ---
 
@@ -303,7 +354,7 @@ After processing all comments, display a brief status:
 **Differences in handling**:
 - Inline comments: Include file path and line number in context
 - General comments: May require broader codebase analysis
-- Reply posting: Different API endpoints (see Step 5.5)
+- Reply posting: Different API endpoints (see Step 7)
 
 ### Web Search Strategy
 
@@ -404,7 +455,9 @@ If any step fails:
 
 - **One PR at a time**: Process all comments from a single PR in one run
 - **Sequential processing**: Handle comments one by one, commit each fix immediately
-- **Auto-post replies**: Replies are automatically posted to GitHub
+- **Push before commenting**: All commits are pushed to remote before posting any comments (ensures commit SHAs are available and links work)
+- **Proper thread replies**: Use GraphQL `addPullRequestReviewThreadReply` mutation to properly reply to inline PR review comments in their threads
+- **Auto-post replies**: Replies are automatically posted to GitHub after commits are pushed
 - **No summary**: Process completes without creating a summary report
 - **Validation is critical**: Never fix without validating through web search + codebase analysis
 - **Be conservative**: When in doubt, reply instead of fixing
