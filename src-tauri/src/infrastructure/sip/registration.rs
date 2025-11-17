@@ -195,7 +195,7 @@ pub fn generate_authorization(
             })?
             .as_secs();
         let cnonce_value = md5_hash(&format!("{}{}", timestamp, username));
-        let nc_value = "00000001"; // Nonce count (incremented for each request)
+        let nc_value = "00000001"; // Initial nonce count (hardcoded for single request)
         (Some(cnonce_value), Some(nc_value.to_string()))
     } else {
         (None, None)
