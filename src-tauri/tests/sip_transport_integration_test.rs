@@ -9,7 +9,7 @@
 //   - SIP_SERVER_PORT_TLS: TLS port (default: 5061)
 //
 // To run these tests:
-//   cargo test --test sip_transport_integration_test -- --nocapture
+//   cargo test --test sip_transport_integration_test -- --ignored --nocapture
 //
 // To skip integration tests (if no server available):
 //   cargo test --test sip_transport_integration_test -- --skip
@@ -43,6 +43,19 @@ fn should_skip_integration_tests() -> bool {
     env::var("SKIP_SIP_INTEGRATION_TESTS").is_ok()
 }
 
+/// Resolve server address from hostname and port
+/// Converts localhost to 127.0.0.1, otherwise uses the hostname as-is
+fn resolve_server_address(host: &str, port: u16) -> Result<SocketAddr, String> {
+    let server_ip = if host == "localhost" {
+        "127.0.0.1"
+    } else {
+        host
+    };
+    format!("{}:{}", server_ip, port)
+        .parse()
+        .map_err(|e| format!("Failed to parse server address: {:?}", e))
+}
+
 /// Create a test REGISTER message
 fn create_test_register_message(server: &str, port: u16) -> Vec<u8> {
     let message = SipMessageBuilder::new()
@@ -72,14 +85,7 @@ async fn test_udp_connect_to_sip_server() {
 
     let server_host = get_sip_server_host();
     let server_port = get_sip_server_port("UDP");
-    // Convert hostname to IP if needed (localhost -> 127.0.0.1)
-    let server_ip = if server_host == "localhost" {
-        "127.0.0.1"
-    } else {
-        &server_host
-    };
-    let server_addr: SocketAddr = format!("{}:{}", server_ip, server_port)
-        .parse()
+    let server_addr = resolve_server_address(&server_host, server_port)
         .expect("Should parse server address");
 
     println!(
@@ -148,14 +154,7 @@ async fn test_tcp_connect_to_sip_server() {
 
     let server_host = get_sip_server_host();
     let server_port = get_sip_server_port("TCP");
-    // Convert hostname to IP if needed (localhost -> 127.0.0.1)
-    let server_ip = if server_host == "localhost" {
-        "127.0.0.1"
-    } else {
-        &server_host
-    };
-    let server_addr: SocketAddr = format!("{}:{}", server_ip, server_port)
-        .parse()
+    let server_addr = resolve_server_address(&server_host, server_port)
         .expect("Should parse server address");
 
     println!(
@@ -216,14 +215,7 @@ async fn test_tls_connect_to_sip_server() {
 
     let server_host = get_sip_server_host();
     let server_port = get_sip_server_port("TLS");
-    // Convert hostname to IP if needed (localhost -> 127.0.0.1)
-    let server_ip = if server_host == "localhost" {
-        "127.0.0.1"
-    } else {
-        &server_host
-    };
-    let server_addr_for_tls: SocketAddr = format!("{}:{}", server_ip, server_port)
-        .parse()
+    let server_addr_for_tls = resolve_server_address(&server_host, server_port)
         .expect("Should parse server address");
 
     println!(
@@ -294,14 +286,7 @@ async fn test_tls_certificate_validation() {
 
     let server_host = get_sip_server_host();
     let server_port = get_sip_server_port("TLS");
-    // Convert hostname to IP if needed (localhost -> 127.0.0.1)
-    let server_ip = if server_host == "localhost" {
-        "127.0.0.1"
-    } else {
-        &server_host
-    };
-    let server_addr: SocketAddr = format!("{}:{}", server_ip, server_port)
-        .parse()
+    let server_addr = resolve_server_address(&server_host, server_port)
         .expect("Should parse server address");
 
     println!(
