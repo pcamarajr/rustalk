@@ -190,7 +190,9 @@ pub fn generate_authorization(
         // Generate a random cnonce (client nonce)
         let timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .unwrap()
+            .map_err(|e| SipError::InvalidMessage {
+                reason: format!("System time error: {}", e),
+            })?
             .as_secs();
         let cnonce_value = md5_hash(&format!("{}{}", timestamp, username));
         let nc_value = "00000001"; // Nonce count (incremented for each request)
@@ -345,7 +347,9 @@ pub async fn register_with_challenge(
     // Generate Call-ID, CSeq, and tags
     let timestamp = SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .unwrap()
+        .map_err(|e| SipError::InvalidMessage {
+            reason: format!("System time error: {}", e),
+        })?
         .as_secs();
     let call_id = format!(
         "{}@{}",
