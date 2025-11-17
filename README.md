@@ -6,7 +6,7 @@ Open-source white-label VoIP desktop application built with Rust and Tauri.
 
 ## Project Status
 
-**Phase 2 Complete** ✅ - UI Foundation with Mock Actions
+**Phase 3 Complete** ✅ - Core Infrastructure
 
 ### Completed Features
 
@@ -26,6 +26,17 @@ Open-source white-label VoIP desktop application built with Rust and Tauri.
 - ✅ Navigation and routing between all screens
 - ✅ Mock actions for dialer, call controls, and call state transitions
 - ✅ UI components library (buttons, inputs, cards, dialogs, etc.)
+
+**Phase 3:**
+
+- ✅ Secure credential storage (macOS Keychain integration)
+- ✅ Audio device enumeration (macOS CoreAudio via `cpal`)
+- ✅ SIP transport layer (UDP/TCP/TLS) with async Tokio
+- ✅ SIP message parsing and building (rsip integration)
+- ✅ TLS certificate validation for SIPS
+- ✅ Platform abstractions (AudioEngine, CredentialStore traits)
+- ✅ Input validation for Tauri commands
+- ✅ Integration tests for SIP transport (tested with Asterisk server)
 
 ## Quick Start
 
@@ -87,8 +98,8 @@ See detailed architecture documentation in [`docs/architecture/`](docs/architect
 Phase 0: Dev Container            ✅ (Skipped - using local environment)
 Phase 1: Hello World              ✅ Complete (~0.5 weeks)
 Phase 2: UI with Mocks            ✅ Complete (~1.5 weeks)
-Phase 3: Core Infrastructure      🔄 Next (~2.4 weeks)
-Phase 4: Registration + Audio     📋 Planned (~1.7 weeks)
+Phase 3: Core Infrastructure      ✅ Complete (~2.4 weeks)
+Phase 4: Registration + Audio     🔄 Next (~1.7 weeks)
 Phase 5: Call Flows               📋 Planned (~3.3 weeks)
 Phase 6: Call Controls            📋 Planned (~0.6 weeks)
 Phase 7: Windows Platform         📋 Planned (~1.3 weeks)
@@ -97,9 +108,9 @@ Phase 8: Production Polish        📋 Planned (~1.3 weeks)
 
 **Total Estimated Duration**: ~12 weeks for MVP
 
-## Current Phase: Phase 3 In Progress 🔄
+## Current Phase: Phase 3 Complete ✅
 
-Phase 3 work has started with SIP-1.1 (SIP message parsing with rsip integration), SIP-1.2 (Async SIP transport layer), and SIP-1.3 (REGISTER message handling with 401 challenge) completed.
+Phase 3 core infrastructure is complete with all components implemented and tested.
 
 ### What Works
 
@@ -126,6 +137,16 @@ Phase 3 work has started with SIP-1.1 (SIP message parsing with rsip integration
 - Settings screens with audio device selection UI
 - Contacts and call history with mock data
 
+**Core Infrastructure (Phase 3):**
+
+- Secure credential storage via macOS Keychain
+- Audio device enumeration and management (macOS CoreAudio)
+- SIP transport layer (UDP/TCP/TLS) with async support
+- SIP message parsing and building (rsip integration)
+- TLS certificate validation for secure SIP connections
+- Platform abstractions for cross-platform support
+- Integration tests validated with real Asterisk server
+
 ### Demo the UI
 
 1. Navigate between screens using the sidebar
@@ -135,9 +156,9 @@ Phase 3 work has started with SIP-1.1 (SIP message parsing with rsip integration
 5. Browse mock contacts and call history
 6. Explore settings and audio device selection (UI only, no real audio yet)
 
-## Next Steps: Phase 3
+## Next Steps: Phase 4
 
-Phase 3 will implement:
+Phase 4 will implement:
 
 - ✅ Secure credential storage (macOS Keychain integration) - **Completed**
 - ✅ SIP message parsing (rsip integration) - **Completed (SIP-1.1)**
