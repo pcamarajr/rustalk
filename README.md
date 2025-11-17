@@ -99,7 +99,7 @@ Phase 8: Production Polish        📋 Planned (~1.3 weeks)
 
 ## Current Phase: Phase 3 In Progress 🔄
 
-Phase 3 work has started with SIP-1.1 (SIP message parsing with rsip integration) and SIP-1.2 (Async SIP transport layer) completed.
+Phase 3 work has started with SIP-1.1 (SIP message parsing with rsip integration), SIP-1.2 (Async SIP transport layer), and SIP-1.3 (REGISTER message handling with 401 challenge) completed.
 
 ### What Works
 
@@ -143,6 +143,7 @@ Phase 3 will implement:
 - ✅ SIP message parsing (rsip integration) - **Completed (SIP-1.1)**
 - Audio device enumeration (macOS CoreAudio via `cpal`)
 - ✅ SIP transport layer with TLS support - **Completed (SIP-1.2)**
+- ✅ REGISTER message handling with 401 challenge - **Completed (SIP-1.3)**
 - ✅ Platform abstractions for security and audio - **AudioEngine trait completed (AUD-5.1)**
 - Input validation for all Tauri commands
 
