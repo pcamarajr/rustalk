@@ -85,8 +85,8 @@ async fn test_udp_connect_to_sip_server() {
 
     let server_host = get_sip_server_host();
     let server_port = get_sip_server_port("UDP");
-    let server_addr = resolve_server_address(&server_host, server_port)
-        .expect("Should parse server address");
+    let server_addr =
+        resolve_server_address(&server_host, server_port).expect("Should parse server address");
 
     println!(
         "DEBUG:[SIP/UDP] Connecting to {}:{}",
@@ -154,8 +154,8 @@ async fn test_tcp_connect_to_sip_server() {
 
     let server_host = get_sip_server_host();
     let server_port = get_sip_server_port("TCP");
-    let server_addr = resolve_server_address(&server_host, server_port)
-        .expect("Should parse server address");
+    let server_addr =
+        resolve_server_address(&server_host, server_port).expect("Should parse server address");
 
     println!(
         "DEBUG:[SIP/TCP] Connecting to {}:{}",
@@ -215,8 +215,8 @@ async fn test_tls_connect_to_sip_server() {
 
     let server_host = get_sip_server_host();
     let server_port = get_sip_server_port("TLS");
-    let server_addr_for_tls = resolve_server_address(&server_host, server_port)
-        .expect("Should parse server address");
+    let server_addr_for_tls =
+        resolve_server_address(&server_host, server_port).expect("Should parse server address");
 
     println!(
         "DEBUG:[SIP/TLS] Connecting to {}:{}",
@@ -286,8 +286,8 @@ async fn test_tls_certificate_validation() {
 
     let server_host = get_sip_server_host();
     let server_port = get_sip_server_port("TLS");
-    let server_addr = resolve_server_address(&server_host, server_port)
-        .expect("Should parse server address");
+    let server_addr =
+        resolve_server_address(&server_host, server_port).expect("Should parse server address");
 
     println!(
         "DEBUG:[SIP/TLS] Testing certificate validation for {}:{}",
