@@ -160,13 +160,13 @@ Phase 3 core infrastructure is complete with all components implemented and test
 
 Phase 4 will implement:
 
-- SIP registration flow with 401 challenge handling
-- Registration state machine
-- Tauri commands for account registration
-- Frontend registration/login UI
-- Audio device selection service layer
-- Tauri commands for audio device management
-- Frontend audio settings UI integration
+- ✅ Secure credential storage (macOS Keychain integration) - **Completed**
+- ✅ SIP message parsing (rsip integration) - **Completed (SIP-1.1)**
+- Audio device enumeration (macOS CoreAudio via `cpal`)
+- ✅ SIP transport layer with TLS support - **Completed (SIP-1.2)**
+- ✅ REGISTER message handling with 401 challenge - **Completed (SIP-1.3)**
+- ✅ Platform abstractions for security and audio - **AudioEngine trait completed (AUD-5.1)**
+- Input validation for all Tauri commands
 
 ## Project Goals
 

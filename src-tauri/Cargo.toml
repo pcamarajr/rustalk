@@ -34,4 +34,6 @@ futures = "0.3"
 keyring = "2.0"
 cpal = "0.15"
 rsip = "0.4"
+md5 = "0.7"
+hex = "0.4"
 
