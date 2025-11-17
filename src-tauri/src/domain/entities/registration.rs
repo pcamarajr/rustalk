@@ -99,10 +99,7 @@ impl Registration {
                 Ok(())
             }
             _ => Err(SipError::InvalidMessage {
-                reason: format!(
-                    "Cannot transition from {:?} to Registering",
-                    self.state
-                ),
+                reason: format!("Cannot transition from {:?} to Registering", self.state),
             }),
         }
     }
@@ -294,13 +291,8 @@ mod tests {
         let creds = create_test_credentials();
         reg.start_registering(creds).unwrap();
 
-        assert!(reg
-            .set_failed("401 Unauthorized".to_string())
-            .is_ok());
-        assert!(matches!(
-            reg.state(),
-            RegistrationState::Failed(_)
-        ));
+        assert!(reg.set_failed("401 Unauthorized".to_string()).is_ok());
+        assert!(matches!(reg.state(), RegistrationState::Failed(_)));
         assert!(reg.last_error().is_some());
         assert_eq!(reg.last_error().unwrap(), "401 Unauthorized");
     }
@@ -439,4 +431,3 @@ mod tests {
         assert!(!reg.is_expired());
     }
 }
-

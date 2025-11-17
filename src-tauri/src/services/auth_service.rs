@@ -66,9 +66,11 @@ impl AuthService {
         expires: u32,
     ) -> Result<(), SipError> {
         // Validate credentials
-        credentials.validate().map_err(|e| SipError::InvalidMessage {
-            reason: format!("Invalid credentials: {}", e),
-        })?;
+        credentials
+            .validate()
+            .map_err(|e| SipError::InvalidMessage {
+                reason: format!("Invalid credentials: {}", e),
+            })?;
 
         // Store server address and contact URI
         self.server_addr = Some(server_addr);
@@ -174,9 +176,12 @@ impl AuthService {
             let server = self.server_addr.ok_or_else(|| SipError::InvalidMessage {
                 reason: "No server address available for refresh".to_string(),
             })?;
-            let contact = self.contact_uri.clone().ok_or_else(|| SipError::InvalidMessage {
-                reason: "No contact URI available for refresh".to_string(),
-            })?;
+            let contact = self
+                .contact_uri
+                .clone()
+                .ok_or_else(|| SipError::InvalidMessage {
+                    reason: "No contact URI available for refresh".to_string(),
+                })?;
             (creds.clone(), server, contact)
         };
 
@@ -312,7 +317,10 @@ mod tests {
             message: "Unauthorized".to_string(),
         };
 
-        assert!(service.handle_registration_result(Ok(result)).await.is_err());
+        assert!(service
+            .handle_registration_result(Ok(result))
+            .await
+            .is_err());
         let state = service.get_registration_state().await;
         assert!(matches!(state, RegistrationState::Failed(_)));
     }
@@ -334,7 +342,10 @@ mod tests {
             reason: "Network error".to_string(),
         };
 
-        assert!(service.handle_registration_result(Err(error)).await.is_err());
+        assert!(service
+            .handle_registration_result(Err(error))
+            .await
+            .is_err());
         let state = service.get_registration_state().await;
         assert!(matches!(state, RegistrationState::Failed(_)));
     }
@@ -358,4 +369,3 @@ mod tests {
         assert_eq!(result.unwrap(), false);
     }
 }
-
