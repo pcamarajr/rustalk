@@ -32,11 +32,9 @@ fn get_sip_server_port(protocol: &str) -> u16 {
     env::var(&env_var)
         .ok()
         .and_then(|v| v.parse().ok())
-        .unwrap_or_else(|| {
-            match protocol {
-                "TLS" => 5061,
-                _ => 5060,
-            }
+        .unwrap_or(match protocol {
+            "TLS" => 5061,
+            _ => 5060,
         })
 }
 
@@ -50,7 +48,7 @@ fn create_test_register_message(server: &str, port: u16) -> Vec<u8> {
     let message = SipMessageBuilder::new()
         .method("REGISTER")
         .uri(&format!("sip:{}:{}", server, port))
-        .header("Via", &format!("SIP/2.0/UDP localhost:5060;branch=z9hG4bK-test"))
+        .header("Via", "SIP/2.0/UDP localhost:5060;branch=z9hG4bK-test")
         .header("From", "<sip:test@localhost>;tag=test-tag")
         .header("To", "<sip:test@localhost>")
         .header("Call-ID", "test-call-id@localhost")
@@ -61,7 +59,7 @@ fn create_test_register_message(server: &str, port: u16) -> Vec<u8> {
         .build()
         .expect("Should build REGISTER message");
 
-    message.into()
+    message
 }
 
 #[tokio::test]
@@ -84,7 +82,10 @@ async fn test_udp_connect_to_sip_server() {
         .parse()
         .expect("Should parse server address");
 
-    println!("DEBUG:[SIP/UDP] Connecting to {}:{}", server_host, server_port);
+    println!(
+        "DEBUG:[SIP/UDP] Connecting to {}:{}",
+        server_host, server_port
+    );
 
     // Create UDP client
     let mut client = SipClient::new_udp_any()
@@ -95,7 +96,11 @@ async fn test_udp_connect_to_sip_server() {
     let message_bytes = create_test_register_message(&server_host, server_port);
 
     // Send message to server
-    let send_result = timeout(Duration::from_secs(5), client.send_bytes(&message_bytes, &server_addr)).await;
+    let send_result = timeout(
+        Duration::from_secs(5),
+        client.send_bytes(&message_bytes, &server_addr),
+    )
+    .await;
 
     match send_result {
         Ok(Ok(_)) => {
@@ -121,7 +126,10 @@ async fn test_udp_connect_to_sip_server() {
         }
         Ok(Err(e)) => {
             // Server might not respond, but connection should work
-            println!("DEBUG:[SIP/UDP] No response received (this may be expected): {:?}", e);
+            println!(
+                "DEBUG:[SIP/UDP] No response received (this may be expected): {:?}",
+                e
+            );
         }
         Err(_) => {
             println!("DEBUG:[SIP/UDP] Timeout waiting for response (this may be expected)");
@@ -150,7 +158,10 @@ async fn test_tcp_connect_to_sip_server() {
         .parse()
         .expect("Should parse server address");
 
-    println!("DEBUG:[SIP/TCP] Connecting to {}:{}", server_host, server_port);
+    println!(
+        "DEBUG:[SIP/TCP] Connecting to {}:{}",
+        server_host, server_port
+    );
 
     // Create TCP client
     let mut client = SipClient::new_tcp();
@@ -173,7 +184,11 @@ async fn test_tcp_connect_to_sip_server() {
 
     // Create and send a test message
     let message_bytes = create_test_register_message(&server_host, server_port);
-    let send_result = timeout(Duration::from_secs(5), client.send_bytes(&message_bytes, &server_addr)).await;
+    let send_result = timeout(
+        Duration::from_secs(5),
+        client.send_bytes(&message_bytes, &server_addr),
+    )
+    .await;
 
     match send_result {
         Ok(Ok(_)) => {
@@ -211,7 +226,10 @@ async fn test_tls_connect_to_sip_server() {
         .parse()
         .expect("Should parse server address");
 
-    println!("DEBUG:[SIP/TLS] Connecting to {}:{}", server_host, server_port);
+    println!(
+        "DEBUG:[SIP/TLS] Connecting to {}:{}",
+        server_host, server_port
+    );
 
     // Create TLS client
     let mut client = SipClient::new_tls();
@@ -244,7 +262,11 @@ async fn test_tls_connect_to_sip_server() {
 
     // Create and send a test message
     let message_bytes = create_test_register_message(&server_host, server_port);
-    let send_result = timeout(Duration::from_secs(5), client.send_bytes(&message_bytes, &server_addr_for_tls)).await;
+    let send_result = timeout(
+        Duration::from_secs(5),
+        client.send_bytes(&message_bytes, &server_addr_for_tls),
+    )
+    .await;
 
     match send_result {
         Ok(Ok(_)) => {
@@ -282,7 +304,10 @@ async fn test_tls_certificate_validation() {
         .parse()
         .expect("Should parse server address");
 
-    println!("DEBUG:[SIP/TLS] Testing certificate validation for {}:{}", server_host, server_port);
+    println!(
+        "DEBUG:[SIP/TLS] Testing certificate validation for {}:{}",
+        server_host, server_port
+    );
 
     let mut client = SipClient::new_tls();
 
@@ -301,7 +326,10 @@ async fn test_tls_certificate_validation() {
         }
         Ok(Err(e)) => {
             // Certificate validation errors are expected for self-signed certs
-            println!("DEBUG:[SIP/TLS] Connection failed (may be certificate issue): {:?}", e);
+            println!(
+                "DEBUG:[SIP/TLS] Connection failed (may be certificate issue): {:?}",
+                e
+            );
             // Don't fail the test - this verifies certificate validation is working
         }
         Err(_) => {
@@ -309,4 +337,3 @@ async fn test_tls_certificate_validation() {
         }
     }
 }
-
