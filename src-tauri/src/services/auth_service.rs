@@ -85,7 +85,7 @@ impl AuthService {
         // Perform registration
         let mut client = self.client.lock().await;
         let result = register_with_challenge(
-            &mut *client,
+            &mut client,
             &credentials,
             &server_addr,
             &contact_uri,
@@ -366,6 +366,6 @@ mod tests {
         // Refresh should return false (not needed)
         let result = service.refresh_registration().await;
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), false);
+        assert!(!result.unwrap());
     }
 }
