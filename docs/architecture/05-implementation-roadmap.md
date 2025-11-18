@@ -329,10 +329,10 @@ Phase 8: Production Polish        █████░░░░░░░░░░�
   - Files: `/src-tauri/src/services/audio_service.rs`
   - Tests: Unit tests with mock audio engine
 
-- **AUD-5.4** (12h): Device selection and switching logic
+- **AUD-5.4** (12h): Device selection and switching logic ✅ **COMPLETED**
 
   - Files: `/src-tauri/src/services/audio_service.rs`
-  - Tests: Integration test - switch devices
+  - Tests: Integration test - switch devices (`tests/audio_device_integration_test.rs`)
 
 - **AUD-5.5** (6h): Tauri audio commands (`list_devices`, `set_device`)
 
