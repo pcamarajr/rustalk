@@ -2,7 +2,7 @@
 // Holds shared state accessible by Tauri commands
 
 use crate::infrastructure::sip::client::SipClient;
-use crate::services::AuthService;
+use crate::services::{AudioService, AuthService};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -10,16 +10,20 @@ use tokio::sync::Mutex;
 pub struct AppState {
     /// Authentication service for SIP account registration
     pub auth_service: Arc<Mutex<AuthService>>,
+    /// Audio service for device enumeration and selection
+    pub audio_service: Arc<Mutex<AudioService>>,
 }
 
 impl AppState {
-    /// Create a new AppState with an AuthService
+    /// Create a new AppState with an AuthService and AudioService
     ///
     /// # Arguments
     /// * `client` - SIP client instance for the AuthService
-    pub fn new(client: SipClient) -> Self {
+    /// * `audio_service` - Audio service instance
+    pub fn new(client: SipClient, audio_service: AudioService) -> Self {
         Self {
             auth_service: Arc::new(Mutex::new(AuthService::new(client))),
+            audio_service: Arc::new(Mutex::new(audio_service)),
         }
     }
 }

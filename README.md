@@ -46,7 +46,7 @@ Open-source white-label VoIP desktop application built with Rust and Tauri.
 - ✅ Registration status polling
 - ✅ Audio device enumeration API (AUD-5.3)
 - ✅ Device selection and switching logic (AUD-5.4)
-- 🔄 Tauri audio commands (AUD-5.5) - Next
+- ✅ Tauri audio commands (AUD-5.5)
 - 🔄 Frontend audio settings UI (AUD-5.6) - Next
 
 ## Quick Start

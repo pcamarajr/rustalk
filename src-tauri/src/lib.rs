@@ -15,9 +15,15 @@ pub mod commands;
 // Application state
 pub mod state;
 
-use commands::{get_registration_status, greet, register_account, unregister_account};
+use commands::{
+    get_input_device, get_output_device, get_registration_status, greet, list_input_devices,
+    list_output_devices, register_account, set_input_device, set_output_device, unregister_account,
+};
+use infrastructure::audio::create_audio_engine;
 use infrastructure::sip::client::SipClient;
+use services::AudioService;
 use state::AppState;
+use std::sync::Arc;
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -56,8 +62,19 @@ pub fn run() {
                 });
             });
 
+            eprintln!("DEBUG:[SETUP] Creating audio engine");
+            let audio_engine = create_audio_engine()
+                .map_err(|e| format!("Failed to create audio engine: {}", e))?;
+            let audio_engine: Arc<dyn crate::domain::traits::audio_engine::AudioEngine> =
+                Arc::from(audio_engine);
+            eprintln!("DEBUG:[SETUP] Audio engine created successfully");
+
+            eprintln!("DEBUG:[SETUP] Creating audio service");
+            let audio_service = AudioService::new(audio_engine);
+            eprintln!("DEBUG:[SETUP] Audio service created successfully");
+
             eprintln!("DEBUG:[SETUP] Creating AppState");
-            let app_state = AppState::new(client);
+            let app_state = AppState::new(client, audio_service);
 
             app.manage(app_state);
             eprintln!("DEBUG:[SETUP] Setup complete");
@@ -67,7 +84,13 @@ pub fn run() {
             greet,
             register_account,
             get_registration_status,
-            unregister_account
+            unregister_account,
+            list_input_devices,
+            list_output_devices,
+            get_input_device,
+            get_output_device,
+            set_input_device,
+            set_output_device
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
