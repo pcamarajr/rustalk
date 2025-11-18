@@ -69,11 +69,47 @@ npm run tauri:build
 
 - `npm run dev` - Start Vite dev server (frontend only)
 - `npm run build` - Build frontend for production
-- `npm run tauri:dev` - Run Tauri app in development mode
+- `npm run tauri:dev` - Run Tauri app in development mode (starts local SIP server automatically)
+- `npm run tauri:dev:stop` - Stop Tauri dev server and SIP server
 - `npm run tauri:build` - Build production app bundle
+- `npm run docker:start` - Start local Asterisk SIP server
+- `npm run docker:stop` - Stop local Asterisk SIP server
 - `npm run check` - Run TypeScript and Svelte checks
 - `npm run lint` - Run linters
 - `npm test` - Run tests (not yet implemented)
+
+## Local SIP Testing Environment
+
+Rustalk includes a local Asterisk SIP server for testing SIP integration. The server starts automatically with `npm run tauri:dev`.
+
+### Quick Start
+
+```bash
+# Start SIP server manually (if needed)
+npm run docker:start
+
+# Stop SIP server
+npm run docker:stop
+```
+
+### Features
+
+- **Automatic startup**: SIP server starts with `npm run tauri:dev`
+- **Pre-configured test user**: `testuser` / `testpass` for integration testing
+- **Full SIP support**: UDP, TCP, and TLS transports
+- **Persistent configuration**: Config files persist across restarts
+
+### Documentation
+
+For detailed setup instructions, troubleshooting, and configuration options, see:
+
+- **[SIP Testing Environment Guide](docs/development/sip-testing-environment.md)** - Complete guide to using the local SIP server
+
+### Prerequisites
+
+- **Docker Desktop** (or Docker Engine + Docker Compose)
+  - Download from: https://www.docker.com/products/docker-desktop
+  - Verify: `docker --version` and `docker-compose --version`
 
 ## Technology Stack
 

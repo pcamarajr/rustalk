@@ -12,3 +12,6 @@ vite.config.ts.timestamp-*
 # Rust/Tauri
 /src-tauri/target
 /src-tauri/Cargo.lock
+
+# Asterisk logs (config files are tracked)
+/asterisk-logs
