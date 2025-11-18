@@ -26,37 +26,39 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             eprintln!("DEBUG:[SETUP] Initializing Tokio runtime and SIP client");
-            
+
             // Initialize Tokio runtime (must be kept alive for the lifetime of the app)
             // Use Runtime::new() which creates a multi-threaded runtime
             let rt = tokio::runtime::Runtime::new()
                 .map_err(|e| format!("Failed to create tokio runtime: {}", e))?;
-            
+
             eprintln!("DEBUG:[SETUP] Tokio runtime created successfully");
-            
+
             // Get handle to the runtime before moving it
             let runtime_handle = rt.handle().clone();
-            
+
             eprintln!("DEBUG:[SETUP] Creating SIP client");
             // Initialize SIP client using the runtime
             let client = rt
                 .block_on(SipClient::new_udp_any())
                 .map_err(|e| format!("Failed to create SIP client: {}", e))?;
-            
+
             eprintln!("DEBUG:[SETUP] SIP client created, spawning runtime keeper thread");
-            
+
             // Spawn a background task to keep the runtime alive
             // The runtime will be dropped when this thread exits, so we keep it running
             std::thread::spawn(move || {
                 eprintln!("DEBUG:[RUNTIME_KEEPER] Runtime keeper thread started");
                 // Keep the runtime alive by running a long-lived future
                 rt.block_on(async {
-                    eprintln!("DEBUG:[RUNTIME_KEEPER] Runtime block_on started, keeping runtime alive");
+                    eprintln!(
+                        "DEBUG:[RUNTIME_KEEPER] Runtime block_on started, keeping runtime alive"
+                    );
                     // This future never completes, keeping the runtime alive
                     std::future::pending::<()>().await;
                 });
             });
-            
+
             eprintln!("DEBUG:[SETUP] Creating AppState");
             let app_state = AppState::new(client, runtime_handle);
 

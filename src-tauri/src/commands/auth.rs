@@ -23,7 +23,7 @@ fn resolve_server_address(server: &str, port: u16) -> Result<std::net::SocketAdd
     }
 
     let addr_string = format!("{}:{}", server, port);
-    let mut addrs: Vec<std::net::SocketAddr> = addr_string
+    let addrs: Vec<std::net::SocketAddr> = addr_string
         .to_socket_addrs()
         .map_err(|e| CommandError::ServiceError {
             message: format!("Failed to resolve server address '{}': {}", addr_string, e),
@@ -106,7 +106,10 @@ pub async fn register_account(
 
     eprintln!("DEBUG:[REGISTER_ACCOUNT] Starting registration with params: server={}, port={}, protocol={:?}, username={}, contact={}, expires={}", 
         server, port, transport_protocol, credentials.username, contact, expires_seconds);
-    eprintln!("DEBUG:[REGISTER_ACCOUNT] Resolved server address: {}", server_addr);
+    eprintln!(
+        "DEBUG:[REGISTER_ACCOUNT] Resolved server address: {}",
+        server_addr
+    );
 
     // Call auth service
     let mut auth_service = state.auth_service.lock().await;
