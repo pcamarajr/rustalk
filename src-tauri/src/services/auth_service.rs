@@ -184,7 +184,11 @@ impl AuthService {
                                     // Also save the default_account pointer
                                     let store_clone = Arc::clone(&store);
                                     let key_for_pointer = key_clone.clone();
-                                    Self::save_default_account_pointer(store_clone, key_for_pointer).await;
+                                    Self::save_default_account_pointer(
+                                        store_clone,
+                                        key_for_pointer,
+                                    )
+                                    .await;
                                 }
                                 Err(e) => {
                                     eprintln!("DEBUG:[AUTH_SERVICE/SAVE_CREDENTIALS] Failed to save credentials: {}", e);
@@ -259,10 +263,7 @@ impl AuthService {
     /// # Arguments
     /// * `store` - The credential store to save to
     /// * `credential_key` - The key of the credentials to point to
-    async fn save_default_account_pointer(
-        store: Arc<dyn CredentialStore>,
-        credential_key: String,
-    ) {
+    async fn save_default_account_pointer(store: Arc<dyn CredentialStore>, credential_key: String) {
         let default_account_key = "default_account".to_string();
         let default_account_creds = Credentials::new(
             "default".to_string(),
@@ -272,7 +273,10 @@ impl AuthService {
             "".to_string(), // Empty password for default account pointer
         );
 
-        match store.save(&default_account_key, &default_account_creds).await {
+        match store
+            .save(&default_account_key, &default_account_creds)
+            .await
+        {
             Ok(()) => {
                 eprintln!("DEBUG:[AUTH_SERVICE/SAVE_CREDENTIALS] Default account pointer saved successfully");
             }
@@ -394,7 +398,11 @@ impl AuthService {
                                     // Also save the default_account pointer
                                     let store_clone = Arc::clone(&store);
                                     let key_for_pointer = key_clone.clone();
-                                    Self::save_default_account_pointer(store_clone, key_for_pointer).await;
+                                    Self::save_default_account_pointer(
+                                        store_clone,
+                                        key_for_pointer,
+                                    )
+                                    .await;
                                 }
                                 Err(e) => {
                                     eprintln!("DEBUG:[AUTH_SERVICE/SAVE_CREDENTIALS] Failed to save credentials after refresh: {}", e);
