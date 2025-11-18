@@ -265,6 +265,10 @@ mod tests {
         let store = KeychainCredentialStore::new();
         let key1 = create_unique_key();
         let key2 = create_unique_key();
+
+        // Ensure keys are different
+        assert_ne!(key1, key2);
+
         let creds1 = Credentials::new(
             "sip1.example.com".to_string(),
             5060,
@@ -280,16 +284,28 @@ mod tests {
             "pass2".to_string(),
         );
 
-        // Save both accounts
+        // Save both accounts with a small delay to ensure proper isolation
         store.save(&key1, &creds1).await.unwrap();
+        tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
         store.save(&key2, &creds2).await.unwrap();
+        tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+
+        // Verify keys exist before loading
+        assert!(store.exists(&key1).await.unwrap());
+        assert!(store.exists(&key2).await.unwrap());
 
         // Load and verify both
         let loaded1 = store.load(&key1).await.unwrap().unwrap();
         let loaded2 = store.load(&key2).await.unwrap().unwrap();
 
-        assert_eq!(loaded1, creds1);
-        assert_eq!(loaded2, creds2);
+        assert_eq!(
+            loaded1, creds1,
+            "Failed to load correct credentials for key1"
+        );
+        assert_eq!(
+            loaded2, creds2,
+            "Failed to load correct credentials for key2"
+        );
 
         // Cleanup
         store.delete(&key1).await.unwrap();
