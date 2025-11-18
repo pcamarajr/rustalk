@@ -1,0 +1,32 @@
+services:
+  asterisk:
+    image: andrius/asterisk:latest
+    container_name: rustalk-asterisk
+    ports:
+      - "5060:5060/udp"  # SIP UDP
+      - "5060:5060/tcp"  # SIP TCP
+      # TLS disabled - requires certificates
+      # - "5061:5061/tcp"  # SIP TLS
+      # RTP port range: 30 ports (10000-10029) - minimal for local testing
+      # Each call uses 4 ports (2 RTP + 2 RTCP), so 30 ports = ~7 concurrent calls with margin
+      - "10000-10029:10000-10029/udp"  # RTP port range (30 ports for local testing)
+    volumes:
+      - ./asterisk-config:/etc/asterisk
+      - ./asterisk-logs:/var/log/asterisk
+    environment:
+      - ASTERISK_UID=1000
+      - ASTERISK_GID=1000
+    networks:
+      - rustalk-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "asterisk", "-rx", "core show version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  rustalk-network:
+    driver: bridge
+
