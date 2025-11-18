@@ -168,6 +168,7 @@ Phase 4 will implement:
 - ✅ Registration state machine - **Completed (SIP-1.4)**
 - ✅ Tauri `register_account` command - **Completed (SIP-1.5)**
 - ✅ Platform abstractions for security and audio - **AudioEngine trait completed (AUD-5.1)**
+- ✅ Audio device enumeration API - **AudioService completed (AUD-5.3)**
 - ✅ Input validation for all Tauri commands - **Completed**
 
 ## Project Goals
