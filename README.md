@@ -96,7 +96,7 @@ npm run docker:stop
 
 - **Automatic startup**: SIP server starts with `npm run tauri:dev`
 - **Pre-configured test user**: `testuser` / `testpass` for integration testing
-- **Full SIP support**: UDP, TCP, and TLS transports
+- **SIP support**: UDP and TCP transports (TLS disabled - requires certificate configuration)
 - **Persistent configuration**: Config files persist across restarts
 
 ### Documentation
