@@ -121,6 +121,16 @@ export const selectedRingtone = derived(
 
 export const ringtoneVolume = derived(ringtoneVolumeReadable, ($volume) => $volume);
 
+// Helper to get current store value
+function get<T>(subscribe: (run: (value: T) => void) => () => void): T {
+  let value: T;
+  const unsubscribe = subscribe((v) => {
+    value = v;
+  });
+  unsubscribe();
+  return value!;
+}
+
 // Store methods
 export const audioStore = {
   subscribe: subscribeInputDevices, // Default subscription to input devices
@@ -165,19 +175,9 @@ export const audioStore = {
       );
 
       // If no device is selected, select the first one (or default)
-      // Note: We check the store value directly via subscription
-      let currentInputId = "";
-      let currentOutputId = "";
-      
-      const unsubscribeInput = subscribeSelectedInputDeviceId((id) => {
-        currentInputId = id;
-      });
-      const unsubscribeOutput = subscribeSelectedOutputDeviceId((id) => {
-        currentOutputId = id;
-      });
-      
-      unsubscribeInput();
-      unsubscribeOutput();
+      // Note: We check the store value directly using get() helper
+      const currentInputId = get(subscribeSelectedInputDeviceId);
+      const currentOutputId = get(subscribeSelectedOutputDeviceId);
       
       if (!currentInputId && inputDevices.length > 0) {
         setSelectedInputDeviceId(inputDevices[0].id);
