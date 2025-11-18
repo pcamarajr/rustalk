@@ -2,7 +2,7 @@
 
 ## Overview
 
-This command performs an automated code review of a GitHub Pull Request and posts comments directly to the PR using GitHub CLI. The review analyzes code quality, framework compliance, architecture adherence, and security issues, then automatically posts inline comments for specific issues and general comments for category-level feedback.
+This command performs an automated code review of a GitHub Pull Request and posts comments directly to the PR using GitHub CLI. The review analyzes code quality, framework compliance, architecture adherence, and security issues, then automatically posts inline comments for specific issues and a review summary.
 
 **Usage**: `/review-pr #4` or `/review-pr` (will prompt for PR number)
 
@@ -82,7 +82,6 @@ Extract PR metadata for README validation:
 Analyze the PR diff and metadata against the review criteria below. For each issue found:
 
 1. **Line-specific issues** → Prepare inline comments with file path and line number
-2. **Category-level issues** → Prepare general PR comments grouped by category
 
 **IMPORTANT - README Validation**:
 
@@ -224,55 +223,9 @@ gh api repos/{owner}/{repo}/pulls/<PR_NUMBER>/reviews \
 - Escape newlines in comment bodies as `\n` when building JSON
 - Use backticks in markdown by escaping them as `\`` in JSON strings
 
-#### Step 6.3: Post Category-Level Comments (Optional)
-
-**CRITICAL**: Only post a category comment if that category has at least one issue (blocker, warning, or suggestion). If a category has no issues, do NOT post a separate category comment for it. Categories without issues can still be mentioned in the main review summary (Step 7).
-
-For each category that has issues, post one general comment using `gh pr review --comment`:
-
-```bash
-# Only post if category has issues (blockers, warnings, or suggestions)
-if [ $category_blockers -gt 0 ] || [ $category_warnings -gt 0 ] || [ $category_suggestions -gt 0 ]; then
-  gh pr review <PR_NUMBER> \
-    --comment \
-    --body "<category_review_text>"
-fi
-```
-
-**Comment Format for General Comments**:
-
-- Category name as header
-- Summary of issues found in that category
-- Count of blockers/warnings/suggestions
-- **CRITICAL**: Each issue MUST include the specific file(s)/component(s) that triggered it
-- Reference to relevant documentation
-
-**Example General Comment**:
-
-```
-## 🔍 Svelte 5 Framework Compliance Review
-
-Found **2 blockers** and **3 warnings** in this category:
-
-**Blockers:**
-- `src/lib/components/Button.svelte:42` - Legacy `$:` reactive statement detected (causes runtime errors in runes mode)
-- `src/lib/components/Dialog.svelte:15` - Legacy `on:click` syntax used (should be `onclick`)
-
-**Warnings:**
-- `src/lib/stores/callStore.ts:78` - Consider using `$derived` instead of `$state` for computed values
-- `src/lib/components/ContactList.svelte:123` - Missing cleanup in `$effect` for store subscriptions
-- `src/lib/components/Settings.svelte:45` - CSS scoping: prop-based classes may need `:global()`
-
-**Reference:** `docs/development/svelte-patterns.md`
-```
-
-**IMPORTANT**:
-- Never use generic references like "some components" or "various files". Always specify the exact file paths and line numbers (or at minimum, file paths) for each issue.
-- **Do NOT post category comments for categories with zero issues.** Categories without issues can be mentioned in the main review summary if needed.
-
 ### Step 7: Submit Final Review
 
-After posting all inline comments (Step 6.2) and category review comments (Step 6.3), automatically submit the final review with overall decision:
+After posting all inline comments (Step 6.2), automatically submit the final review with overall decision:
 
 **Decision Logic**:
 
@@ -282,7 +235,6 @@ After posting all inline comments (Step 6.2) and category review comments (Step 
 
 **Note**:
 - Inline comments are posted via `gh api` in Step 6.2 (creates a review with inline comments)
-- Category comments are posted using `gh pr review --comment` in Step 6.3
 - This final step submits the overall review decision (approve/request-changes/comment) with a summary, which will appear as the main review comment
 
 ```bash
@@ -324,11 +276,8 @@ fi
 
 **Review Details:**
 - Inline comments posted for line-specific issues
-- Category review comments posted above for categories with issues
 - Categories reviewed: [List all categories reviewed, including those with no issues if relevant]
 ```
-
-**Note**: The summary can mention all categories that were reviewed, including those with no issues. However, only categories with actual issues (blockers, warnings, or suggestions) should have their own dedicated category comment posted in Step 6.
 
 ---
 
@@ -626,13 +575,10 @@ When reviewing code, be critical about decisions that:
   - **CRITICAL**: `gh pr comment` does NOT support inline comments (no `--file` or `--line` flags exist)
   - All inline comments must be submitted in a single review API call
   - Requires the PR head commit SHA (`headRefOid`)
-- **Category comments** should be used for category-level feedback → Use `gh pr review --comment` (creates review comments)
-- **Category comments posting rule**: **ONLY** post category comments for categories that have at least one issue (blocker, warning, or suggestion). Categories with no issues should NOT get their own category comment, but can be mentioned in the main review summary.
 - **Final review submission** → Use `gh pr review` with `--approve`/`--request-changes`/`--comment` (overall decision)
 - **Review workflow**:
   1. Post inline comments via `gh api` (Step 6.2) - creates a review with inline comments
-  2. Post category comments via `gh pr review --comment` (Step 6.3) - adds general review comments
-  3. Submit final review decision via `gh pr review` (Step 7) - sets overall review status (approve/request-changes/comment)
+  2. Submit final review decision via `gh pr review` (Step 7) - sets overall review status (approve/request-changes/comment) with summary
 - **CRITICAL - Be specific**: **ALWAYS** include exact file paths and line numbers for every issue found. Never use generic references.
 - **File references format**: Use backticks for file paths, e.g., `` `src/lib/components/Button.svelte:42` ``
 - **Multiple files**: When multiple files have the same issue, list each one explicitly: `` `file1.svelte:10`, `file2.svelte:25`, `file3.svelte:8` ``
