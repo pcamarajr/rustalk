@@ -54,7 +54,7 @@ Open-source white-label VoIP desktop application built with Rust and Tauri.
 **Phase 4.1 (Next):**
 
 - ✅ Credential store integrated into AppState (SEC-6.7)
-- ⏳ Save credentials after successful registration (SEC-6.8)
+- ✅ Save credentials after successful registration (SEC-6.8)
 - ⏳ Load credentials on app startup and auto-login (SEC-6.9)
 - ⏳ E2E test suite (POL-7.3)
 
@@ -229,7 +229,7 @@ Phase 4 core features (SIP registration and audio device selection) are complete
 Phase 4.1 will implement:
 
 - ✅ **SEC-6.7**: Integrate credential store into AppState (completed)
-- **SEC-6.8**: Save credentials after successful registration
+- ✅ **SEC-6.8**: Save credentials after successful registration
 - **SEC-6.9**: Load credentials on app startup and auto-login
 - **POL-7.3**: Create E2E test for registration flow (Login → Register → Settings → Select audio)
 

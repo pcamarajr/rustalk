@@ -3,6 +3,7 @@
 use crate::domain::entities::credentials::Credentials;
 use crate::domain::entities::registration::{Registration, RegistrationState};
 use crate::domain::errors::SipError;
+use crate::domain::traits::CredentialStore;
 use crate::infrastructure::sip::client::SipClient;
 use crate::infrastructure::sip::registration::{register_with_challenge, RegistrationResult};
 use std::net::SocketAddr;
@@ -20,19 +21,23 @@ pub struct AuthService {
     server_addr: Option<SocketAddr>,
     /// Contact URI for registration
     contact_uri: Option<String>,
+    /// Credential store for secure credential persistence
+    credential_store: Arc<dyn CredentialStore>,
 }
 
 impl AuthService {
-    /// Create a new AuthService with a SIP client
+    /// Create a new AuthService with a SIP client and credential store
     ///
     /// # Arguments
     /// * `client` - SIP client for sending/receiving messages
-    pub fn new(client: SipClient) -> Self {
+    /// * `credential_store` - Credential store for secure credential persistence
+    pub fn new(client: SipClient, credential_store: Arc<dyn CredentialStore>) -> Self {
         Self {
             registration: Arc::new(RwLock::new(Registration::new())),
             client: Arc::new(tokio::sync::Mutex::new(client)),
             server_addr: None,
             contact_uri: None,
+            credential_store,
         }
     }
 
@@ -155,6 +160,38 @@ impl AuthService {
                         );
                         e
                     })?;
+
+                    // Save credentials to Keychain after successful registration
+                    if let Some(credentials) = reg.credentials() {
+                        let credential_key =
+                            format!("{}@{}", credentials.username, credentials.server);
+                        eprintln!(
+                            "DEBUG:[AUTH_SERVICE/SAVE_CREDENTIALS] Saving credentials with key: {}",
+                            credential_key
+                        );
+
+                        // Clone credentials and key for async operation
+                        let creds_clone = credentials.clone();
+                        let key_clone = credential_key.clone();
+                        let store = Arc::clone(&self.credential_store);
+
+                        // Save credentials (non-blocking, errors are logged but don't fail registration)
+                        tokio::spawn(async move {
+                            match store.save(&key_clone, &creds_clone).await {
+                                Ok(()) => {
+                                    eprintln!("DEBUG:[AUTH_SERVICE/SAVE_CREDENTIALS] Credentials saved successfully");
+                                }
+                                Err(e) => {
+                                    eprintln!("DEBUG:[AUTH_SERVICE/SAVE_CREDENTIALS] Failed to save credentials: {}", e);
+                                    // Note: We don't fail registration if credential save fails
+                                    // Registration succeeded, storage is secondary
+                                }
+                            }
+                        });
+                    } else {
+                        eprintln!("DEBUG:[AUTH_SERVICE/SAVE_CREDENTIALS] No credentials available to save");
+                    }
+
                     Ok(())
                 } else {
                     // Error response - transition to Failed
@@ -221,6 +258,7 @@ impl AuthService {
             &self.client,
             self.server_addr,
             self.contact_uri.as_ref(),
+            &self.credential_store,
         )
         .await
     }
@@ -234,6 +272,7 @@ impl AuthService {
         client: &Arc<tokio::sync::Mutex<SipClient>>,
         server_addr: Option<SocketAddr>,
         contact_uri: Option<&String>,
+        credential_store: &Arc<dyn CredentialStore>,
     ) -> Result<bool, SipError> {
         // Check if registration is expired
         let should_refresh = {
@@ -294,6 +333,38 @@ impl AuthService {
                 if reg_result.status_code == 200 {
                     // Success - transition to Registered
                     reg.set_registered(reg_result.expires)?;
+
+                    // Save credentials to Keychain after successful refresh
+                    if let Some(credentials) = reg.credentials() {
+                        let credential_key =
+                            format!("{}@{}", credentials.username, credentials.server);
+                        eprintln!(
+                            "DEBUG:[AUTH_SERVICE/SAVE_CREDENTIALS] Saving credentials after refresh with key: {}",
+                            credential_key
+                        );
+
+                        // Clone credentials and key for async operation
+                        let creds_clone = credentials.clone();
+                        let key_clone = credential_key.clone();
+                        let store = Arc::clone(credential_store);
+
+                        // Save credentials (non-blocking, errors are logged but don't fail registration)
+                        tokio::spawn(async move {
+                            match store.save(&key_clone, &creds_clone).await {
+                                Ok(()) => {
+                                    eprintln!("DEBUG:[AUTH_SERVICE/SAVE_CREDENTIALS] Credentials saved successfully after refresh");
+                                }
+                                Err(e) => {
+                                    eprintln!("DEBUG:[AUTH_SERVICE/SAVE_CREDENTIALS] Failed to save credentials after refresh: {}", e);
+                                    // Note: We don't fail registration if credential save fails
+                                    // Registration succeeded, storage is secondary
+                                }
+                            }
+                        });
+                    } else {
+                        eprintln!("DEBUG:[AUTH_SERVICE/SAVE_CREDENTIALS] No credentials available to save after refresh");
+                    }
+
                     Ok(true)
                 } else {
                     // Error response - transition to Failed
@@ -332,6 +403,7 @@ impl AuthService {
         let client = Arc::clone(&self.client);
         let server_addr = self.server_addr;
         let contact_uri = self.contact_uri.clone();
+        let credential_store = Arc::clone(&self.credential_store);
 
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(Duration::from_secs(check_interval_secs));
@@ -350,6 +422,7 @@ impl AuthService {
                     &client,
                     server_addr,
                     contact_uri.as_ref(),
+                    &credential_store,
                 )
                 .await
                 {
@@ -364,6 +437,12 @@ impl AuthService {
 mod tests {
     use super::*;
     use crate::domain::entities::credentials::{Credentials, TransportProtocol};
+    use crate::domain::errors::CredentialStoreError;
+    use crate::domain::traits::CredentialStore;
+    use async_trait::async_trait;
+    use std::collections::HashMap;
+    use std::sync::Arc;
+    use tokio::sync::Mutex;
 
     fn create_test_credentials() -> Credentials {
         Credentials::new(
@@ -375,10 +454,57 @@ mod tests {
         )
     }
 
+    // Mock credential store for testing
+    struct MockCredentialStore {
+        storage: Arc<Mutex<HashMap<String, Credentials>>>,
+    }
+
+    impl MockCredentialStore {
+        fn new() -> Self {
+            Self {
+                storage: Arc::new(Mutex::new(HashMap::new())),
+            }
+        }
+    }
+
+    #[async_trait]
+    impl CredentialStore for MockCredentialStore {
+        async fn save(
+            &self,
+            key: &str,
+            credentials: &Credentials,
+        ) -> Result<(), CredentialStoreError> {
+            let mut storage = self.storage.lock().await;
+            storage.insert(key.to_string(), credentials.clone());
+            Ok(())
+        }
+
+        async fn load(&self, key: &str) -> Result<Option<Credentials>, CredentialStoreError> {
+            let storage = self.storage.lock().await;
+            Ok(storage.get(key).cloned())
+        }
+
+        async fn delete(&self, key: &str) -> Result<(), CredentialStoreError> {
+            let mut storage = self.storage.lock().await;
+            storage.remove(key);
+            Ok(())
+        }
+
+        async fn exists(&self, key: &str) -> Result<bool, CredentialStoreError> {
+            let storage = self.storage.lock().await;
+            Ok(storage.contains_key(key))
+        }
+    }
+
+    fn create_mock_credential_store() -> Arc<dyn CredentialStore> {
+        Arc::new(MockCredentialStore::new())
+    }
+
     #[tokio::test]
     async fn test_new_auth_service() {
         let client = SipClient::new_udp_any().await.unwrap();
-        let service = AuthService::new(client);
+        let credential_store = create_mock_credential_store();
+        let service = AuthService::new(client, credential_store);
         let state = service.get_registration_state().await;
         assert!(matches!(state, RegistrationState::Unregistered));
     }
@@ -386,7 +512,8 @@ mod tests {
     #[tokio::test]
     async fn test_get_registration_state() {
         let client = SipClient::new_udp_any().await.unwrap();
-        let service = AuthService::new(client);
+        let credential_store = create_mock_credential_store();
+        let service = AuthService::new(client, credential_store);
         let state = service.get_registration_state().await;
         assert!(matches!(state, RegistrationState::Unregistered));
     }
@@ -394,7 +521,8 @@ mod tests {
     #[tokio::test]
     async fn test_unregister() {
         let client = SipClient::new_udp_any().await.unwrap();
-        let service = AuthService::new(client);
+        let credential_store = create_mock_credential_store();
+        let service = AuthService::new(client, credential_store);
         assert!(service.unregister().await.is_ok());
         let state = service.get_registration_state().await;
         assert!(matches!(state, RegistrationState::Unregistered));
@@ -403,7 +531,8 @@ mod tests {
     #[tokio::test]
     async fn test_handle_registration_result_success() {
         let client = SipClient::new_udp_any().await.unwrap();
-        let service = AuthService::new(client);
+        let credential_store = create_mock_credential_store();
+        let service = AuthService::new(client, credential_store);
 
         // First transition to Registering
         {
@@ -422,12 +551,16 @@ mod tests {
         assert!(service.handle_registration_result(Ok(result)).await.is_ok());
         let state = service.get_registration_state().await;
         assert!(matches!(state, RegistrationState::Registered));
+
+        // Give time for async credential save to complete
+        tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
     }
 
     #[tokio::test]
     async fn test_handle_registration_result_failure() {
         let client = SipClient::new_udp_any().await.unwrap();
-        let service = AuthService::new(client);
+        let credential_store = create_mock_credential_store();
+        let service = AuthService::new(client, credential_store);
 
         // First transition to Registering
         {
@@ -454,7 +587,8 @@ mod tests {
     #[tokio::test]
     async fn test_handle_registration_result_error() {
         let client = SipClient::new_udp_any().await.unwrap();
-        let service = AuthService::new(client);
+        let credential_store = create_mock_credential_store();
+        let service = AuthService::new(client, credential_store);
 
         // First transition to Registering
         {
@@ -479,7 +613,8 @@ mod tests {
     #[tokio::test]
     async fn test_refresh_registration_not_expired() {
         let client = SipClient::new_udp_any().await.unwrap();
-        let mut service = AuthService::new(client);
+        let credential_store = create_mock_credential_store();
+        let mut service = AuthService::new(client, credential_store);
 
         // Set to Registered state
         {
@@ -493,5 +628,49 @@ mod tests {
         let result = service.refresh_registration().await;
         assert!(result.is_ok());
         assert!(!result.unwrap());
+    }
+
+    #[tokio::test]
+    async fn test_save_credentials_after_successful_registration() {
+        let client = SipClient::new_udp_any().await.unwrap();
+        let mock_store = MockCredentialStore::new();
+        let credential_store: Arc<dyn CredentialStore> = Arc::new(mock_store);
+        let credential_store_clone = Arc::clone(&credential_store);
+        let service = AuthService::new(client, credential_store);
+
+        let creds = create_test_credentials();
+        let expected_key = format!("{}@{}", creds.username, creds.server);
+
+        // First transition to Registering
+        {
+            let mut reg = service.registration.write().await;
+            reg.start_registering(creds.clone()).unwrap();
+        }
+
+        // Handle successful result
+        let result = RegistrationResult {
+            status_code: 200,
+            expires: Some(3600),
+            message: "OK".to_string(),
+        };
+
+        assert!(service.handle_registration_result(Ok(result)).await.is_ok());
+        let state = service.get_registration_state().await;
+        assert!(matches!(state, RegistrationState::Registered));
+
+        // Give time for async credential save to complete
+        tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
+
+        // Verify credentials were saved
+        let saved_creds = credential_store_clone.load(&expected_key).await.unwrap();
+        assert!(
+            saved_creds.is_some(),
+            "Credentials should be saved after successful registration"
+        );
+        assert_eq!(
+            saved_creds.unwrap(),
+            creds,
+            "Saved credentials should match original"
+        );
     }
 }
