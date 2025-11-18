@@ -8,7 +8,7 @@ The local SIP testing environment uses Docker Compose to run an Asterisk server 
 
 - Starts automatically with `npm run tauri:dev`
 - Persists configuration across restarts
-- Supports UDP, TCP, and TLS SIP transports
+- Supports UDP and TCP SIP transports (TLS disabled - requires certificate configuration)
 - Includes a pre-configured test user for integration testing
 
 ## Prerequisites
@@ -69,8 +69,7 @@ The Asterisk server exposes the following ports:
 
 - **SIP UDP**: `localhost:5060`
 - **SIP TCP**: `localhost:5060`
-- **SIP TLS**: `localhost:5061`
-- **RTP**: `10000-20000/udp` (for media streams)
+- **RTP**: `10000-10029/udp` (30 ports for local testing)
 
 ### Environment Variables
 
@@ -275,7 +274,7 @@ cd src-tauri && cargo test
 **Problem**: Audio doesn't work in calls.
 
 **Solutions**:
-1. Verify RTP port range is open: `10000-20000/udp`
+1. Verify RTP port range is open: `10000-10029/udp`
 2. Check firewall settings
 3. Verify RTP configuration in `asterisk-config/rtp.conf`
 4. Check Asterisk logs for RTP errors
@@ -322,7 +321,7 @@ The Asterisk container runs on a bridge network (`rustalk-network`) for isolatio
 
 ---
 
-**Last Updated**: 2025-01-XX  
+**Last Updated**: 2025-11-18  
 **Asterisk Version**: Latest stable (via `andrius/asterisk:latest`)  
 **Docker Compose Version**: 3.8
 
