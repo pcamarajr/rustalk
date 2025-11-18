@@ -6,7 +6,8 @@ Open-source white-label VoIP desktop application built with Rust and Tauri.
 
 ## Project Status
 
-**Phase 4 In Progress** 🔄 - Registration + Audio (SIP-1.6 Complete ✅)
+**Phase 4 Partially Complete** ⚠️ - Registration + Audio (manually verified ✅)  
+**Phase 4.1 Next** 🔄 - Credential Persistence + E2E Testing
 
 ### Completed Features
 
@@ -38,7 +39,7 @@ Open-source white-label VoIP desktop application built with Rust and Tauri.
 - ✅ Input validation for Tauri commands
 - ✅ Integration tests for SIP transport (tested with Asterisk server)
 
-**Phase 4 (In Progress):**
+**Phase 4 (Partially Complete):**
 
 - ✅ SIP registration backend (SIP-1.3, SIP-1.4, SIP-1.5)
 - ✅ Frontend registration UI (SIP-1.6) - Login page with form validation
@@ -48,6 +49,12 @@ Open-source white-label VoIP desktop application built with Rust and Tauri.
 - ✅ Device selection and switching logic (AUD-5.4)
 - ✅ Tauri audio commands (AUD-5.5)
 - ✅ Frontend audio settings UI (AUD-5.6)
+- ✅ Manual verification: Registration and audio devices working
+
+**Phase 4.1 (Next):**
+
+- ⏳ Credential persistence integration (SEC-6.7, SEC-6.8, SEC-6.9)
+- ⏳ E2E test suite (POL-7.3)
 
 ## Quick Start
 
@@ -134,7 +141,7 @@ For detailed setup instructions, troubleshooting, and configuration options, see
 See detailed architecture documentation in [`docs/architecture/`](docs/architecture/):
 
 - [00-overview.md](docs/architecture/00-overview.md) - Architecture overview
-- [05-implementation-roadmap.md](docs/architecture/05-implementation-roadmap.md) - Development roadmap (~12 weeks, 9 phases)
+- [05-implementation-roadmap.md](docs/architecture/05-implementation-roadmap.md) - Development roadmap (~12.4 weeks, 9 phases + Phase 4.1)
 - [06-technology-decisions.md](docs/architecture/06-technology-decisions.md) - Technology choices and rationale
 - [07-design-system.md](docs/architecture/07-design-system.md) - Design system guidelines
 - [08-ui-design.md](docs/architecture/08-ui-design.md) - UI specifications
@@ -146,18 +153,19 @@ Phase 0: Dev Container            ✅ (Skipped - using local environment)
 Phase 1: Hello World              ✅ Complete (~0.5 weeks)
 Phase 2: UI with Mocks            ✅ Complete (~1.5 weeks)
 Phase 3: Core Infrastructure      ✅ Complete (~2.4 weeks)
-Phase 4: Registration + Audio     🔄 Next (~1.7 weeks)
+Phase 4: Registration + Audio     ⚠️ Partially Complete (~1.7 weeks)
+Phase 4.1: Credentials + E2E      🔄 Next (~0.4 weeks)
 Phase 5: Call Flows               📋 Planned (~3.3 weeks)
 Phase 6: Call Controls            📋 Planned (~0.6 weeks)
 Phase 7: Windows Platform         📋 Planned (~1.3 weeks)
 Phase 8: Production Polish        📋 Planned (~1.3 weeks)
 ```
 
-**Total Estimated Duration**: ~12 weeks for MVP
+**Total Estimated Duration**: ~12.4 weeks for MVP
 
-## Current Phase: Phase 4 In Progress 🔄
+## Current Phase: Phase 4.1 Next 🔄
 
-Phase 3 core infrastructure is complete. Phase 4 is in progress with SIP registration UI completed.
+Phase 4 core features (SIP registration and audio device selection) are complete and manually verified. Phase 4.1 will add credential persistence and E2E testing.
 
 ### What Works
 
@@ -194,29 +202,36 @@ Phase 3 core infrastructure is complete. Phase 4 is in progress with SIP registr
 - Platform abstractions for cross-platform support
 - Integration tests validated with real Asterisk server
 
+**SIP Registration & Audio (Phase 4):**
+
+- SIP registration with digest authentication (401 challenge/response)
+- Registration state machine (Unregistered → Registering → Registered)
+- Frontend login UI with form validation
+- Real SIP account registration via Tauri commands
+- Audio device enumeration and selection
+- Audio device switching in settings UI
+- Manual verification: Registration and audio devices working with test SIP server
+
 ### Demo the UI
 
 1. Navigate between screens using the sidebar
-2. Enter a phone number in the dialer
-3. Click "Call" to trigger a mock call flow
-4. View call state transitions in the active call screen
-5. Browse mock contacts and call history
-6. Explore settings and audio device selection (UI only, no real audio yet)
+2. **Register a SIP account** via the login page (use test SIP server credentials)
+3. **Select audio devices** in Settings → Audio (microphone and speaker)
+4. Enter a phone number in the dialer
+5. Click "Call" to trigger a mock call flow
+6. View call state transitions in the active call screen
+7. Browse mock contacts and call history
 
-## Next Steps: Phase 4
+## Next Steps: Phase 4.1
 
-Phase 4 will implement:
+Phase 4.1 will implement:
 
-- ✅ Secure credential storage (macOS Keychain integration) - **Completed**
-- ✅ SIP message parsing (rsip integration) - **Completed (SIP-1.1)**
-- Audio device enumeration (macOS CoreAudio via `cpal`)
-- ✅ SIP transport layer with TLS support - **Completed (SIP-1.2)**
-- ✅ REGISTER message handling with 401 challenge - **Completed (SIP-1.3)**
-- ✅ Registration state machine - **Completed (SIP-1.4)**
-- ✅ Tauri `register_account` command - **Completed (SIP-1.5)**
-- ✅ Platform abstractions for security and audio - **AudioEngine trait completed (AUD-5.1)**
-- ✅ Audio device enumeration API - **AudioService completed (AUD-5.3)**
-- ✅ Input validation for all Tauri commands - **Completed**
+- **SEC-6.7**: Integrate credential store into AppState
+- **SEC-6.8**: Save credentials after successful registration
+- **SEC-6.9**: Load credentials on app startup and auto-login
+- **POL-7.3**: Create E2E test for registration flow (Login → Register → Settings → Select audio)
+
+This will complete Phase 4 by adding credential persistence (so credentials survive app restarts) and comprehensive E2E testing.
 
 ## Project Goals
 
@@ -234,7 +249,7 @@ Apache 2.0 - See [LICENSE](LICENSE)
 
 ## Contributing
 
-This project is under active development following a structured 12-week roadmap. Please check the [implementation roadmap](docs/architecture/05-implementation-roadmap.md) for current status and planned features.
+This project is under active development following a structured 12.4-week roadmap. Please check the [implementation roadmap](docs/architecture/05-implementation-roadmap.md) for current status and planned features.
 
 ## IDE Setup
 

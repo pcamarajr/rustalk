@@ -1,6 +1,6 @@
 # Implementation Roadmap - RUSTALK MVP
 
-**Total Duration:** ~12 weeks (474 hours)
+**Total Duration:** ~12.4 weeks (490 hours)
 **Approach:** 9-phase incremental delivery with testable deliverables
 **Methodology:** Incremental, human-in-the-loop development
 **Platform Focus:** macOS first, then Windows
@@ -12,13 +12,14 @@ Phase 0: Dev Container            ███░░░░░░░░░░░░�
 Phase 1: Hello World              ███░░░░░░░░░░░░░  0.5 weeks (20h) COMPLETED
 Phase 2: UI with Mocks            ██████░░░░░░░░░░  1.5 weeks (60h) COMPLETED
 Phase 3: Core Infrastructure      ████████░░░░░░░░  2.4 weeks (94h) COMPLETED
-Phase 4: Registration + Audio     ████░░░░░░░░░░░░  1.7 weeks (66h)
+Phase 4: Registration + Audio     ████░░░░░░░░░░░░  1.7 weeks (66h) PARTIALLY COMPLETED
+Phase 4.1: Credentials + E2E       ██░░░░░░░░░░░░░░  0.4 weeks (16h)
 Phase 5: Call Flows               ████████░░░░░░░░  3.3 weeks (130h)
 Phase 6: Call Controls            ██░░░░░░░░░░░░░░  0.6 weeks (24h)
 Phase 7: Windows Platform         ████░░░░░░░░░░░░  1.3 weeks (32h)
 Phase 8: Production Polish        █████░░░░░░░░░░░  1.3 weeks (28h)
                                   ═══════════════════
-                                  Total: ~12 weeks (474h)
+                                  Total: ~12.4 weeks (490h)
 ```
 
 ## Phase 0: Development Environment Setup (20 hours, ~0.5 weeks)
@@ -288,7 +289,7 @@ Phase 8: Production Polish        █████░░░░░░░░░░�
 
 ---
 
-## Phase 4: SIP Registration + Audio Selection (66 hours, ~1.7 weeks)
+## Phase 4: SIP Registration + Audio Selection (66 hours, ~1.7 weeks) - PARTIALLY COMPLETED
 
 **Goal:** Complete SIP registration flow and audio device management UI
 
@@ -349,8 +350,8 @@ Phase 8: Production Polish        █████░░░░░░░░░░�
 
 - ✅ Working SIP registration with real SIP server
 - ✅ Audio device selection in settings UI
-- ✅ Persistent credential storage
-- ✅ E2E test for registration flow
+- ⏳ Persistent credential storage (moved to Phase 4.1)
+- ⏳ E2E test for registration flow (moved to Phase 4.1)
 
 ### Milestone
 
@@ -358,10 +359,71 @@ Phase 8: Production Polish        █████░░░░░░░░░░�
 
 ### Completion Criteria
 
-- [ ] Successful registration with test SIP server
-- [ ] Audio devices appear in UI dropdowns
-- [ ] Credentials persist across app restarts
+- [x] Successful registration with test SIP server (manually verified)
+- [x] Audio devices appear in UI dropdowns (manually verified)
+- [ ] Credentials persist across app restarts (moved to Phase 4.1)
+- [ ] E2E test passes: Login → Register → Settings → Select audio (moved to Phase 4.1)
+
+---
+
+## Phase 4.1: Credential Persistence + E2E Testing (16 hours, ~0.4 weeks)
+
+**Goal:** Complete credential persistence integration and create E2E test suite
+
+### Tasks
+
+#### Credential Persistence Integration (10 hours)
+
+- **SEC-6.7** (4h): Integrate credential store into AppState
+
+  - Files: `src-tauri/src/state.rs`
+  - Add `credential_store: Arc<dyn CredentialStore>` field to AppState
+  - Initialize KeychainCredentialStore in `lib.rs` setup
+  - Update AppState::new() to accept credential store
+
+- **SEC-6.8** (3h): Save credentials after successful registration
+
+  - Files: `src-tauri/src/services/auth_service.rs`
+  - Files: `src-tauri/src/commands/auth.rs`
+  - Save credentials to Keychain after successful registration (status 200)
+  - Use username@server as the key for credential storage
+  - Handle save errors gracefully (log but don't fail registration)
+
+- **SEC-6.9** (3h): Load credentials on app startup and auto-login
+  - Files: `src-tauri/src/lib.rs` (setup function)
+  - Files: `src-tauri/src/commands/auth.rs` (new `load_saved_credentials` command)
+  - Files: `src/lib/stores/authStore.ts` (auto-login logic)
+  - On app startup, check for saved credentials
+  - If found, automatically attempt registration
+  - Update frontend to handle auto-login state
+
+#### E2E Test Suite (6 hours)
+
+- **POL-7.3** (6h): Create E2E test for registration flow
+  - Files: `tests/e2e/registration_flow_test.rs` (or similar)
+  - Test: Login → Register → Settings → Select audio
+  - Use mock SIP server or test fixtures
+  - Verify credential persistence across test steps
+  - Verify audio device selection persists
+
+### Deliverables
+
+- ✅ Credentials persist in Keychain after registration
+- ✅ Auto-login on app startup if credentials exist
+- ✅ E2E test suite for registration and audio selection flow
+- ✅ All Phase 4 completion criteria met
+
+### Milestone
+
+**Demo:** Register account → Close app → Reopen app → Verify auto-login → Select audio devices → Run E2E test suite
+
+### Completion Criteria
+
+- [ ] Credentials saved to Keychain after successful registration
+- [ ] Credentials loaded on app startup
+- [ ] Auto-login works when credentials exist
 - [ ] E2E test passes: Login → Register → Settings → Select audio
+- [ ] Manual verification: Close and reopen app, verify credentials persist
 
 ---
 
@@ -685,7 +747,7 @@ Week 0.5   [███ Phase 0: Dev Container ███]
 Week 1     [███ Phase 1: Hello World ███]
 Week 2-3   [██████ Phase 2: UI with Mocks ██████]
 Week 4-5   [█████████ Phase 3: Core Infrastructure ██████████]
-Week 6-7   [██████ Phase 4: Registration + Audio ███████]
+Week 6-7   [██████ Phase 4: Registration + Audio ███████] [██ Phase 4.1: Credentials + E2E ██]
 Week 8-10  [████████████ Phase 5: Call Flows ██████████████]
 Week 10-11 [██ Phase 6: Call Controls ██] [███ Phase 7: Windows ███]
 Week 11-12 [█████ Phase 8: Production Polish █████]
@@ -693,17 +755,18 @@ Week 11-12 [█████ Phase 8: Production Polish █████]
 
 ### Milestone Timeline
 
-| Week | Milestone        | Demo                             |
-| ---- | ---------------- | -------------------------------- |
-| 0.5  | Phase 0 Complete | Dev container working            |
-| 1    | Phase 1 Complete | Hello World app running          |
-| 3    | Phase 2 Complete | Full UI with mock actions        |
-| 5    | Phase 3 Complete | Keychain + Audio devices + TLS   |
-| 7    | Phase 4 Complete | Register account + Select audio  |
-| 10   | Phase 5 Complete | Outbound + Inbound calls working |
-| 10.5 | Phase 6 Complete | Call controls (hangup, mute)     |
-| 11.5 | Phase 7 Complete | Windows platform working         |
-| 12   | **MVP Complete** | **Full production-ready demo**   |
+| Week | Milestone          | Demo                             |
+| ---- | ------------------ | -------------------------------- |
+| 0.5  | Phase 0 Complete   | Dev container working            |
+| 1    | Phase 1 Complete   | Hello World app running          |
+| 3    | Phase 2 Complete   | Full UI with mock actions        |
+| 5    | Phase 3 Complete   | Keychain + Audio devices + TLS   |
+| 7    | Phase 4 Complete   | Register account + Select audio  |
+| 7.4  | Phase 4.1 Complete | Credentials persist + E2E tests  |
+| 10   | Phase 5 Complete   | Outbound + Inbound calls working |
+| 10.5 | Phase 6 Complete   | Call controls (hangup, mute)     |
+| 11.5 | Phase 7 Complete   | Windows platform working         |
+| 12   | **MVP Complete**   | **Full production-ready demo**   |
 
 ---
 
@@ -761,7 +824,8 @@ Each phase produces a testable, demonstrable deliverable:
 - **Phase 1:** Hello World app with frontend-backend communication
 - **Phase 2:** Complete UI with mock actions (no real SIP/audio)
 - **Phase 3:** Core infrastructure (security, audio enumeration, SIP transport)
-- **Phase 4:** SIP registration and audio selection UI
+- **Phase 4:** SIP registration and audio selection UI (partially complete)
+- **Phase 4.1:** Credential persistence and E2E testing
 - **Phase 5:** Full call flows with real SIP and audio
 - **Phase 6:** Call controls (hangup, mute) for active calls
 - **Phase 7:** Windows platform support with feature parity
@@ -774,10 +838,11 @@ Clear checkpoints for validation before proceeding:
 1. **Phase 0-2:** Foundation and UI - Validate design and user experience
 2. **Phase 3:** Core infrastructure - Validate architecture decisions
 3. **Phase 4:** Registration - Validate SIP connectivity
-4. **Phase 5:** Call flows - Validate end-to-end calling
-5. **Phase 6:** Call controls - Validate interactive call management
-6. **Phase 7:** Windows - Validate cross-platform support
-7. **Phase 8:** Polish - Final validation before production MVP
+4. **Phase 4.1:** Credential persistence - Validate secure storage and auto-login
+5. **Phase 5:** Call flows - Validate end-to-end calling
+6. **Phase 6:** Call controls - Validate interactive call management
+7. **Phase 7:** Windows - Validate cross-platform support
+8. **Phase 8:** Polish - Final validation before production MVP
 
 ### Test-Driven Development (TDD)
 
