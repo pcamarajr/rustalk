@@ -156,9 +156,28 @@ impl AuthService {
     /// # Returns
     /// `Ok(true)` if re-registration was attempted, `Ok(false)` if not needed, `Err(SipError)` if re-registration failed
     pub async fn refresh_registration(&mut self) -> Result<bool, SipError> {
+        Self::refresh_registration_internal(
+            &self.registration,
+            &self.client,
+            self.server_addr,
+            self.contact_uri.as_ref(),
+        )
+        .await
+    }
+
+    /// Internal helper to refresh registration without requiring &mut self
+    ///
+    /// This allows the refresh logic to be called from background tasks without
+    /// creating unnecessary service instances.
+    async fn refresh_registration_internal(
+        registration: &Arc<RwLock<Registration>>,
+        client: &Arc<tokio::sync::Mutex<SipClient>>,
+        server_addr: Option<SocketAddr>,
+        contact_uri: Option<&String>,
+    ) -> Result<bool, SipError> {
         // Check if registration is expired
         let should_refresh = {
-            let mut reg = self.registration.write().await;
+            let mut reg = registration.write().await;
             reg.check_expiration();
             matches!(reg.state(), RegistrationState::Expired)
         };
@@ -169,27 +188,70 @@ impl AuthService {
 
         // Get credentials and server info
         let (credentials, server_addr, contact_uri) = {
-            let reg = self.registration.read().await;
+            let reg = registration.read().await;
             let creds = reg.credentials().ok_or_else(|| SipError::InvalidMessage {
                 reason: "No credentials available for refresh".to_string(),
             })?;
-            let server = self.server_addr.ok_or_else(|| SipError::InvalidMessage {
+            let server = server_addr.ok_or_else(|| SipError::InvalidMessage {
                 reason: "No server address available for refresh".to_string(),
             })?;
-            let contact = self
-                .contact_uri
-                .clone()
+            let contact = contact_uri
                 .ok_or_else(|| SipError::InvalidMessage {
                     reason: "No contact URI available for refresh".to_string(),
-                })?;
+                })?
+                .clone();
             (creds.clone(), server, contact)
         };
 
-        // Attempt re-registration
-        self.register(credentials, server_addr, contact_uri, 3600)
-            .await?;
+        // Validate credentials
+        credentials
+            .validate()
+            .map_err(|e| SipError::InvalidMessage {
+                reason: format!("Invalid credentials: {}", e),
+            })?;
 
-        Ok(true)
+        // Transition to Registering state
+        {
+            let mut reg = registration.write().await;
+            reg.start_registering(credentials.clone())?;
+        }
+
+        // Perform registration
+        let mut client_guard = client.lock().await;
+        let result = register_with_challenge(
+            &mut client_guard,
+            &credentials,
+            &server_addr,
+            &contact_uri,
+            3600,
+        )
+        .await;
+
+        // Handle registration result
+        let mut reg = registration.write().await;
+        match result {
+            Ok(reg_result) => {
+                if reg_result.status_code == 200 {
+                    // Success - transition to Registered
+                    reg.set_registered(reg_result.expires)?;
+                    Ok(true)
+                } else {
+                    // Error response - transition to Failed
+                    let error_msg = format!(
+                        "Registration failed: {} {}",
+                        reg_result.status_code, reg_result.message
+                    );
+                    reg.set_failed(error_msg.clone())?;
+                    Err(SipError::InvalidMessage { reason: error_msg })
+                }
+            }
+            Err(e) => {
+                // Registration error - transition to Failed
+                let error_msg = format!("Registration error: {}", e);
+                reg.set_failed(error_msg.clone())?;
+                Err(SipError::InvalidMessage { reason: error_msg })
+            }
+        }
     }
 
     /// Start background task to monitor registration expiration
@@ -207,12 +269,9 @@ impl AuthService {
         check_interval_secs: u64,
     ) -> tokio::task::JoinHandle<()> {
         let registration = Arc::clone(&self.registration);
-        let mut service = AuthService {
-            registration: Arc::clone(&self.registration),
-            client: Arc::clone(&self.client),
-            server_addr: self.server_addr,
-            contact_uri: self.contact_uri.clone(),
-        };
+        let client = Arc::clone(&self.client);
+        let server_addr = self.server_addr;
+        let contact_uri = self.contact_uri.clone();
 
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(Duration::from_secs(check_interval_secs));
@@ -226,7 +285,14 @@ impl AuthService {
                 }
 
                 // Attempt refresh if expired
-                if let Err(e) = service.refresh_registration().await {
+                if let Err(e) = AuthService::refresh_registration_internal(
+                    &registration,
+                    &client,
+                    server_addr,
+                    contact_uri.as_ref(),
+                )
+                .await
+                {
                     eprintln!("DEBUG:[AUTH_SERVICE/EXPIRATION_MONITOR] Failed to refresh registration: {}", e);
                 }
             }
