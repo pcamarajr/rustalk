@@ -1,6 +1,7 @@
 // Application state for Tauri
 // Holds shared state accessible by Tauri commands
 
+use crate::domain::traits::CredentialStore;
 use crate::infrastructure::sip::client::SipClient;
 use crate::services::{AudioService, AuthService};
 use std::sync::Arc;
@@ -12,18 +13,26 @@ pub struct AppState {
     pub auth_service: Arc<Mutex<AuthService>>,
     /// Audio service for device enumeration and selection
     pub audio_service: Arc<Mutex<AudioService>>,
+    /// Credential store for secure credential persistence
+    pub credential_store: Arc<dyn CredentialStore>,
 }
 
 impl AppState {
-    /// Create a new AppState with an AuthService and AudioService
+    /// Create a new AppState with an AuthService, AudioService, and CredentialStore
     ///
     /// # Arguments
     /// * `client` - SIP client instance for the AuthService
     /// * `audio_service` - Audio service instance
-    pub fn new(client: SipClient, audio_service: AudioService) -> Self {
+    /// * `credential_store` - Credential store instance for secure credential persistence
+    pub fn new(
+        client: SipClient,
+        audio_service: AudioService,
+        credential_store: Arc<dyn CredentialStore>,
+    ) -> Self {
         Self {
             auth_service: Arc::new(Mutex::new(AuthService::new(client))),
             audio_service: Arc::new(Mutex::new(audio_service)),
+            credential_store,
         }
     }
 }
