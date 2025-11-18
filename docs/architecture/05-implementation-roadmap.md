@@ -324,7 +324,7 @@ Phase 8: Production Polish        █████░░░░░░░░░░�
 
 #### Audio Device Selection (30 hours)
 
-- **AUD-5.3** (10h): Audio device enumeration API
+- **AUD-5.3** (10h): Audio device enumeration API ✅ **COMPLETED**
 
   - Files: `/src-tauri/src/services/audio_service.rs`
   - Tests: Unit tests with mock audio engine
