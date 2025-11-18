@@ -402,10 +402,10 @@ Phase 8: Production Polish        █████░░░░░░░░░░�
 
 #### E2E Test Suite (6 hours)
 
-- **POL-7.3** (6h): Create E2E test for registration flow
-  - Files: `tests/e2e/registration_flow_test.rs` (or similar)
+- ✅ **POL-7.3** (6h): Create E2E test for registration flow
+  - Files: `tests/registration_flow_test.rs`
   - Test: Login → Register → Settings → Select audio
-  - Use mock SIP server or test fixtures
+  - Uses real SIP server (configurable via env vars)
   - Verify credential persistence across test steps
   - Verify audio device selection persists
 
@@ -422,10 +422,10 @@ Phase 8: Production Polish        █████░░░░░░░░░░�
 
 ### Completion Criteria
 
-- [ ] Credentials saved to Keychain after successful registration
-- [ ] Credentials loaded on app startup
-- [ ] Auto-login works when credentials exist
-- [ ] E2E test passes: Login → Register → Settings → Select audio
+- [x] Credentials saved to Keychain after successful registration
+- [x] Credentials loaded on app startup
+- [x] Auto-login works when credentials exist
+- [x] E2E test passes: Login → Register → Settings → Select audio
 - [ ] Manual verification: Close and reopen app, verify credentials persist
 
 ---
