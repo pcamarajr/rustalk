@@ -6,7 +6,7 @@ Open-source white-label VoIP desktop application built with Rust and Tauri.
 
 ## Project Status
 
-**Phase 3 Complete** ✅ - Core Infrastructure
+**Phase 4 In Progress** 🔄 - Registration + Audio (SIP-1.6 Complete ✅)
 
 ### Completed Features
 
@@ -37,6 +37,14 @@ Open-source white-label VoIP desktop application built with Rust and Tauri.
 - ✅ Platform abstractions (AudioEngine, CredentialStore traits)
 - ✅ Input validation for Tauri commands
 - ✅ Integration tests for SIP transport (tested with Asterisk server)
+
+**Phase 4 (In Progress):**
+
+- ✅ SIP registration backend (SIP-1.3, SIP-1.4, SIP-1.5)
+- ✅ Frontend registration UI (SIP-1.6) - Login page with form validation
+- ✅ Real Tauri command integration for registration
+- ✅ Registration status polling
+- 🔄 Audio device selection UI (AUD-5.3, AUD-5.4, AUD-5.5, AUD-5.6) - Next
 
 ## Quick Start
 
@@ -144,9 +152,9 @@ Phase 8: Production Polish        📋 Planned (~1.3 weeks)
 
 **Total Estimated Duration**: ~12 weeks for MVP
 
-## Current Phase: Phase 3 Complete ✅
+## Current Phase: Phase 4 In Progress 🔄
 
-Phase 3 core infrastructure is complete with all components implemented and tested.
+Phase 3 core infrastructure is complete. Phase 4 is in progress with SIP registration UI completed.
 
 ### What Works
 
