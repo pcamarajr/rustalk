@@ -10,8 +10,11 @@
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "tauri": "tauri",
-    "tauri:dev": "tauri dev",
+    "tauri:dev": "docker-compose up -d && tauri dev",
+    "tauri:dev:stop": "docker-compose down",
     "tauri:build": "tauri build",
+    "docker:start": "docker-compose up -d",
+    "docker:stop": "docker-compose down",
     "test": "echo \"Tests not yet implemented\" && exit 0",
     "lint": "svelte-check --tsconfig ./tsconfig.json"
   },
