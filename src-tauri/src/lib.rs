@@ -6,6 +6,9 @@ pub mod domain;
 // Infrastructure layer
 pub mod infrastructure;
 
+// Services layer
+pub mod services;
+
 // Commands module (IPC Boundary Layer)
 pub mod commands;
 

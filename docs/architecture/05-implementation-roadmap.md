@@ -302,7 +302,7 @@ Phase 8: Production Polish        █████░░░░░░░░░░�
   - Tests: Unit tests for 401 challenge flow
   - Implementation: Complete digest authentication with WWW-Authenticate parsing, Authorization header generation, and full registration flow
 
-- **SIP-1.4** (10h): Registration state machine
+- **SIP-1.4** (10h): Registration state machine ✅ **COMPLETED**
 
   - Files: `/src-tauri/src/services/auth_service.rs`
   - Files: `/src-tauri/src/domain/entities/registration.rs`
