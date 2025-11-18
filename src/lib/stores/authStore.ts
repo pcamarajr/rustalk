@@ -252,10 +252,18 @@ export const authStore = {
       });
       
       // Convert to SIPCredentials format
+      // Protocol conversion with explicit mapping for type safety
+      const protocolMap: Record<string, "UDP" | "TCP" | "TLS"> = {
+        "Udp": "UDP",
+        "Tcp": "TCP",
+        "Tls": "TLS",
+      };
+      const protocol = protocolMap[credentials.protocol] || "TLS";
+      
       const sipCredentials: SIPCredentials = {
         server: credentials.server,
         port: credentials.port.toString(),
-        protocol: credentials.protocol === "Udp" ? "UDP" : credentials.protocol === "Tcp" ? "TCP" : "TLS",
+        protocol,
         username: credentials.username,
         password: credentials.password, // Include password for auto-login
       };
@@ -285,11 +293,19 @@ export const authStore = {
         username: credentials.username,
       });
       
+      // Protocol conversion with explicit mapping for type safety
+      const protocolMap: Record<string, "udp" | "tcp" | "tls"> = {
+        "UDP": "udp",
+        "TCP": "tcp",
+        "TLS": "tls",
+      };
+      const protocol = protocolMap[credentials.protocol] || credentials.protocol.toLowerCase() as "udp" | "tcp" | "tls";
+      
       // Attempt registration with saved credentials
       await authStore.register(
         credentials.server,
         parseInt(credentials.port, 10),
-        credentials.protocol.toLowerCase() as "udp" | "tcp" | "tls",
+        protocol,
         credentials.username,
         credentials.password,
       );
