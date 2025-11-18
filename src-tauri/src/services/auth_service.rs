@@ -65,12 +65,26 @@ impl AuthService {
         contact_uri: String,
         expires: u32,
     ) -> Result<(), SipError> {
+        eprintln!(
+            "DEBUG:[AUTH_SERVICE/REGISTER] Starting registration for user: {}@{}",
+            credentials.username, credentials.server
+        );
+
         // Validate credentials
-        credentials
-            .validate()
-            .map_err(|e| SipError::InvalidMessage {
+        credentials.validate().map_err(|e| {
+            eprintln!(
+                "DEBUG:[AUTH_SERVICE/REGISTER] Credential validation failed: {}",
+                e
+            );
+            SipError::InvalidMessage {
                 reason: format!("Invalid credentials: {}", e),
-            })?;
+            }
+        })?;
+
+        eprintln!(
+            "DEBUG:[AUTH_SERVICE/REGISTER] Credentials validated, server_addr={}, contact_uri={}",
+            server_addr, contact_uri
+        );
 
         // Store server address and contact URI
         self.server_addr = Some(server_addr);
@@ -79,8 +93,16 @@ impl AuthService {
         // Transition to Registering state
         {
             let mut reg = self.registration.write().await;
-            reg.start_registering(credentials.clone())?;
+            reg.start_registering(credentials.clone()).map_err(|e| {
+                eprintln!(
+                    "DEBUG:[AUTH_SERVICE/REGISTER] Failed to transition to registering state: {}",
+                    e
+                );
+                e
+            })?;
         }
+
+        eprintln!("DEBUG:[AUTH_SERVICE/REGISTER] State set to registering, calling register_with_challenge");
 
         // Perform registration
         let mut client = self.client.lock().await;
@@ -92,6 +114,14 @@ impl AuthService {
             expires,
         )
         .await;
+
+        eprintln!(
+            "DEBUG:[AUTH_SERVICE/REGISTER] register_with_challenge completed, result: {:?}",
+            result
+                .as_ref()
+                .map(|r| format!("Status: {}, Message: {}", r.status_code, r.message))
+                .unwrap_or_else(|e| format!("Error: {}", e))
+        );
 
         // Handle registration result
         self.handle_registration_result(result).await
@@ -112,9 +142,19 @@ impl AuthService {
 
         match result {
             Ok(reg_result) => {
+                eprintln!("DEBUG:[AUTH_SERVICE/HANDLE_RESULT] Registration result: status={}, message={}, expires={:?}", 
+                    reg_result.status_code, reg_result.message, reg_result.expires);
+
                 if reg_result.status_code == 200 {
                     // Success - transition to Registered
-                    reg.set_registered(reg_result.expires)?;
+                    eprintln!("DEBUG:[AUTH_SERVICE/HANDLE_RESULT] Registration successful, transitioning to Registered state");
+                    reg.set_registered(reg_result.expires).map_err(|e| {
+                        eprintln!(
+                            "DEBUG:[AUTH_SERVICE/HANDLE_RESULT] Failed to set registered state: {}",
+                            e
+                        );
+                        e
+                    })?;
                     Ok(())
                 } else {
                     // Error response - transition to Failed
@@ -122,14 +162,34 @@ impl AuthService {
                         "Registration failed: {} {}",
                         reg_result.status_code, reg_result.message
                     );
-                    reg.set_failed(error_msg.clone())?;
+                    eprintln!(
+                        "DEBUG:[AUTH_SERVICE/HANDLE_RESULT] Registration failed: {}",
+                        error_msg
+                    );
+                    reg.set_failed(error_msg.clone()).map_err(|e| {
+                        eprintln!(
+                            "DEBUG:[AUTH_SERVICE/HANDLE_RESULT] Failed to set failed state: {}",
+                            e
+                        );
+                        e
+                    })?;
                     Err(SipError::InvalidMessage { reason: error_msg })
                 }
             }
             Err(e) => {
                 // Registration error - transition to Failed
                 let error_msg = format!("Registration error: {}", e);
-                reg.set_failed(error_msg.clone())?;
+                eprintln!(
+                    "DEBUG:[AUTH_SERVICE/HANDLE_RESULT] Registration error: {}",
+                    error_msg
+                );
+                reg.set_failed(error_msg.clone()).map_err(|e| {
+                    eprintln!(
+                        "DEBUG:[AUTH_SERVICE/HANDLE_RESULT] Failed to set failed state: {}",
+                        e
+                    );
+                    e
+                })?;
                 Err(SipError::InvalidMessage { reason: error_msg })
             }
         }

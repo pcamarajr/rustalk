@@ -9,6 +9,7 @@ use crate::infrastructure::sip::parser::parse_message;
 use rsip::SipMessage;
 use std::net::SocketAddr;
 use std::time::{SystemTime, UNIX_EPOCH};
+use tokio::time::{timeout, Duration};
 
 /// Digest challenge parameters extracted from WWW-Authenticate header
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -280,7 +281,11 @@ fn extract_status_code(message: &SipMessage) -> Result<u16, SipError> {
     match message {
         SipMessage::Response(response) => {
             let status_str = response.status_code.to_string();
-            status_str
+            // The status_code might include the reason phrase (e.g., "401 Unauthorized")
+            // Extract just the numeric part
+            let numeric_part = status_str.split_whitespace().next().unwrap_or(&status_str);
+
+            numeric_part
                 .parse::<u16>()
                 .map_err(|_| SipError::InvalidMessage {
                     reason: format!("Invalid status code: {}", status_str),
@@ -363,6 +368,12 @@ pub async fn register_with_challenge(
     let to_uri = format!("sip:{}@{}", credentials.username, credentials.server);
     let from_uri = format!("sip:{}@{}", credentials.username, credentials.server);
 
+    eprintln!("DEBUG:[REGISTRATION/CHALLENGE] Building initial REGISTER request");
+    eprintln!(
+        "DEBUG:[REGISTRATION/CHALLENGE] Server URI: {}, To: {}, From: {}, Contact: {}",
+        server_uri, to_uri, from_uri, contact_uri
+    );
+
     // Step 1: Send initial REGISTER request (without Authorization)
     let register_request = SipMessageBuilder::new()
         .method("REGISTER")
@@ -382,20 +393,77 @@ pub async fn register_with_challenge(
         .header("CSeq", &format!("{} REGISTER", cseq))
         .header("Contact", &format!("<{}>;expires={}", contact_uri, expires))
         .header("User-Agent", "RUSTALK/1.0")
-        .build()?;
+        .build()
+        .map_err(|e| {
+            eprintln!(
+                "DEBUG:[REGISTRATION/CHALLENGE] Failed to build REGISTER request: {}",
+                e
+            );
+            e
+        })?;
 
     // Parse the built message bytes to get SipMessage
-    let register_message: SipMessage = parse_message(&register_request)?;
+    let register_message: SipMessage = parse_message(&register_request).map_err(|e| {
+        eprintln!(
+            "DEBUG:[REGISTRATION/CHALLENGE] Failed to parse REGISTER message: {}",
+            e
+        );
+        e
+    })?;
 
-    client.send_message(&register_message, server_addr).await?;
+    eprintln!(
+        "DEBUG:[REGISTRATION/CHALLENGE] Sending initial REGISTER to {}",
+        server_addr
+    );
+    client
+        .send_message(&register_message, server_addr)
+        .await
+        .map_err(|e| {
+            eprintln!(
+                "DEBUG:[REGISTRATION/CHALLENGE] Failed to send REGISTER message: {}",
+                e
+            );
+            e
+        })?;
+    eprintln!("DEBUG:[REGISTRATION/CHALLENGE] REGISTER message sent, waiting for response...");
 
-    // Step 2: Receive 401 response
-    let (response_message, _) = client.receive_message().await?;
+    // Step 2: Receive 401 response (with 10 second timeout)
+    let receive_timeout = Duration::from_secs(10);
+    let (response_message, _) = timeout(receive_timeout, client.receive_message())
+        .await
+        .map_err(|_| {
+            eprintln!("DEBUG:[REGISTRATION/CHALLENGE] Timeout waiting for response from server");
+            SipError::TimeoutError {
+                message: "Timeout waiting for server response (10 seconds)".to_string(),
+            }
+        })?
+        .map_err(|e| {
+            eprintln!(
+                "DEBUG:[REGISTRATION/CHALLENGE] Failed to receive response: {}",
+                e
+            );
+            e
+        })?;
+    eprintln!("DEBUG:[REGISTRATION/CHALLENGE] Received response from server");
 
-    let status_code = extract_status_code(&response_message)?;
+    let status_code = extract_status_code(&response_message).map_err(|e| {
+        eprintln!(
+            "DEBUG:[REGISTRATION/CHALLENGE] Failed to extract status code: {}",
+            e
+        );
+        e
+    })?;
+
+    eprintln!(
+        "DEBUG:[REGISTRATION/CHALLENGE] Received status code: {}",
+        status_code
+    );
 
     // If we got 200 OK on first try, return success
     if status_code == 200 {
+        eprintln!(
+            "DEBUG:[REGISTRATION/CHALLENGE] Got 200 OK on first try, registration successful"
+        );
         return Ok(RegistrationResult {
             status_code: 200,
             expires: extract_expires(&response_message),
@@ -405,25 +473,58 @@ pub async fn register_with_challenge(
 
     // Expect 401 Unauthorized
     if status_code != 401 {
-        return Err(SipError::InvalidMessage {
-            reason: format!("Expected 401 Unauthorized, got {}", status_code),
-        });
+        let error_msg = format!("Expected 401 Unauthorized, got {}", status_code);
+        eprintln!("DEBUG:[REGISTRATION/CHALLENGE] {}", error_msg);
+        return Err(SipError::InvalidMessage { reason: error_msg });
     }
 
+    eprintln!("DEBUG:[REGISTRATION/CHALLENGE] Got 401 Unauthorized, extracting challenge");
+
     // Step 3: Extract WWW-Authenticate header
-    let www_auth_header = extract_www_authenticate(&response_message)?;
-    let challenge = parse_www_authenticate(&www_auth_header)?;
+    let www_auth_header = extract_www_authenticate(&response_message).map_err(|e| {
+        eprintln!(
+            "DEBUG:[REGISTRATION/CHALLENGE] Failed to extract WWW-Authenticate header: {}",
+            e
+        );
+        e
+    })?;
+    eprintln!(
+        "DEBUG:[REGISTRATION/CHALLENGE] WWW-Authenticate header: {}",
+        www_auth_header
+    );
+
+    let challenge = parse_www_authenticate(&www_auth_header).map_err(|e| {
+        eprintln!(
+            "DEBUG:[REGISTRATION/CHALLENGE] Failed to parse WWW-Authenticate: {}",
+            e
+        );
+        e
+    })?;
+    eprintln!(
+        "DEBUG:[REGISTRATION/CHALLENGE] Parsed challenge: realm={}, nonce={}",
+        challenge.realm, challenge.nonce
+    );
 
     // Step 4: Generate Authorization header
+    eprintln!("DEBUG:[REGISTRATION/CHALLENGE] Generating Authorization header");
     let auth_header = generate_authorization(
         "REGISTER",
         &server_uri,
         &credentials.username,
         &credentials.password,
         &challenge,
-    )?;
+    )
+    .map_err(|e| {
+        eprintln!(
+            "DEBUG:[REGISTRATION/CHALLENGE] Failed to generate Authorization header: {}",
+            e
+        );
+        e
+    })?;
+    eprintln!("DEBUG:[REGISTRATION/CHALLENGE] Authorization header generated");
 
     // Step 5: Send second REGISTER request with Authorization
+    eprintln!("DEBUG:[REGISTRATION/CHALLENGE] Building authenticated REGISTER request");
     let register_request_auth = SipMessageBuilder::new()
         .method("REGISTER")
         .uri(&server_uri)
@@ -448,13 +549,56 @@ pub async fn register_with_challenge(
     // Parse the built message bytes to get SipMessage
     let register_message_auth: SipMessage = parse_message(&register_request_auth)?;
 
+    eprintln!(
+        "DEBUG:[REGISTRATION/CHALLENGE] Sending authenticated REGISTER to {}",
+        server_addr
+    );
     client
         .send_message(&register_message_auth, server_addr)
-        .await?;
+        .await
+        .map_err(|e| {
+            eprintln!(
+                "DEBUG:[REGISTRATION/CHALLENGE] Failed to send authenticated REGISTER: {}",
+                e
+            );
+            e
+        })?;
+    eprintln!(
+        "DEBUG:[REGISTRATION/CHALLENGE] Authenticated REGISTER sent, waiting for final response..."
+    );
 
-    // Step 6: Receive final response
-    let (final_response, _) = client.receive_message().await?;
-    let final_status_code = extract_status_code(&final_response)?;
+    // Step 6: Receive final response (with 10 second timeout)
+    let receive_timeout = Duration::from_secs(10);
+    let (final_response, _) = timeout(receive_timeout, client.receive_message())
+        .await
+        .map_err(|_| {
+            eprintln!(
+                "DEBUG:[REGISTRATION/CHALLENGE] Timeout waiting for final response from server"
+            );
+            SipError::TimeoutError {
+                message: "Timeout waiting for final server response (10 seconds)".to_string(),
+            }
+        })?
+        .map_err(|e| {
+            eprintln!(
+                "DEBUG:[REGISTRATION/CHALLENGE] Failed to receive final response: {}",
+                e
+            );
+            e
+        })?;
+    eprintln!("DEBUG:[REGISTRATION/CHALLENGE] Received final response");
+
+    let final_status_code = extract_status_code(&final_response).map_err(|e| {
+        eprintln!(
+            "DEBUG:[REGISTRATION/CHALLENGE] Failed to extract final status code: {}",
+            e
+        );
+        e
+    })?;
+    eprintln!(
+        "DEBUG:[REGISTRATION/CHALLENGE] Final status code: {}",
+        final_status_code
+    );
 
     let status_message = match final_status_code {
         200 => "OK",
