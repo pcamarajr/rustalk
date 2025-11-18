@@ -143,6 +143,37 @@ impl From<std::io::Error> for SipError {
     }
 }
 
+impl From<SipError> for CommandError {
+    fn from(err: SipError) -> Self {
+        match err {
+            SipError::InvalidMessage { reason } => CommandError::ServiceError {
+                message: format!("Invalid message: {}", reason),
+            },
+            SipError::ConnectionError { message } => CommandError::ServiceError {
+                message: format!("Connection error: {}", message),
+            },
+            SipError::TransportError { message } => CommandError::ServiceError {
+                message: format!("Transport error: {}", message),
+            },
+            SipError::ParseError { message } => CommandError::ServiceError {
+                message: format!("Parse error: {}", message),
+            },
+            SipError::UnsupportedMethod { method } => CommandError::ServiceError {
+                message: format!("Unsupported method: {}", method),
+            },
+            SipError::MissingHeader { header } => CommandError::ServiceError {
+                message: format!("Missing required header: {}", header),
+            },
+            SipError::TlsError { message } => CommandError::ServiceError {
+                message: format!("TLS error: {}", message),
+            },
+            SipError::TimeoutError { message } => CommandError::ServiceError {
+                message: format!("Timeout error: {}", message),
+            },
+        }
+    }
+}
+
 /// Errors that can occur during Tauri command execution
 #[derive(Debug, Error, Clone, PartialEq, Eq, serde::Serialize)]
 pub enum CommandError {

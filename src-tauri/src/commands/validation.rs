@@ -201,6 +201,122 @@ pub fn validate_hostname(hostname: &str) -> Result<(), CommandError> {
     Ok(())
 }
 
+/// Validates that a port number is within the valid range (1-65535)
+///
+/// # Arguments
+///
+/// * `port` - The port number to validate
+///
+/// # Returns
+///
+/// * `Ok(())` if the port is valid
+/// * `Err(CommandError::InvalidArgument)` if the port is outside the valid range
+///
+/// # Example
+///
+/// ```rust
+/// use rustalk_lib::commands::validate_port_range;
+/// # fn main() -> Result<(), rustalk_lib::domain::CommandError> {
+/// validate_port_range(8080)?;
+/// # Ok(())
+/// # }
+/// ```
+pub fn validate_port_range(port: u16) -> Result<(), CommandError> {
+    if port == 0 {
+        return Err(CommandError::InvalidArgument {
+            argument: "port".to_string(),
+            reason: "Port must be between 1 and 65535".to_string(),
+        });
+    }
+    // u16 is already constrained to 0-65535, so we only need to check for 0
+    Ok(())
+}
+
+/// Validates a protocol string (udp, tcp, or tls)
+///
+/// # Arguments
+///
+/// * `protocol` - The protocol string to validate
+///
+/// # Returns
+///
+/// * `Ok(())` if the protocol is valid
+/// * `Err(CommandError::ValidationError)` if the protocol is invalid
+///
+/// # Example
+///
+/// ```rust
+/// use rustalk_lib::commands::validate_protocol;
+/// # fn main() -> Result<(), rustalk_lib::domain::CommandError> {
+/// validate_protocol("udp")?;
+/// # Ok(())
+/// # }
+/// ```
+pub fn validate_protocol(protocol: &str) -> Result<(), CommandError> {
+    let protocol_lower = protocol.to_lowercase();
+    match protocol_lower.as_str() {
+        "udp" | "tcp" | "tls" => Ok(()),
+        _ => Err(CommandError::ValidationError {
+            field: "protocol".to_string(),
+            message: format!("Protocol must be 'udp', 'tcp', or 'tls', got '{}'", protocol),
+        }),
+    }
+}
+
+/// Validates a SIP contact URI format (basic validation)
+///
+/// # Arguments
+///
+/// * `contact_uri` - The contact URI string to validate (optional)
+///
+/// # Returns
+///
+/// * `Ok(())` if the contact URI is valid or None
+/// * `Err(CommandError::ValidationError)` if the format is invalid
+///
+/// # Validation Rules
+///
+/// - Must start with "sip:" or "sips:"
+/// - Must contain "@" (user@host format)
+/// - Must not be empty if provided
+///
+/// # Example
+///
+/// ```rust
+/// use rustalk_lib::commands::validate_contact_uri;
+/// # fn main() -> Result<(), rustalk_lib::domain::CommandError> {
+/// validate_contact_uri(Some("sip:user@192.168.1.100:5060"))?;
+/// # Ok(())
+/// # }
+/// ```
+pub fn validate_contact_uri(contact_uri: Option<&str>) -> Result<(), CommandError> {
+    if let Some(uri) = contact_uri {
+        if uri.trim().is_empty() {
+            return Err(CommandError::ValidationError {
+                field: "contact_uri".to_string(),
+                message: "Contact URI cannot be empty if provided".to_string(),
+            });
+        }
+
+        // Basic SIP URI format check: must start with sip: or sips:
+        if !uri.starts_with("sip:") && !uri.starts_with("sips:") {
+            return Err(CommandError::ValidationError {
+                field: "contact_uri".to_string(),
+                message: "Contact URI must start with 'sip:' or 'sips:'".to_string(),
+            });
+        }
+
+        // Must contain @ for user@host format
+        if !uri.contains('@') {
+            return Err(CommandError::ValidationError {
+                field: "contact_uri".to_string(),
+                message: "Contact URI must contain '@' (user@host format)".to_string(),
+            });
+        }
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -383,5 +499,99 @@ mod tests {
         assert!(validate_string_length("field", "abc", 3, 3).is_ok());
         assert!(validate_string_length("field", "ab", 3, 3).is_err());
         assert!(validate_string_length("field", "abcd", 3, 3).is_err());
+    }
+
+    // Tests for validate_port_range
+    #[test]
+    fn test_validate_port_range_valid() {
+        assert!(validate_port_range(1).is_ok());
+        assert!(validate_port_range(8080).is_ok());
+        assert!(validate_port_range(65535).is_ok());
+    }
+
+    #[test]
+    fn test_validate_port_range_zero() {
+        let result = validate_port_range(0);
+        assert!(result.is_err());
+        if let Err(CommandError::InvalidArgument { argument, reason }) = result {
+            assert_eq!(argument, "port");
+            assert!(reason.contains("between 1 and 65535"));
+        } else {
+            panic!("Expected InvalidArgument");
+        }
+    }
+
+    // Tests for validate_protocol
+    #[test]
+    fn test_validate_protocol_valid() {
+        assert!(validate_protocol("udp").is_ok());
+        assert!(validate_protocol("tcp").is_ok());
+        assert!(validate_protocol("tls").is_ok());
+        assert!(validate_protocol("UDP").is_ok()); // Case insensitive
+        assert!(validate_protocol("TCP").is_ok());
+        assert!(validate_protocol("TLS").is_ok());
+    }
+
+    #[test]
+    fn test_validate_protocol_invalid() {
+        let result = validate_protocol("http");
+        assert!(result.is_err());
+        if let Err(CommandError::ValidationError { field, message }) = result {
+            assert_eq!(field, "protocol");
+            assert!(message.contains("udp") || message.contains("tcp") || message.contains("tls"));
+        } else {
+            panic!("Expected ValidationError");
+        }
+    }
+
+    #[test]
+    fn test_validate_protocol_empty() {
+        let result = validate_protocol("");
+        assert!(result.is_err());
+    }
+
+    // Tests for validate_contact_uri
+    #[test]
+    fn test_validate_contact_uri_valid() {
+        assert!(validate_contact_uri(Some("sip:user@example.com")).is_ok());
+        assert!(validate_contact_uri(Some("sips:user@example.com")).is_ok());
+        assert!(validate_contact_uri(Some("sip:user@192.168.1.100:5060")).is_ok());
+        assert!(validate_contact_uri(None).is_ok()); // Optional field
+    }
+
+    #[test]
+    fn test_validate_contact_uri_empty() {
+        let result = validate_contact_uri(Some(""));
+        assert!(result.is_err());
+        if let Err(CommandError::ValidationError { field, message }) = result {
+            assert_eq!(field, "contact_uri");
+            assert!(message.contains("cannot be empty"));
+        } else {
+            panic!("Expected ValidationError");
+        }
+    }
+
+    #[test]
+    fn test_validate_contact_uri_no_sip_prefix() {
+        let result = validate_contact_uri(Some("user@example.com"));
+        assert!(result.is_err());
+        if let Err(CommandError::ValidationError { field, message }) = result {
+            assert_eq!(field, "contact_uri");
+            assert!(message.contains("sip:") || message.contains("sips:"));
+        } else {
+            panic!("Expected ValidationError");
+        }
+    }
+
+    #[test]
+    fn test_validate_contact_uri_no_at_symbol() {
+        let result = validate_contact_uri(Some("sip:userexample.com"));
+        assert!(result.is_err());
+        if let Err(CommandError::ValidationError { field, message }) = result {
+            assert_eq!(field, "contact_uri");
+            assert!(message.contains("@"));
+        } else {
+            panic!("Expected ValidationError");
+        }
     }
 }

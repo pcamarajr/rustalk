@@ -308,10 +308,13 @@ Phase 8: Production Polish        █████░░░░░░░░░░�
   - Files: `/src-tauri/src/domain/entities/registration.rs`
   - Tests: Unit tests for state transitions
 
-- **SIP-1.5** (6h): Tauri `register_account` command
+- **SIP-1.5** (6h): Tauri `register_account` command ✅ **COMPLETED**
 
   - Files: `/src-tauri/src/commands/auth.rs`
-  - Tests: Integration test - full registration flow
+  - Files: `/src-tauri/src/state.rs`
+  - Files: `/src-tauri/src/commands/validation.rs` (extended)
+  - Files: `/src-tauri/src/domain/errors.rs` (extended)
+  - Tests: Integration test - validation and command structure
 
 - **SIP-1.6** (8h): Frontend registration UI (login page)
   - Files: `/src/routes/login/+page.svelte`

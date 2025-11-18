@@ -2,8 +2,10 @@
 // This module contains all Tauri command handlers and their validation logic
 
 pub mod validation;
+pub mod auth;
 
 pub use validation::*;
+pub use auth::{register_account, get_registration_status, unregister_account};
 
 use crate::domain::CommandError;
 

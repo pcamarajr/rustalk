@@ -12,13 +12,34 @@ pub mod services;
 // Commands module (IPC Boundary Layer)
 pub mod commands;
 
-use commands::greet;
+// Application state
+pub mod state;
+
+use commands::{greet, register_account, get_registration_status, unregister_account};
+use infrastructure::sip::client::SipClient;
+use state::AppState;
+use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet])
+        .setup(|app| {
+            // Initialize SIP client and AppState
+            let rt = tokio::runtime::Runtime::new().expect("Failed to create tokio runtime");
+            let client = rt.block_on(SipClient::new_udp_any())
+                .expect("Failed to create SIP client");
+            let app_state = AppState::new(client);
+            
+            app.manage(app_state);
+            Ok(())
+        })
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            register_account,
+            get_registration_status,
+            unregister_account
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

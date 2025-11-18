@@ -166,8 +166,9 @@ Phase 4 will implement:
 - ✅ SIP transport layer with TLS support - **Completed (SIP-1.2)**
 - ✅ REGISTER message handling with 401 challenge - **Completed (SIP-1.3)**
 - ✅ Registration state machine - **Completed (SIP-1.4)**
+- ✅ Tauri `register_account` command - **Completed (SIP-1.5)**
 - ✅ Platform abstractions for security and audio - **AudioEngine trait completed (AUD-5.1)**
-- Input validation for all Tauri commands
+- ✅ Input validation for all Tauri commands - **Completed**
 
 ## Project Goals
 
