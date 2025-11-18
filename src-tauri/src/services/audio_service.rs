@@ -66,6 +66,36 @@ impl AudioService {
     pub async fn get_output_device(&self) -> Result<Option<AudioDevice>, AudioEngineError> {
         self.audio_engine.get_output_device().await
     }
+
+    /// Set the active input device
+    ///
+    /// Delegates to the audio engine's `set_input_device()` method.
+    ///
+    /// # Arguments
+    /// * `device_id` - Unique identifier of the device to select
+    ///
+    /// # Returns
+    /// * `Ok(())` - Device selected successfully
+    /// * `Err(AudioEngineError::DeviceNotFound)` - Device ID doesn't exist
+    /// * `Err(AudioEngineError::DeviceSwitchFailed)` - Failed to switch device
+    pub async fn set_input_device(&self, device_id: &str) -> Result<(), AudioEngineError> {
+        self.audio_engine.set_input_device(device_id).await
+    }
+
+    /// Set the active output device
+    ///
+    /// Delegates to the audio engine's `set_output_device()` method.
+    ///
+    /// # Arguments
+    /// * `device_id` - Unique identifier of the device to select
+    ///
+    /// # Returns
+    /// * `Ok(())` - Device selected successfully
+    /// * `Err(AudioEngineError::DeviceNotFound)` - Device ID doesn't exist
+    /// * `Err(AudioEngineError::DeviceSwitchFailed)` - Failed to switch device
+    pub async fn set_output_device(&self, device_id: &str) -> Result<(), AudioEngineError> {
+        self.audio_engine.set_output_device(device_id).await
+    }
 }
 
 #[cfg(test)]
@@ -296,5 +326,89 @@ mod tests {
         // No device selected
         let device = service.get_output_device().await.unwrap();
         assert!(device.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_set_input_device() {
+        let mock_engine: Arc<dyn AudioEngine> = Arc::new(MockAudioEngine::new());
+        let service = AudioService::new(Arc::clone(&mock_engine));
+
+        // Set input device
+        service.set_input_device("input-1").await.unwrap();
+
+        // Verify device was set
+        let device = service.get_input_device().await.unwrap().unwrap();
+        assert_eq!(device.id, "input-1");
+        assert_eq!(device.name, "Built-in Microphone");
+    }
+
+    #[tokio::test]
+    async fn test_set_output_device() {
+        let mock_engine: Arc<dyn AudioEngine> = Arc::new(MockAudioEngine::new());
+        let service = AudioService::new(Arc::clone(&mock_engine));
+
+        // Set output device
+        service.set_output_device("output-1").await.unwrap();
+
+        // Verify device was set
+        let device = service.get_output_device().await.unwrap().unwrap();
+        assert_eq!(device.id, "output-1");
+        assert_eq!(device.name, "Built-in Speakers");
+    }
+
+    #[tokio::test]
+    async fn test_set_invalid_input_device() {
+        let mock_engine: Arc<dyn AudioEngine> = Arc::new(MockAudioEngine::new());
+        let service = AudioService::new(mock_engine);
+
+        // Try to set invalid device
+        let result = service.set_input_device("invalid-device").await;
+        assert!(result.is_err());
+        assert!(matches!(
+            result.unwrap_err(),
+            AudioEngineError::DeviceNotFound { .. }
+        ));
+    }
+
+    #[tokio::test]
+    async fn test_set_invalid_output_device() {
+        let mock_engine: Arc<dyn AudioEngine> = Arc::new(MockAudioEngine::new());
+        let service = AudioService::new(mock_engine);
+
+        // Try to set invalid device
+        let result = service.set_output_device("invalid-device").await;
+        assert!(result.is_err());
+        assert!(matches!(
+            result.unwrap_err(),
+            AudioEngineError::DeviceNotFound { .. }
+        ));
+    }
+
+    #[tokio::test]
+    async fn test_device_switching() {
+        let mock_engine: Arc<dyn AudioEngine> = Arc::new(MockAudioEngine::new());
+        let service = AudioService::new(Arc::clone(&mock_engine));
+
+        // Set first input device
+        service.set_input_device("input-1").await.unwrap();
+        let device = service.get_input_device().await.unwrap().unwrap();
+        assert_eq!(device.id, "input-1");
+
+        // Switch to second input device
+        service.set_input_device("input-2").await.unwrap();
+        let device = service.get_input_device().await.unwrap().unwrap();
+        assert_eq!(device.id, "input-2");
+        assert_eq!(device.name, "USB Microphone");
+
+        // Set first output device
+        service.set_output_device("output-1").await.unwrap();
+        let device = service.get_output_device().await.unwrap().unwrap();
+        assert_eq!(device.id, "output-1");
+
+        // Switch to second output device
+        service.set_output_device("output-2").await.unwrap();
+        let device = service.get_output_device().await.unwrap().unwrap();
+        assert_eq!(device.id, "output-2");
+        assert_eq!(device.name, "USB Headphones");
     }
 }

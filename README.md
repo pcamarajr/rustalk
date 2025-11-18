@@ -44,7 +44,10 @@ Open-source white-label VoIP desktop application built with Rust and Tauri.
 - ✅ Frontend registration UI (SIP-1.6) - Login page with form validation
 - ✅ Real Tauri command integration for registration
 - ✅ Registration status polling
-- 🔄 Audio device selection UI (AUD-5.3, AUD-5.4, AUD-5.5, AUD-5.6) - Next
+- ✅ Audio device enumeration API (AUD-5.3)
+- ✅ Device selection and switching logic (AUD-5.4)
+- 🔄 Tauri audio commands (AUD-5.5) - Next
+- 🔄 Frontend audio settings UI (AUD-5.6) - Next
 
 ## Quick Start
 
