@@ -16,6 +16,38 @@
   let selectedSpeaker = $state("");
   let speakerVolume = $state([75]);
   let isTestingSpeaker = $state(false);
+  let isLoading = $state(false);
+  let error = $state<string | null>(null);
+
+  // Fetch devices on mount
+  $effect(() => {
+    let mounted = true;
+
+    async function loadDevices() {
+      isLoading = true;
+      error = null;
+      try {
+        await audioStore.refreshDevices();
+        // Also get current device selection
+        await audioStore.getCurrentDevices();
+      } catch (err) {
+        if (mounted) {
+          error = err instanceof Error ? err.message : "Failed to load audio devices";
+          console.error("DEBUG:[SETTINGS/AUDIO] Error loading devices:", err);
+        }
+      } finally {
+        if (mounted) {
+          isLoading = false;
+        }
+      }
+    }
+
+    loadDevices();
+
+    return () => {
+      mounted = false;
+    };
+  });
 
   $effect(() => {
     const unsubscribeDevices = audioStore.outputDevices.subscribe((devices) => {
@@ -24,6 +56,8 @@
         if (!selectedSpeaker) {
           selectedSpeaker = speakers[0].id;
         }
+      } else {
+        speakers = [];
       }
     });
     const unsubscribeSelected = audioStore.selectedOutputDevice.subscribe((device) => {
@@ -31,9 +65,13 @@
         selectedSpeaker = device.id;
       }
     });
+    const unsubscribeLoading = audioStore.isLoadingDevices.subscribe((loading: boolean) => {
+      isLoading = loading;
+    });
     return () => {
       unsubscribeDevices();
       unsubscribeSelected();
+      unsubscribeLoading();
     };
   });
 
@@ -49,22 +87,38 @@
     <Volume2 class="h-5 w-5 text-gray-600" />
     <Label class="text-base font-semibold">Speaker</Label>
   </div>
+  {#if error}
+    <div class="text-sm text-red-600 mb-2">{error}</div>
+  {/if}
   <Select
     type="single"
     value={selectedSpeaker}
-    onValueChange={(value) => {
+    disabled={isLoading}
+    onValueChange={async (value) => {
       if (value) {
-        audioStore.setOutputDevice(value);
+        try {
+          error = null;
+          await audioStore.setOutputDevice(value);
+        } catch (err) {
+          error = err instanceof Error ? err.message : "Failed to set output device";
+          console.error("DEBUG:[SETTINGS/AUDIO] Error setting output device:", err);
+        }
       }
     }}
   >
-    <SelectTrigger class="w-full">
-      {speakers.find((s) => s.id === selectedSpeaker)?.name || "Select speaker"}
+    <SelectTrigger class="w-full" disabled={isLoading}>
+      {isLoading
+        ? "Loading devices..."
+        : speakers.find((s) => s.id === selectedSpeaker)?.name || "Select speaker"}
     </SelectTrigger>
     <SelectContent>
-      {#each speakers as speaker}
-        <SelectItem value={speaker.id} label={speaker.name} />
-      {/each}
+      {#if speakers.length === 0 && !isLoading}
+        <div class="px-2 py-1.5 text-sm text-gray-500">No speakers found</div>
+      {:else}
+        {#each speakers as speaker}
+          <SelectItem value={speaker.id} label={speaker.name} />
+        {/each}
+      {/if}
     </SelectContent>
   </Select>
   <div class="space-y-3">

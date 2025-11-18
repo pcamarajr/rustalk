@@ -339,10 +339,11 @@ Phase 8: Production Polish        █████░░░░░░░░░░�
   - Files: `/src-tauri/src/commands/audio.rs`
   - Tests: Integration test - IPC layer (`tests/audio_commands_integration_test.rs`)
 
-- **AUD-5.6** (8h): Frontend audio settings UI
-  - Files: `/src/routes/settings/+page.svelte`
-  - Files: `/src/lib/components/AudioDeviceSelector.svelte`
-  - Tests: Component tests
+- **AUD-5.6** (8h): Frontend audio settings UI ✅ **COMPLETED**
+  - Files: `/src/lib/components/settings/audio/MicrophoneSettings.svelte`
+  - Files: `/src/lib/components/settings/audio/SpeakerSettings.svelte`
+  - Files: `/src/lib/stores/audioStore.ts` (updated with real Tauri commands)
+  - Tests: Component tests (structure created)
 
 ### Deliverables
 

@@ -1,4 +1,5 @@
 import { writable, derived, type Readable } from "svelte/store";
+import { invoke } from "@tauri-apps/api/core";
 
 export type AudioDeviceType = "input" | "output";
 
@@ -9,36 +10,39 @@ export interface AudioDevice {
   isDefault: boolean;
 }
 
+// Rust AudioDevice structure from Tauri
+interface RustAudioDevice {
+  id: string;
+  name: string;
+  is_input: boolean;
+}
+
 export interface Ringtone {
   id: string;
   name: string;
 }
 
-// Mock audio devices
-const mockInputDevices: AudioDevice[] = [
-  { id: "mic-1", name: "Built-in Microphone", type: "input", isDefault: true },
-  { id: "mic-2", name: "USB Headset Microphone", type: "input", isDefault: false },
-  { id: "mic-3", name: "Blue Yeti", type: "input", isDefault: false },
-];
+// Convert Rust AudioDevice to frontend AudioDevice
+function convertRustDevice(device: RustAudioDevice, isDefault: boolean = false): AudioDevice {
+  return {
+    id: device.id,
+    name: device.name,
+    type: device.is_input ? "input" : "output",
+    isDefault,
+  };
+}
 
-const mockOutputDevices: AudioDevice[] = [
-  { id: "speaker-1", name: "Built-in Speakers", type: "output", isDefault: true },
-  { id: "speaker-2", name: "USB Headset", type: "output", isDefault: false },
-  { id: "speaker-3", name: "AirPods Pro", type: "output", isDefault: false },
-];
+// Create writable stores - initialize as empty arrays
+const { subscribe: subscribeInputDevices, set: setInputDevices } = writable<AudioDevice[]>([]);
 
-// Create writable stores
-const { subscribe: subscribeInputDevices, set: setInputDevices } = writable<AudioDevice[]>(mockInputDevices);
+const { subscribe: subscribeOutputDevices, set: setOutputDevices } = writable<AudioDevice[]>([]);
 
-const { subscribe: subscribeOutputDevices, set: setOutputDevices } = writable<AudioDevice[]>(mockOutputDevices);
+const { subscribe: subscribeSelectedInputDeviceId, set: setSelectedInputDeviceId } = writable<string>("");
 
-const { subscribe: subscribeSelectedInputDeviceId, set: setSelectedInputDeviceId } = writable<string>(
-  mockInputDevices.find((d) => d.isDefault)?.id || mockInputDevices[0].id
-);
+const { subscribe: subscribeSelectedOutputDeviceId, set: setSelectedOutputDeviceId } = writable<string>("");
 
-const { subscribe: subscribeSelectedOutputDeviceId, set: setSelectedOutputDeviceId } = writable<string>(
-  mockOutputDevices.find((d) => d.isDefault)?.id || mockOutputDevices[0].id
-);
+// Loading states
+const { subscribe: subscribeIsLoadingDevices, set: setIsLoadingDevices } = writable<boolean>(false);
 
 // Mock ringtones
 const mockRingtones: Ringtone[] = [
@@ -75,10 +79,10 @@ export const selectedInputDevice = derived(
   [inputDevicesReadable, selectedInputDeviceIdReadable],
   ([$devices, $selectedId]) => {
     if (!$devices || $devices.length === 0) {
-      return mockInputDevices[0]; // Fallback to first mock device
+      return null;
     }
     if (!$selectedId) {
-      return $devices[0]; // Fallback if no selected ID
+      return $devices[0]; // Fallback to first device
     }
     return $devices.find((d: AudioDevice) => d.id === $selectedId) || $devices[0];
   }
@@ -88,14 +92,16 @@ export const selectedOutputDevice = derived(
   [outputDevicesReadable, selectedOutputDeviceIdReadable],
   ([$devices, $selectedId]) => {
     if (!$devices || $devices.length === 0) {
-      return mockOutputDevices[0]; // Fallback to first mock device
+      return null;
     }
     if (!$selectedId) {
-      return $devices[0]; // Fallback if no selected ID
+      return $devices[0]; // Fallback to first device
     }
     return $devices.find((d: AudioDevice) => d.id === $selectedId) || $devices[0];
   }
 );
+
+export const isLoadingDevices = { subscribe: subscribeIsLoadingDevices };
 
 // Derived stores for ringtones
 export const ringtones = derived(ringtonesReadable, ($ringtones) => $ringtones);
@@ -115,6 +121,16 @@ export const selectedRingtone = derived(
 
 export const ringtoneVolume = derived(ringtoneVolumeReadable, ($volume) => $volume);
 
+// Helper to get current store value
+function get<T>(subscribe: (run: (value: T) => void) => () => void): T {
+  let value: T;
+  const unsubscribe = subscribe((v) => {
+    value = v;
+  });
+  unsubscribe();
+  return value!;
+}
+
 // Store methods
 export const audioStore = {
   subscribe: subscribeInputDevices, // Default subscription to input devices
@@ -125,17 +141,110 @@ export const audioStore = {
   ringtones,
   selectedRingtone,
   ringtoneVolume,
+  isLoadingDevices,
 
-  // Set selected input device
-  setInputDevice: (deviceId: string) => {
-    console.log("DEBUG:[AUDIOSTORE/SET_INPUT] Setting input device:", deviceId);
-    setSelectedInputDeviceId(deviceId);
+  // Refresh devices from Tauri
+  async refreshDevices(): Promise<void> {
+    console.log("DEBUG:[AUDIOSTORE/REFRESH] Refreshing audio devices");
+    setIsLoadingDevices(true);
+
+    try {
+      // Fetch input and output devices in parallel
+      const [inputDevicesResult, outputDevicesResult] = await Promise.all([
+        invoke<RustAudioDevice[]>("list_input_devices"),
+        invoke<RustAudioDevice[]>("list_output_devices"),
+      ]);
+
+      // Convert Rust devices to frontend format
+      const inputDevices = inputDevicesResult.map((device) => convertRustDevice(device, false));
+      const outputDevices = outputDevicesResult.map((device) => convertRustDevice(device, false));
+
+      // Mark first device as default if available
+      if (inputDevices.length > 0) {
+        inputDevices[0].isDefault = true;
+      }
+      if (outputDevices.length > 0) {
+        outputDevices[0].isDefault = true;
+      }
+
+      setInputDevices(inputDevices);
+      setOutputDevices(outputDevices);
+
+      console.log(
+        `DEBUG:[AUDIOSTORE/REFRESH] Found ${inputDevices.length} input devices and ${outputDevices.length} output devices`
+      );
+
+      // If no device is selected, select the first one (or default)
+      // Note: We check the store value directly using get() helper
+      const currentInputId = get(subscribeSelectedInputDeviceId);
+      const currentOutputId = get(subscribeSelectedOutputDeviceId);
+      
+      if (!currentInputId && inputDevices.length > 0) {
+        setSelectedInputDeviceId(inputDevices[0].id);
+      }
+
+      if (!currentOutputId && outputDevices.length > 0) {
+        setSelectedOutputDeviceId(outputDevices[0].id);
+      }
+    } catch (error) {
+      console.error("DEBUG:[AUDIOSTORE/REFRESH] Error refreshing devices:", error);
+      // On error, set empty arrays
+      setInputDevices([]);
+      setOutputDevices([]);
+      throw error;
+    } finally {
+      setIsLoadingDevices(false);
+    }
   },
 
-  // Set selected output device
-  setOutputDevice: (deviceId: string) => {
+  // Get current devices from Tauri
+  async getCurrentDevices(): Promise<void> {
+    console.log("DEBUG:[AUDIOSTORE/GET_CURRENT] Getting current audio devices");
+    try {
+      const [inputDevice, outputDevice] = await Promise.all([
+        invoke<RustAudioDevice | null>("get_input_device"),
+        invoke<RustAudioDevice | null>("get_output_device"),
+      ]);
+
+      if (inputDevice) {
+        setSelectedInputDeviceId(inputDevice.id);
+        console.log("DEBUG:[AUDIOSTORE/GET_CURRENT] Current input device:", inputDevice.id);
+      }
+
+      if (outputDevice) {
+        setSelectedOutputDeviceId(outputDevice.id);
+        console.log("DEBUG:[AUDIOSTORE/GET_CURRENT] Current output device:", outputDevice.id);
+      }
+    } catch (error) {
+      console.error("DEBUG:[AUDIOSTORE/GET_CURRENT] Error getting current devices:", error);
+      throw error;
+    }
+  },
+
+  // Set selected input device via Tauri
+  async setInputDevice(deviceId: string): Promise<void> {
+    console.log("DEBUG:[AUDIOSTORE/SET_INPUT] Setting input device:", deviceId);
+    try {
+      await invoke<string>("set_input_device", { deviceId });
+      setSelectedInputDeviceId(deviceId);
+      console.log("DEBUG:[AUDIOSTORE/SET_INPUT] Input device set successfully");
+    } catch (error) {
+      console.error("DEBUG:[AUDIOSTORE/SET_INPUT] Error setting input device:", error);
+      throw error;
+    }
+  },
+
+  // Set selected output device via Tauri
+  async setOutputDevice(deviceId: string): Promise<void> {
     console.log("DEBUG:[AUDIOSTORE/SET_OUTPUT] Setting output device:", deviceId);
-    setSelectedOutputDeviceId(deviceId);
+    try {
+      await invoke<string>("set_output_device", { deviceId });
+      setSelectedOutputDeviceId(deviceId);
+      console.log("DEBUG:[AUDIOSTORE/SET_OUTPUT] Output device set successfully");
+    } catch (error) {
+      console.error("DEBUG:[AUDIOSTORE/SET_OUTPUT] Error setting output device:", error);
+      throw error;
+    }
   },
 
   // Set selected ringtone
@@ -149,12 +258,6 @@ export const audioStore = {
     console.log("DEBUG:[AUDIOSTORE/SET_RINGTONE_VOLUME] Setting ringtone volume:", volume);
     setRingtoneVolumeValue(volume);
   },
-
-  // Refresh devices (mock - just returns current devices)
-  refreshDevices: () => {
-    console.log("DEBUG:[AUDIOSTORE/REFRESH] Refreshing audio devices");
-    // In Phase 3, this will call Tauri command to enumerate real devices
-    // For now, just log
-  },
 };
+
 
