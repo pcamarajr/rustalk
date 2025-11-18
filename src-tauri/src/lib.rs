@@ -34,9 +34,6 @@ pub fn run() {
 
             eprintln!("DEBUG:[SETUP] Tokio runtime created successfully");
 
-            // Get handle to the runtime before moving it
-            let runtime_handle = rt.handle().clone();
-
             eprintln!("DEBUG:[SETUP] Creating SIP client");
             // Initialize SIP client using the runtime
             let client = rt
@@ -60,7 +57,7 @@ pub fn run() {
             });
 
             eprintln!("DEBUG:[SETUP] Creating AppState");
-            let app_state = AppState::new(client, runtime_handle);
+            let app_state = AppState::new(client);
 
             app.manage(app_state);
             eprintln!("DEBUG:[SETUP] Setup complete");
