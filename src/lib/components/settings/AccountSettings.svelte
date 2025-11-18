@@ -9,6 +9,7 @@
     CardTitle,
   } from "$lib/components/ui/card";
   import { authStore } from "$lib/stores/authStore";
+  import { goto } from "$app/navigation";
 
   // Get user info and registration state from store
   let userName = $state("John Doe");
@@ -44,14 +45,18 @@
     // TODO: Open edit profile dialog
   }
 
-  function handleRegister() {
-    console.log("DEBUG:[SETTINGS/ACCOUNT] Register button clicked");
-    authStore.register();
+  async function handleRegister() {
+    console.log("DEBUG:[SETTINGS/ACCOUNT] Register button clicked - redirecting to login");
+    goto("/login");
   }
 
-  function handleUnregister() {
+  async function handleUnregister() {
     console.log("DEBUG:[SETTINGS/ACCOUNT] Unregister button clicked");
-    authStore.unregister();
+    try {
+      await authStore.unregister();
+    } catch (error) {
+      console.error("DEBUG:[SETTINGS/ACCOUNT] Unregister failed", error);
+    }
   }
 </script>
 
