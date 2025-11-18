@@ -87,7 +87,43 @@ npm run tauri:build
 - `npm run docker:stop` - Stop local Asterisk SIP server
 - `npm run check` - Run TypeScript and Svelte checks
 - `npm run lint` - Run linters
-- `npm test` - Run tests (not yet implemented)
+- `npm test` - Run E2E tests (Playwright)
+- `npm run test:e2e` - Run E2E tests explicitly
+- `npm run test:e2e:ui` - Run E2E tests in UI mode (interactive)
+- `npm run test:e2e:debug` - Run E2E tests in debug mode
+
+## E2E Testing
+
+Rustalk uses [Playwright](https://playwright.dev) for end-to-end testing. Tests run against the built/preview version of the app.
+
+### Running E2E Tests
+
+```bash
+# Run all E2E tests
+npm test
+
+# Run with UI mode (interactive)
+npm run test:e2e:ui
+
+# Run in debug mode
+npm run test:e2e:debug
+```
+
+### Test Structure
+
+E2E tests are located in `tests/e2e/` and cover:
+
+- **Authentication Flow** (`auth.spec.ts`) - Login and registration
+- **Navigation** (`navigation.spec.ts`) - Route and sidebar navigation
+- **Settings** (`settings.spec.ts`) - Settings page and audio device selection
+- **Dialer** (`dialer.spec.ts`) - Basic dialer functionality
+
+### Test Configuration
+
+Tests are configured in `playwright.config.js`. The configuration automatically:
+- Builds the app (`npm run build`)
+- Starts the preview server (`npm run preview`)
+- Runs tests against `http://localhost:4173`
 
 ## Local SIP Testing Environment
 
