@@ -29,8 +29,13 @@ impl AppState {
         audio_service: AudioService,
         credential_store: Arc<dyn CredentialStore>,
     ) -> Self {
+        // Clone credential store for AuthService
+        let credential_store_for_auth = Arc::clone(&credential_store);
         Self {
-            auth_service: Arc::new(Mutex::new(AuthService::new(client))),
+            auth_service: Arc::new(Mutex::new(AuthService::new(
+                client,
+                credential_store_for_auth,
+            ))),
             audio_service: Arc::new(Mutex::new(audio_service)),
             credential_store,
         }
