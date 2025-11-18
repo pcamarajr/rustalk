@@ -26,10 +26,11 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             // Initialize SIP client and AppState
-            let rt = tokio::runtime::Runtime::new().expect("Failed to create tokio runtime");
+            let rt = tokio::runtime::Runtime::new()
+                .map_err(|e| format!("Failed to create tokio runtime: {}", e))?;
             let client = rt
                 .block_on(SipClient::new_udp_any())
-                .expect("Failed to create SIP client");
+                .map_err(|e| format!("Failed to create SIP client: {}", e))?;
             let app_state = AppState::new(client);
 
             app.manage(app_state);
