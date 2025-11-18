@@ -66,10 +66,10 @@ impl Registration {
     /// Check if registration is expired
     pub fn is_expired(&self) -> bool {
         if let Some(expires_at) = self.expires_at {
-            let now = SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_secs();
+            let now = match SystemTime::now().duration_since(UNIX_EPOCH) {
+                Ok(duration) => duration.as_secs(),
+                Err(_) => return false, // If system time is invalid, consider not expired
+            };
             now >= expires_at
         } else {
             false
