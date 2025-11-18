@@ -12,13 +12,32 @@ use std::net::ToSocketAddrs;
 use tauri::State;
 
 /// Resolve server address to SocketAddr
+/// Prefers IPv4 addresses to avoid IPv4/IPv6 socket mismatch issues
 fn resolve_server_address(server: &str, port: u16) -> Result<std::net::SocketAddr, CommandError> {
+    // Handle localhost specially - prefer IPv4
+    if server == "localhost" || server == "127.0.0.1" {
+        return Ok(std::net::SocketAddr::new(
+            std::net::IpAddr::V4(std::net::Ipv4Addr::new(127, 0, 0, 1)),
+            port,
+        ));
+    }
+
     let addr_string = format!("{}:{}", server, port);
-    addr_string
+    let addrs: Vec<std::net::SocketAddr> = addr_string
         .to_socket_addrs()
         .map_err(|e| CommandError::ServiceError {
             message: format!("Failed to resolve server address '{}': {}", addr_string, e),
         })?
+        .collect();
+
+    // Prefer IPv4 addresses
+    if let Some(ipv4_addr) = addrs.iter().find(|addr| addr.is_ipv4()) {
+        return Ok(*ipv4_addr);
+    }
+
+    // Fall back to IPv6 if no IPv4 found
+    addrs
+        .into_iter()
         .next()
         .ok_or_else(|| CommandError::ServiceError {
             message: format!("No address found for server '{}'", server),
@@ -85,12 +104,30 @@ pub async fn register_account(
     // Default expires to 3600 seconds if not provided
     let expires_seconds = expires.unwrap_or(3600);
 
+    eprintln!("DEBUG:[REGISTER_ACCOUNT] Starting registration with params: server={}, port={}, protocol={:?}, username={}, contact={}, expires={}", 
+        server, port, transport_protocol, credentials.username, contact, expires_seconds);
+    eprintln!(
+        "DEBUG:[REGISTER_ACCOUNT] Resolved server address: {}",
+        server_addr
+    );
+
     // Call auth service
     let mut auth_service = state.auth_service.lock().await;
-    auth_service
+    let result = auth_service
         .register(credentials, server_addr, contact, expires_seconds)
         .await
-        .map_err(CommandError::from)?;
+        .map_err(CommandError::from);
+
+    match &result {
+        Ok(_) => {
+            eprintln!("DEBUG:[REGISTER_ACCOUNT] Registration initiated successfully");
+        }
+        Err(e) => {
+            eprintln!("DEBUG:[REGISTER_ACCOUNT] Registration failed: {}", e);
+        }
+    }
+
+    result?;
 
     Ok("Registration initiated successfully".to_string())
 }

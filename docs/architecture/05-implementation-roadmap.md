@@ -316,10 +316,11 @@ Phase 8: Production Polish        █████░░░░░░░░░░�
   - Files: `/src-tauri/src/domain/errors.rs` (extended)
   - Tests: Integration test - validation and command structure
 
-- **SIP-1.6** (8h): Frontend registration UI (login page)
+- **SIP-1.6** (8h): Frontend registration UI (login page) ✅ **COMPLETED**
   - Files: `/src/routes/login/+page.svelte`
-  - Files: `/src/lib/stores/authStore.ts`
-  - Tests: Component tests for login form
+  - Files: `/src/lib/components/auth/LoginForm.svelte`
+  - Files: `/src/lib/stores/authStore.ts` (updated with real Tauri commands)
+  - Tests: Component tests for login form (structure created)
 
 #### Audio Device Selection (30 hours)
 
