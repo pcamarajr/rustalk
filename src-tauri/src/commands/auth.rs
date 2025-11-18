@@ -180,11 +180,13 @@ pub async fn unregister_account(state: State<'_, AppState>) -> Result<String, Co
 /// * `Ok(Option<String>)` - JSON string of credentials if found, None if not found
 /// * `Err(CommandError)` - Service error
 #[tauri::command]
-pub async fn load_saved_credentials(state: State<'_, AppState>) -> Result<Option<String>, CommandError> {
+pub async fn load_saved_credentials(
+    state: State<'_, AppState>,
+) -> Result<Option<String>, CommandError> {
     eprintln!("DEBUG:[LOAD_SAVED_CREDENTIALS] Attempting to load saved credentials");
-    
+
     let credential_store = &state.credential_store;
-    
+
     // Load the default_account pointer
     let default_account_key = "default_account";
     let default_account_creds = match credential_store.load(default_account_key).await {
@@ -193,40 +195,57 @@ pub async fn load_saved_credentials(state: State<'_, AppState>) -> Result<Option
             creds
         }
         Ok(None) => {
-            eprintln!("DEBUG:[LOAD_SAVED_CREDENTIALS] No default_account found, no saved credentials");
+            eprintln!(
+                "DEBUG:[LOAD_SAVED_CREDENTIALS] No default_account found, no saved credentials"
+            );
             return Ok(None);
         }
         Err(e) => {
-            eprintln!("DEBUG:[LOAD_SAVED_CREDENTIALS] Error loading default_account: {}", e);
+            eprintln!(
+                "DEBUG:[LOAD_SAVED_CREDENTIALS] Error loading default_account: {}",
+                e
+            );
             return Err(CommandError::ServiceError {
                 message: format!("Failed to load default account pointer: {}", e),
             });
         }
     };
-    
+
     // Extract the credential key from the username field
     let credential_key = &default_account_creds.username;
-    eprintln!("DEBUG:[LOAD_SAVED_CREDENTIALS] Loading credentials with key: {}", credential_key);
-    
+    eprintln!(
+        "DEBUG:[LOAD_SAVED_CREDENTIALS] Loading credentials with key: {}",
+        credential_key
+    );
+
     // Load the actual credentials
     match credential_store.load(credential_key).await {
         Ok(Some(credentials)) => {
-            eprintln!("DEBUG:[LOAD_SAVED_CREDENTIALS] Successfully loaded credentials for: {}@{}", 
-                credentials.username, credentials.server);
-            
+            eprintln!(
+                "DEBUG:[LOAD_SAVED_CREDENTIALS] Successfully loaded credentials for: {}@{}",
+                credentials.username, credentials.server
+            );
+
             // Serialize credentials to JSON
-            let json = serde_json::to_string(&credentials).map_err(|e| CommandError::ServiceError {
-                message: format!("Failed to serialize credentials: {}", e),
-            })?;
-            
+            let json =
+                serde_json::to_string(&credentials).map_err(|e| CommandError::ServiceError {
+                    message: format!("Failed to serialize credentials: {}", e),
+                })?;
+
             Ok(Some(json))
         }
         Ok(None) => {
-            eprintln!("DEBUG:[LOAD_SAVED_CREDENTIALS] Credentials not found for key: {}", credential_key);
+            eprintln!(
+                "DEBUG:[LOAD_SAVED_CREDENTIALS] Credentials not found for key: {}",
+                credential_key
+            );
             Ok(None)
         }
         Err(e) => {
-            eprintln!("DEBUG:[LOAD_SAVED_CREDENTIALS] Error loading credentials: {}", e);
+            eprintln!(
+                "DEBUG:[LOAD_SAVED_CREDENTIALS] Error loading credentials: {}",
+                e
+            );
             Err(CommandError::ServiceError {
                 message: format!("Failed to load credentials: {}", e),
             })
