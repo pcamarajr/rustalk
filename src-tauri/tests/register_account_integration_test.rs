@@ -131,7 +131,7 @@ fn test_register_account_validation_complete_valid_input() {
 // 1. A test SIP server (e.g., Asterisk, FreeSWITCH, or a mock server)
 // 2. Proper network setup
 // 3. Async test environment with tokio runtime
-// 
+//
 // Example of what a full integration test would look like:
 // #[tokio::test]
 // async fn test_register_account_success() {
@@ -146,4 +146,3 @@ fn test_register_account_validation_complete_valid_input() {
 //     // Execute: Call register_account with invalid credentials
 //     // Verify: Check registration status is "failed" with appropriate error
 // }
-

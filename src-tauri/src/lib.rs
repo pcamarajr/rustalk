@@ -15,7 +15,7 @@ pub mod commands;
 // Application state
 pub mod state;
 
-use commands::{greet, register_account, get_registration_status, unregister_account};
+use commands::{get_registration_status, greet, register_account, unregister_account};
 use infrastructure::sip::client::SipClient;
 use state::AppState;
 use tauri::Manager;
@@ -27,10 +27,11 @@ pub fn run() {
         .setup(|app| {
             // Initialize SIP client and AppState
             let rt = tokio::runtime::Runtime::new().expect("Failed to create tokio runtime");
-            let client = rt.block_on(SipClient::new_udp_any())
+            let client = rt
+                .block_on(SipClient::new_udp_any())
                 .expect("Failed to create SIP client");
             let app_state = AppState::new(client);
-            
+
             app.manage(app_state);
             Ok(())
         })

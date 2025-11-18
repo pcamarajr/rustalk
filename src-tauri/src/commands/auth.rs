@@ -5,8 +5,8 @@ use crate::commands::validation::{
     validate_protocol,
 };
 use crate::domain::entities::credentials::{Credentials, TransportProtocol};
-use crate::domain::errors::CommandError;
 use crate::domain::entities::registration::RegistrationState;
+use crate::domain::errors::CommandError;
 use crate::state::AppState;
 use std::net::ToSocketAddrs;
 use tauri::State;
@@ -19,7 +19,10 @@ fn parse_protocol(protocol: &str) -> Result<TransportProtocol, CommandError> {
         "tls" => Ok(TransportProtocol::Tls),
         _ => Err(CommandError::ValidationError {
             field: "protocol".to_string(),
-            message: format!("Invalid protocol: {}. Must be 'udp', 'tcp', or 'tls'", protocol),
+            message: format!(
+                "Invalid protocol: {}. Must be 'udp', 'tcp', or 'tls'",
+                protocol
+            ),
         }),
     }
 }
@@ -52,6 +55,7 @@ fn resolve_server_address(server: &str, port: u16) -> Result<std::net::SocketAdd
 /// # Returns
 /// * `Ok(String)` - Success message with registration status
 /// * `Err(CommandError)` - Validation or service error
+#[allow(clippy::too_many_arguments)]
 #[tauri::command]
 pub async fn register_account(
     server: String,
@@ -76,13 +80,8 @@ pub async fn register_account(
     let transport_protocol = parse_protocol(&protocol)?;
 
     // Build credentials
-    let credentials = Credentials::new(
-        server.clone(),
-        port,
-        transport_protocol,
-        username,
-        password,
-    );
+    let credentials =
+        Credentials::new(server.clone(), port, transport_protocol, username, password);
 
     // Resolve server address
     let server_addr = resolve_server_address(&server, port)?;
@@ -113,9 +112,7 @@ pub async fn register_account(
 /// * `Ok(String)` - Current registration state as string
 /// * `Err(CommandError)` - Service error
 #[tauri::command]
-pub async fn get_registration_status(
-    state: State<'_, AppState>,
-) -> Result<String, CommandError> {
+pub async fn get_registration_status(state: State<'_, AppState>) -> Result<String, CommandError> {
     let auth_service = state.auth_service.lock().await;
     let status = auth_service.get_registration_state().await;
 
@@ -136,9 +133,7 @@ pub async fn get_registration_status(
 /// * `Ok(String)` - Success message
 /// * `Err(CommandError)` - Service error
 #[tauri::command]
-pub async fn unregister_account(
-    state: State<'_, AppState>,
-) -> Result<String, CommandError> {
+pub async fn unregister_account(state: State<'_, AppState>) -> Result<String, CommandError> {
     let auth_service = state.auth_service.lock().await;
     auth_service
         .unregister()
@@ -147,4 +142,3 @@ pub async fn unregister_account(
 
     Ok("Account unregistered successfully".to_string())
 }
-

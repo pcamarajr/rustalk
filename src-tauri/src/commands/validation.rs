@@ -258,7 +258,10 @@ pub fn validate_protocol(protocol: &str) -> Result<(), CommandError> {
         "udp" | "tcp" | "tls" => Ok(()),
         _ => Err(CommandError::ValidationError {
             field: "protocol".to_string(),
-            message: format!("Protocol must be 'udp', 'tcp', or 'tls', got '{}'", protocol),
+            message: format!(
+                "Protocol must be 'udp', 'tcp', or 'tls', got '{}'",
+                protocol
+            ),
         }),
     }
 }
