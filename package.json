@@ -15,7 +15,10 @@
     "tauri:build": "tauri build",
     "docker:start": "docker-compose up -d",
     "docker:stop": "docker-compose down",
-    "test": "echo \"Tests not yet implemented\" && exit 0",
+    "test": "playwright test",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:debug": "playwright test --debug",
     "lint": "svelte-check --tsconfig ./tsconfig.json"
   },
   "license": "Apache-2.0",
@@ -26,6 +29,7 @@
   "devDependencies": {
     "@internationalized/date": "^3.10.0",
     "@lucide/svelte": "^0.544.0",
+    "@playwright/test": "^1.56.1",
     "@sveltejs/adapter-static": "^3.0.6",
     "@sveltejs/kit": "^2.9.0",
     "@sveltejs/vite-plugin-svelte": "^5.0.0",
