@@ -187,10 +187,7 @@ async fn test_switch_invalid_device() {
         "Setting invalid input device should return error"
     );
     assert!(
-        matches!(
-            result.unwrap_err(),
-            AudioEngineError::DeviceNotFound { .. }
-        ),
+        matches!(result.unwrap_err(), AudioEngineError::DeviceNotFound { .. }),
         "Error should be DeviceNotFound"
     );
 
@@ -200,10 +197,7 @@ async fn test_switch_invalid_device() {
         "Setting invalid output device should return error"
     );
     assert!(
-        matches!(
-            result.unwrap_err(),
-            AudioEngineError::DeviceNotFound { .. }
-        ),
+        matches!(result.unwrap_err(), AudioEngineError::DeviceNotFound { .. }),
         "Error should be DeviceNotFound"
     );
 
@@ -341,4 +335,3 @@ async fn test_device_switching_flow() {
 
     println!("DEBUG:[AUDIO/INTEGRATION] Complete device switching flow test passed");
 }
-
