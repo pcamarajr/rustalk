@@ -4,12 +4,15 @@
 use crate::infrastructure::sip::client::SipClient;
 use crate::services::AuthService;
 use std::sync::Arc;
+use tokio::runtime::Handle;
 use tokio::sync::Mutex;
 
 /// Application state shared across Tauri commands
 pub struct AppState {
     /// Authentication service for SIP account registration
     pub auth_service: Arc<Mutex<AuthService>>,
+    /// Tokio runtime handle for spawning async tasks
+    pub runtime_handle: Handle,
 }
 
 impl AppState {
@@ -17,9 +20,11 @@ impl AppState {
     ///
     /// # Arguments
     /// * `client` - SIP client instance for the AuthService
-    pub fn new(client: SipClient) -> Self {
+    /// * `runtime_handle` - Handle to the Tokio runtime
+    pub fn new(client: SipClient, runtime_handle: Handle) -> Self {
         Self {
             auth_service: Arc::new(Mutex::new(AuthService::new(client))),
+            runtime_handle,
         }
     }
 }
