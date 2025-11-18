@@ -180,6 +180,27 @@ impl AuthService {
                             match store.save(&key_clone, &creds_clone).await {
                                 Ok(()) => {
                                     eprintln!("DEBUG:[AUTH_SERVICE/SAVE_CREDENTIALS] Credentials saved successfully");
+                                    
+                                    // Also save the default_account pointer
+                                    // Store the credential key string in a special Credentials object
+                                    // We'll use the username field to store the actual credential key
+                                    let default_account_key = "default_account".to_string();
+                                    let default_account_creds = Credentials::new(
+                                        "default".to_string(),
+                                        0,
+                                        crate::domain::entities::credentials::TransportProtocol::Udp,
+                                        key_clone.clone(),
+                                        "".to_string(), // Empty password for default account pointer
+                                    );
+                                    
+                                    match store.save(&default_account_key, &default_account_creds).await {
+                                        Ok(()) => {
+                                            eprintln!("DEBUG:[AUTH_SERVICE/SAVE_CREDENTIALS] Default account pointer saved successfully");
+                                        }
+                                        Err(e) => {
+                                            eprintln!("DEBUG:[AUTH_SERVICE/SAVE_CREDENTIALS] Failed to save default account pointer: {}", e);
+                                        }
+                                    }
                                 }
                                 Err(e) => {
                                     eprintln!("DEBUG:[AUTH_SERVICE/SAVE_CREDENTIALS] Failed to save credentials: {}", e);
@@ -353,6 +374,25 @@ impl AuthService {
                             match store.save(&key_clone, &creds_clone).await {
                                 Ok(()) => {
                                     eprintln!("DEBUG:[AUTH_SERVICE/SAVE_CREDENTIALS] Credentials saved successfully after refresh");
+                                    
+                                    // Also save the default_account pointer
+                                    let default_account_key = "default_account".to_string();
+                                    let default_account_creds = Credentials::new(
+                                        "default".to_string(),
+                                        0,
+                                        crate::domain::entities::credentials::TransportProtocol::Udp,
+                                        key_clone.clone(),
+                                        "".to_string(), // Empty password for default account pointer
+                                    );
+                                    
+                                    match store.save(&default_account_key, &default_account_creds).await {
+                                        Ok(()) => {
+                                            eprintln!("DEBUG:[AUTH_SERVICE/SAVE_CREDENTIALS] Default account pointer saved successfully after refresh");
+                                        }
+                                        Err(e) => {
+                                            eprintln!("DEBUG:[AUTH_SERVICE/SAVE_CREDENTIALS] Failed to save default account pointer after refresh: {}", e);
+                                        }
+                                    }
                                 }
                                 Err(e) => {
                                     eprintln!("DEBUG:[AUTH_SERVICE/SAVE_CREDENTIALS] Failed to save credentials after refresh: {}", e);

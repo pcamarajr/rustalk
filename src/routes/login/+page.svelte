@@ -4,7 +4,7 @@
   import LoginForm from '$lib/components/auth/LoginForm.svelte';
   import { authStore, registrationState } from '$lib/stores/authStore';
 
-  // Check registration status on mount and redirect if already registered
+  // Check registration status on mount and attempt auto-login
   onMount(async () => {
     try {
       // Check current registration status from backend
@@ -14,9 +14,21 @@
       if ($registrationState === 'registered') {
         console.log('DEBUG:[LOGIN/NAVIGATION] Already registered, redirecting to dialer');
         goto('/');
+        return;
+      }
+      
+      // Attempt auto-login if not already registered
+      console.log('DEBUG:[LOGIN/AUTO_LOGIN] Attempting auto-login with saved credentials');
+      const autoLoginSuccess = await authStore.autoLogin();
+      
+      if (autoLoginSuccess) {
+        console.log('DEBUG:[LOGIN/AUTO_LOGIN] Auto-login initiated, waiting for registration');
+        // Registration state polling will handle the redirect when registration completes
+      } else {
+        console.log('DEBUG:[LOGIN/AUTO_LOGIN] No saved credentials or auto-login failed, showing login form');
       }
     } catch (error) {
-      console.error('DEBUG:[LOGIN/NAVIGATION] Error checking registration status', error);
+      console.error('DEBUG:[LOGIN/NAVIGATION] Error during auto-login check', error);
       // Continue to show login form even if check fails
     }
   });

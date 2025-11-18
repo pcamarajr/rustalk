@@ -231,5 +231,75 @@ export const authStore = {
     console.log("DEBUG:[AUTHSTORE/UPDATE_SIP] Updating SIP credentials");
     updateSIPCredentials((current) => ({ ...current, ...creds }));
   },
+
+  // Load saved credentials from storage
+  async loadSavedCredentials(): Promise<SIPCredentials | null> {
+    console.log("DEBUG:[AUTHSTORE/LOAD_SAVED] Attempting to load saved credentials");
+    
+    try {
+      const credentialsJson = await invoke<string | null>("load_saved_credentials");
+      
+      if (!credentialsJson) {
+        console.log("DEBUG:[AUTHSTORE/LOAD_SAVED] No saved credentials found");
+        return null;
+      }
+      
+      // Parse the JSON credentials
+      const credentials = JSON.parse(credentialsJson);
+      console.log("DEBUG:[AUTHSTORE/LOAD_SAVED] Successfully loaded credentials", {
+        server: credentials.server,
+        username: credentials.username,
+      });
+      
+      // Convert to SIPCredentials format
+      const sipCredentials: SIPCredentials = {
+        server: credentials.server,
+        port: credentials.port.toString(),
+        protocol: credentials.protocol === "Udp" ? "UDP" : credentials.protocol === "Tcp" ? "TCP" : "TLS",
+        username: credentials.username,
+        password: credentials.password, // Include password for auto-login
+      };
+      
+      return sipCredentials;
+    } catch (error) {
+      console.error("DEBUG:[AUTHSTORE/LOAD_SAVED] Error loading saved credentials", error);
+      return null;
+    }
+  },
+
+  // Auto-login using saved credentials
+  async autoLogin(): Promise<boolean> {
+    console.log("DEBUG:[AUTHSTORE/AUTO_LOGIN] Starting auto-login");
+    
+    try {
+      // Load saved credentials
+      const credentials = await authStore.loadSavedCredentials();
+      
+      if (!credentials || !credentials.password) {
+        console.log("DEBUG:[AUTHSTORE/AUTO_LOGIN] No saved credentials or password missing");
+        return false;
+      }
+      
+      console.log("DEBUG:[AUTHSTORE/AUTO_LOGIN] Found saved credentials, attempting registration", {
+        server: credentials.server,
+        username: credentials.username,
+      });
+      
+      // Attempt registration with saved credentials
+      await authStore.register(
+        credentials.server,
+        parseInt(credentials.port, 10),
+        credentials.protocol.toLowerCase() as "udp" | "tcp" | "tls",
+        credentials.username,
+        credentials.password,
+      );
+      
+      console.log("DEBUG:[AUTHSTORE/AUTO_LOGIN] Auto-login registration initiated");
+      return true;
+    } catch (error) {
+      console.error("DEBUG:[AUTHSTORE/AUTO_LOGIN] Auto-login failed", error);
+      return false;
+    }
+  },
 };
 
