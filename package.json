@@ -31,6 +31,7 @@
     "@sveltejs/vite-plugin-svelte": "^5.0.0",
     "@tailwindcss/postcss": "^4.1.17",
     "@tauri-apps/cli": "^2",
+    "@types/node": "^24.10.1",
     "autoprefixer": "^10.4.22",
     "bits-ui": "^2.14.3",
     "clsx": "^2.1.1",
