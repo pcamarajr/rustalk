@@ -415,21 +415,38 @@ async fn test_registration_and_audio_flow() {
 
     // Step 3: Verify Credential Persistence
     println!("DEBUG:[E2E] Step 3: Verifying credential persistence");
-    // Give time for async credential save to complete
-    tokio::time::sleep(Duration::from_millis(500)).await;
-
-    // Load credentials via credential store (simulating load_saved_credentials command)
+    // Poll for credentials with timeout (credentials are saved via tokio::spawn which is fire-and-forget)
     let credential_key = format!("{}@{}", username, server_host);
     let credential_store = &app_state.credential_store;
 
-    // Check default_account pointer first
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    let poll_interval = Duration::from_millis(100);
+
+    loop {
+        if tokio::time::Instant::now() >= deadline {
+            panic!("Timeout waiting for credentials to be saved");
+        }
+
+        // Check default_account pointer first
+        let default_account = credential_store.load("default_account").await.unwrap();
+        if default_account.is_some() {
+            // Load actual credentials
+            let loaded_creds = credential_store.load(&credential_key).await.unwrap();
+            if loaded_creds.is_some() {
+                break;
+            }
+        }
+
+        tokio::time::sleep(poll_interval).await;
+    }
+
+    // Verify credentials were saved
     let default_account = credential_store.load("default_account").await.unwrap();
     assert!(
         default_account.is_some(),
         "Expected default_account pointer to exist"
     );
 
-    // Load actual credentials
     let loaded_creds = credential_store.load(&credential_key).await.unwrap();
     assert!(
         loaded_creds.is_some(),
@@ -453,20 +470,22 @@ async fn test_registration_and_audio_flow() {
     // Step 4: List Audio Devices
     println!("DEBUG:[E2E] Step 4: Listing audio devices");
     let audio_service = app_state.audio_service.lock().await;
-    let input_devices = timeout(Duration::from_secs(3), audio_service.list_input_devices())
-        .await
-        .unwrap()
-        .unwrap();
+    let input_devices = match timeout(Duration::from_secs(3), audio_service.list_input_devices()).await {
+        Ok(Ok(devices)) => devices,
+        Ok(Err(e)) => panic!("Failed to list input devices: {:?}", e),
+        Err(_) => panic!("Timeout waiting for input device list"),
+    };
     assert!(
         !input_devices.is_empty(),
         "Expected at least one input device"
     );
     println!("DEBUG:[E2E] Found {} input device(s)", input_devices.len());
 
-    let output_devices = timeout(Duration::from_secs(3), audio_service.list_output_devices())
-        .await
-        .unwrap()
-        .unwrap();
+    let output_devices = match timeout(Duration::from_secs(3), audio_service.list_output_devices()).await {
+        Ok(Ok(devices)) => devices,
+        Ok(Err(e)) => panic!("Failed to list output devices: {:?}", e),
+        Err(_) => panic!("Timeout waiting for output device list"),
+    };
     assert!(
         !output_devices.is_empty(),
         "Expected at least one output device"
@@ -481,30 +500,39 @@ async fn test_registration_and_audio_flow() {
     let first_input_id = input_devices[0].id.clone();
     let first_output_id = output_devices[0].id.clone();
 
-    let set_input_result = timeout(
+    let set_input_result = match timeout(
         Duration::from_secs(3),
         audio_service.set_input_device(&first_input_id),
     )
     .await
-    .unwrap();
+    {
+        Ok(Ok(())) => Ok(()),
+        Ok(Err(e)) => Err(e),
+        Err(_) => panic!("Timeout waiting for input device to be set"),
+    };
     assert!(set_input_result.is_ok(), "Should set input device");
     println!("DEBUG:[E2E] Input device set successfully");
 
-    let set_output_result = timeout(
+    let set_output_result = match timeout(
         Duration::from_secs(3),
         audio_service.set_output_device(&first_output_id),
     )
     .await
-    .unwrap();
+    {
+        Ok(Ok(())) => Ok(()),
+        Ok(Err(e)) => Err(e),
+        Err(_) => panic!("Timeout waiting for output device to be set"),
+    };
     assert!(set_output_result.is_ok(), "Should set output device");
     println!("DEBUG:[E2E] Output device set successfully");
 
     // Step 6: Verify Audio Device Persistence
     println!("DEBUG:[E2E] Step 6: Verifying audio device persistence");
-    let selected_input = timeout(Duration::from_secs(3), audio_service.get_input_device())
-        .await
-        .unwrap()
-        .unwrap();
+    let selected_input = match timeout(Duration::from_secs(3), audio_service.get_input_device()).await {
+        Ok(Ok(device)) => device,
+        Ok(Err(e)) => panic!("Failed to get input device: {:?}", e),
+        Err(_) => panic!("Timeout waiting for input device"),
+    };
     assert!(
         selected_input.is_some(),
         "Expected input device to be selected"
@@ -516,10 +544,11 @@ async fn test_registration_and_audio_flow() {
     );
     println!("DEBUG:[E2E] Input device persistence verified");
 
-    let selected_output = timeout(Duration::from_secs(3), audio_service.get_output_device())
-        .await
-        .unwrap()
-        .unwrap();
+    let selected_output = match timeout(Duration::from_secs(3), audio_service.get_output_device()).await {
+        Ok(Ok(device)) => device,
+        Ok(Err(e)) => panic!("Failed to get output device: {:?}", e),
+        Err(_) => panic!("Timeout waiting for output device"),
+    };
     assert!(
         selected_output.is_some(),
         "Expected output device to be selected"
