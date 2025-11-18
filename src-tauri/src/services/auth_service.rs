@@ -258,6 +258,7 @@ impl AuthService {
             &self.client,
             self.server_addr,
             self.contact_uri.as_ref(),
+            &self.credential_store,
         )
         .await
     }
@@ -271,6 +272,7 @@ impl AuthService {
         client: &Arc<tokio::sync::Mutex<SipClient>>,
         server_addr: Option<SocketAddr>,
         contact_uri: Option<&String>,
+        credential_store: &Arc<dyn CredentialStore>,
     ) -> Result<bool, SipError> {
         // Check if registration is expired
         let should_refresh = {
@@ -331,6 +333,38 @@ impl AuthService {
                 if reg_result.status_code == 200 {
                     // Success - transition to Registered
                     reg.set_registered(reg_result.expires)?;
+
+                    // Save credentials to Keychain after successful refresh
+                    if let Some(credentials) = reg.credentials() {
+                        let credential_key =
+                            format!("{}@{}", credentials.username, credentials.server);
+                        eprintln!(
+                            "DEBUG:[AUTH_SERVICE/SAVE_CREDENTIALS] Saving credentials after refresh with key: {}",
+                            credential_key
+                        );
+
+                        // Clone credentials and key for async operation
+                        let creds_clone = credentials.clone();
+                        let key_clone = credential_key.clone();
+                        let store = Arc::clone(credential_store);
+
+                        // Save credentials (non-blocking, errors are logged but don't fail registration)
+                        tokio::spawn(async move {
+                            match store.save(&key_clone, &creds_clone).await {
+                                Ok(()) => {
+                                    eprintln!("DEBUG:[AUTH_SERVICE/SAVE_CREDENTIALS] Credentials saved successfully after refresh");
+                                }
+                                Err(e) => {
+                                    eprintln!("DEBUG:[AUTH_SERVICE/SAVE_CREDENTIALS] Failed to save credentials after refresh: {}", e);
+                                    // Note: We don't fail registration if credential save fails
+                                    // Registration succeeded, storage is secondary
+                                }
+                            }
+                        });
+                    } else {
+                        eprintln!("DEBUG:[AUTH_SERVICE/SAVE_CREDENTIALS] No credentials available to save after refresh");
+                    }
+
                     Ok(true)
                 } else {
                     // Error response - transition to Failed
@@ -369,6 +403,7 @@ impl AuthService {
         let client = Arc::clone(&self.client);
         let server_addr = self.server_addr;
         let contact_uri = self.contact_uri.clone();
+        let credential_store = Arc::clone(&self.credential_store);
 
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(Duration::from_secs(check_interval_secs));
@@ -387,6 +422,7 @@ impl AuthService {
                     &client,
                     server_addr,
                     contact_uri.as_ref(),
+                    &credential_store,
                 )
                 .await
                 {
