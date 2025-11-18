@@ -19,8 +19,11 @@ use commands::{
     get_input_device, get_output_device, get_registration_status, greet, list_input_devices,
     list_output_devices, register_account, set_input_device, set_output_device, unregister_account,
 };
+use domain::traits::CredentialStore;
 use infrastructure::audio::create_audio_engine;
 use infrastructure::sip::client::SipClient;
+#[cfg(target_os = "macos")]
+use infrastructure::storage::KeychainCredentialStore;
 use services::AudioService;
 use state::AppState;
 use std::sync::Arc;
@@ -73,8 +76,21 @@ pub fn run() {
             let audio_service = AudioService::new(audio_engine);
             eprintln!("DEBUG:[SETUP] Audio service created successfully");
 
+            eprintln!("DEBUG:[SETUP] Creating credential store");
+            #[cfg(target_os = "macos")]
+            let credential_store: Arc<dyn CredentialStore> =
+                Arc::new(KeychainCredentialStore::new());
+            #[cfg(not(target_os = "macos"))]
+            {
+                // For non-macOS platforms, we'll need to implement a platform-specific store
+                // For now, this will cause a compilation error on non-macOS platforms
+                // This is expected as KeychainCredentialStore is macOS-only
+                compile_error!("Credential store not implemented for this platform");
+            }
+            eprintln!("DEBUG:[SETUP] Credential store created successfully");
+
             eprintln!("DEBUG:[SETUP] Creating AppState");
-            let app_state = AppState::new(client, audio_service);
+            let app_state = AppState::new(client, audio_service, credential_store);
 
             app.manage(app_state);
             eprintln!("DEBUG:[SETUP] Setup complete");

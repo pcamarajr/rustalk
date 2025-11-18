@@ -374,7 +374,7 @@ Phase 8: Production Polish        █████░░░░░░░░░░�
 
 #### Credential Persistence Integration (10 hours)
 
-- **SEC-6.7** (4h): Integrate credential store into AppState
+- **SEC-6.7** (4h): Integrate credential store into AppState ✅ **COMPLETED**
 
   - Files: `src-tauri/src/state.rs`
   - Add `credential_store: Arc<dyn CredentialStore>` field to AppState
