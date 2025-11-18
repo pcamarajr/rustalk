@@ -8,7 +8,7 @@ use async_trait::async_trait;
 ///
 /// Represents an audio input or output device with its identifier and display name.
 /// This is a minimal representation for AUD-5.1; full entity can be refined in AUD-5.3.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct AudioDevice {
     /// Unique identifier for the device (platform-agnostic)
     pub id: String,

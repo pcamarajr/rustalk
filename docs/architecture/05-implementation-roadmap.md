@@ -334,10 +334,10 @@ Phase 8: Production Polish        █████░░░░░░░░░░�
   - Files: `/src-tauri/src/services/audio_service.rs`
   - Tests: Integration test - switch devices (`tests/audio_device_integration_test.rs`)
 
-- **AUD-5.5** (6h): Tauri audio commands (`list_devices`, `set_device`)
+- **AUD-5.5** (6h): Tauri audio commands (`list_devices`, `set_device`) ✅ **COMPLETED**
 
   - Files: `/src-tauri/src/commands/audio.rs`
-  - Tests: Integration test - IPC layer
+  - Tests: Integration test - IPC layer (`tests/audio_commands_integration_test.rs`)
 
 - **AUD-5.6** (8h): Frontend audio settings UI
   - Files: `/src/routes/settings/+page.svelte`

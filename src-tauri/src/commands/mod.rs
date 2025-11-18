@@ -1,9 +1,14 @@
 // Commands module - Tauri command handlers and validation
 // This module contains all Tauri command handlers and their validation logic
 
+pub mod audio;
 pub mod auth;
 pub mod validation;
 
+pub use audio::{
+    get_input_device, get_output_device, list_input_devices, list_output_devices, set_input_device,
+    set_output_device,
+};
 pub use auth::{get_registration_status, register_account, unregister_account};
 pub use validation::*;
 

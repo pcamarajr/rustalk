@@ -174,6 +174,32 @@ impl From<SipError> for CommandError {
     }
 }
 
+impl From<AudioEngineError> for CommandError {
+    fn from(err: AudioEngineError) -> Self {
+        match err {
+            AudioEngineError::DeviceNotFound { device_id } => CommandError::InvalidArgument {
+                argument: "device_id".to_string(),
+                reason: format!("Device not found: {}", device_id),
+            },
+            AudioEngineError::DeviceEnumerationFailed { message } => CommandError::ServiceError {
+                message: format!("Device enumeration failed: {}", message),
+            },
+            AudioEngineError::StreamStartFailed { message } => CommandError::ServiceError {
+                message: format!("Stream start failed: {}", message),
+            },
+            AudioEngineError::StreamStopFailed { message } => CommandError::ServiceError {
+                message: format!("Stream stop failed: {}", message),
+            },
+            AudioEngineError::DeviceSwitchFailed { message } => CommandError::ServiceError {
+                message: format!("Device switch failed: {}", message),
+            },
+            AudioEngineError::InvalidConfiguration { message } => CommandError::ServiceError {
+                message: format!("Invalid configuration: {}", message),
+            },
+        }
+    }
+}
+
 /// Errors that can occur during Tauri command execution
 #[derive(Debug, Error, Clone, PartialEq, Eq, serde::Serialize)]
 pub enum CommandError {
