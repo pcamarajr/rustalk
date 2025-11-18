@@ -17,7 +17,8 @@ pub mod state;
 
 use commands::{
     get_input_device, get_output_device, get_registration_status, greet, list_input_devices,
-    list_output_devices, register_account, set_input_device, set_output_device, unregister_account,
+    list_output_devices, load_saved_credentials, register_account, set_input_device,
+    set_output_device, unregister_account,
 };
 use domain::traits::CredentialStore;
 use infrastructure::audio::create_audio_engine;
@@ -101,6 +102,7 @@ pub fn run() {
             register_account,
             get_registration_status,
             unregister_account,
+            load_saved_credentials,
             list_input_devices,
             list_output_devices,
             get_input_device,

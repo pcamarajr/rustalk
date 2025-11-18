@@ -180,6 +180,15 @@ impl AuthService {
                             match store.save(&key_clone, &creds_clone).await {
                                 Ok(()) => {
                                     eprintln!("DEBUG:[AUTH_SERVICE/SAVE_CREDENTIALS] Credentials saved successfully");
+
+                                    // Also save the default_account pointer
+                                    let store_clone = Arc::clone(&store);
+                                    let key_for_pointer = key_clone.clone();
+                                    Self::save_default_account_pointer(
+                                        store_clone,
+                                        key_for_pointer,
+                                    )
+                                    .await;
                                 }
                                 Err(e) => {
                                     eprintln!("DEBUG:[AUTH_SERVICE/SAVE_CREDENTIALS] Failed to save credentials: {}", e);
@@ -243,6 +252,38 @@ impl AuthService {
     pub async fn unregister(&self) -> Result<(), SipError> {
         let mut reg = self.registration.write().await;
         reg.set_unregistered()
+    }
+
+    /// Save the default_account pointer to the credential store
+    ///
+    /// This helper function saves a pointer to the credential key in a special
+    /// Credentials object stored under the "default_account" key. This allows
+    /// the application to quickly find the default account credentials.
+    ///
+    /// # Arguments
+    /// * `store` - The credential store to save to
+    /// * `credential_key` - The key of the credentials to point to
+    async fn save_default_account_pointer(store: Arc<dyn CredentialStore>, credential_key: String) {
+        let default_account_key = "default_account".to_string();
+        let default_account_creds = Credentials::new(
+            "default".to_string(),
+            0,
+            crate::domain::entities::credentials::TransportProtocol::Udp,
+            credential_key.clone(),
+            "".to_string(), // Empty password for default account pointer
+        );
+
+        match store
+            .save(&default_account_key, &default_account_creds)
+            .await
+        {
+            Ok(()) => {
+                eprintln!("DEBUG:[AUTH_SERVICE/SAVE_CREDENTIALS] Default account pointer saved successfully");
+            }
+            Err(e) => {
+                eprintln!("DEBUG:[AUTH_SERVICE/SAVE_CREDENTIALS] Failed to save default account pointer: {}", e);
+            }
+        }
     }
 
     /// Refresh registration if expired
@@ -353,6 +394,15 @@ impl AuthService {
                             match store.save(&key_clone, &creds_clone).await {
                                 Ok(()) => {
                                     eprintln!("DEBUG:[AUTH_SERVICE/SAVE_CREDENTIALS] Credentials saved successfully after refresh");
+
+                                    // Also save the default_account pointer
+                                    let store_clone = Arc::clone(&store);
+                                    let key_for_pointer = key_clone.clone();
+                                    Self::save_default_account_pointer(
+                                        store_clone,
+                                        key_for_pointer,
+                                    )
+                                    .await;
                                 }
                                 Err(e) => {
                                     eprintln!("DEBUG:[AUTH_SERVICE/SAVE_CREDENTIALS] Failed to save credentials after refresh: {}", e);

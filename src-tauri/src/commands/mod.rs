@@ -9,7 +9,9 @@ pub use audio::{
     get_input_device, get_output_device, list_input_devices, list_output_devices, set_input_device,
     set_output_device,
 };
-pub use auth::{get_registration_status, register_account, unregister_account};
+pub use auth::{
+    get_registration_status, load_saved_credentials, register_account, unregister_account,
+};
 pub use validation::*;
 
 use crate::domain::CommandError;

@@ -389,13 +389,16 @@ Phase 8: Production Polish        █████░░░░░░░░░░�
   - Use username@server as the key for credential storage
   - Handle save errors gracefully (log but don't fail registration)
 
-- **SEC-6.9** (3h): Load credentials on app startup and auto-login
+- ✅ **SEC-6.9** (3h): Load credentials on app startup and auto-login
   - Files: `src-tauri/src/lib.rs` (setup function)
   - Files: `src-tauri/src/commands/auth.rs` (new `load_saved_credentials` command)
   - Files: `src/lib/stores/authStore.ts` (auto-login logic)
+  - Files: `src/routes/login/+page.svelte` (auto-login trigger)
+  - Files: `src-tauri/src/services/auth_service.rs` (save default_account pointer)
   - On app startup, check for saved credentials
   - If found, automatically attempt registration
   - Update frontend to handle auto-login state
+  - Store "default_account" pointer when saving credentials
 
 #### E2E Test Suite (6 hours)
 
