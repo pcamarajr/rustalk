@@ -11,22 +11,6 @@ use crate::state::AppState;
 use std::net::ToSocketAddrs;
 use tauri::State;
 
-/// Convert protocol string to TransportProtocol enum
-fn parse_protocol(protocol: &str) -> Result<TransportProtocol, CommandError> {
-    match protocol.to_lowercase().as_str() {
-        "udp" => Ok(TransportProtocol::Udp),
-        "tcp" => Ok(TransportProtocol::Tcp),
-        "tls" => Ok(TransportProtocol::Tls),
-        _ => Err(CommandError::ValidationError {
-            field: "protocol".to_string(),
-            message: format!(
-                "Invalid protocol: {}. Must be 'udp', 'tcp', or 'tls'",
-                protocol
-            ),
-        }),
-    }
-}
-
 /// Resolve server address to SocketAddr
 fn resolve_server_address(server: &str, port: u16) -> Result<std::net::SocketAddr, CommandError> {
     let addr_string = format!("{}:{}", server, port);
@@ -76,8 +60,13 @@ pub async fn register_account(
     validate_non_empty_string("password", &password)?;
     validate_contact_uri(contact_uri.as_deref())?;
 
-    // Convert protocol string to enum
-    let transport_protocol = parse_protocol(&protocol)?;
+    // Convert protocol string to enum (already validated above)
+    let transport_protocol = match protocol.to_lowercase().as_str() {
+        "udp" => TransportProtocol::Udp,
+        "tcp" => TransportProtocol::Tcp,
+        "tls" => TransportProtocol::Tls,
+        _ => unreachable!(), // Already validated by validate_protocol above
+    };
 
     // Build credentials
     let credentials =
