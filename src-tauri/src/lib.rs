@@ -16,10 +16,10 @@ pub mod commands;
 pub mod state;
 
 use commands::{
-    events::EventEmitter,
-    get_input_device, get_output_device, get_registration_status, greet, hangup_call, hold_call,
-    initiate_call, list_input_devices, list_output_devices, load_saved_credentials, mute_call,
-    register_account, set_input_device, set_output_device, unregister_account,
+    events::EventEmitter, get_input_device, get_output_device, get_registration_status, greet,
+    hangup_call, hold_call, initiate_call, list_input_devices, list_output_devices,
+    load_saved_credentials, mute_call, register_account, set_input_device, set_output_device,
+    unregister_account,
 };
 use domain::traits::CredentialStore;
 use infrastructure::audio::create_audio_engine;
@@ -101,7 +101,13 @@ pub fn run() {
             let event_emitter = EventEmitter::new(app.handle().clone());
 
             eprintln!("DEBUG:[SETUP] Creating AppState");
-            let app_state = AppState::new(client, call_client, audio_service, credential_store, event_emitter);
+            let app_state = AppState::new(
+                client,
+                call_client,
+                audio_service,
+                credential_store,
+                event_emitter,
+            );
 
             app.manage(app_state);
             eprintln!("DEBUG:[SETUP] Setup complete");

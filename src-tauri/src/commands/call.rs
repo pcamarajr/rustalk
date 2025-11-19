@@ -169,25 +169,19 @@ pub async fn initiate_call(
 /// * `Ok(())` if call was ended successfully
 /// * `Err(CommandError)` - Validation or service error
 #[tauri::command]
-pub async fn hangup_call(
-    call_id: String,
-    state: State<'_, AppState>,
-) -> Result<(), CommandError> {
+pub async fn hangup_call(call_id: String, state: State<'_, AppState>) -> Result<(), CommandError> {
     eprintln!("DEBUG:[HANGUP_CALL] Ending call: {}", call_id);
 
     use crate::domain::entities::call::CallId;
     let call_id_entity = CallId::from(call_id);
 
     let call_service = state.call_service.lock().await;
-    call_service
-        .end_call(&call_id_entity)
-        .await
-        .map_err(|e| {
-            eprintln!("DEBUG:[HANGUP_CALL] CallService error: {}", e);
-            CommandError::ServiceError {
-                message: format!("Failed to end call: {}", e),
-            }
-        })?;
+    call_service.end_call(&call_id_entity).await.map_err(|e| {
+        eprintln!("DEBUG:[HANGUP_CALL] CallService error: {}", e);
+        CommandError::ServiceError {
+            message: format!("Failed to end call: {}", e),
+        }
+    })?;
 
     eprintln!("DEBUG:[HANGUP_CALL] Call ended successfully");
     Ok(())
@@ -211,7 +205,10 @@ pub async fn mute_call(
     muted: bool,
     _state: State<'_, AppState>,
 ) -> Result<(), CommandError> {
-    eprintln!("DEBUG:[MUTE_CALL] Setting mute state for call {}: {}", call_id, muted);
+    eprintln!(
+        "DEBUG:[MUTE_CALL] Setting mute state for call {}: {}",
+        call_id, muted
+    );
     // TODO: Implement real mute logic in Phase 6 (CTL-4.2)
     // For now, this is a stub that returns success
     Ok(())
@@ -235,7 +232,10 @@ pub async fn hold_call(
     on_hold: bool,
     _state: State<'_, AppState>,
 ) -> Result<(), CommandError> {
-    eprintln!("DEBUG:[HOLD_CALL] Setting hold state for call {}: {}", call_id, on_hold);
+    eprintln!(
+        "DEBUG:[HOLD_CALL] Setting hold state for call {}: {}",
+        call_id, on_hold
+    );
     // TODO: Implement real hold logic in Phase 6
     // For now, this is a stub that returns success
     Ok(())

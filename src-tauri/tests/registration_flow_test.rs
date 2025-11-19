@@ -292,7 +292,13 @@ async fn create_test_app_state() -> AppState {
     use rustalk_lib::commands::events::EventEmitter;
     let app = tauri::test::mock_app();
     let event_emitter = EventEmitter::new(app.handle().clone());
-    AppState::new(client, call_client, audio_service, credential_store, event_emitter)
+    AppState::new(
+        client,
+        call_client,
+        audio_service,
+        credential_store,
+        event_emitter,
+    )
 }
 
 #[tokio::test]
