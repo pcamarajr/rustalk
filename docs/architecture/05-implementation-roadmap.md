@@ -475,11 +475,13 @@ Phase 8: Production Polish        █████░░░░░░░░░░�
   - Tests: Integration test - initiate call via IPC ✅
   - Implementation: Complete Tauri command that validates phone number, checks registration state, gets registration info from AuthService, generates RTP port, and calls CallService to initiate outbound call. Frontend updated to use real Tauri command with proper error handling.
 
-- **OUT-2.6** (10h): Frontend dialer UI + active call view
-  - Files: `/src/lib/components/Dialer.svelte`
-  - Files: `/src/lib/components/ActiveCall.svelte`
-  - Files: `/src/lib/stores/callStore.ts`
-  - Tests: Component tests
+- **OUT-2.6** (10h): Frontend dialer UI + active call view ✅ **COMPLETED**
+  - Files: `/src/lib/components/dialer/Dialer.svelte` ✅
+  - Files: `/src/lib/components/call/ActiveCall.svelte` ✅
+  - Files: `/src/lib/stores/callStore.ts` ✅
+  - Files: `/src-tauri/src/commands/events.rs` (new) ✅
+  - Files: `/src-tauri/src/services/call_service.rs` (event emission) ✅
+  - Implementation: Complete frontend-backend integration with Tauri event system for real-time call state synchronization. Backend emits `call_state_changed` events on state transitions (ringing → connecting → active → ended). Frontend event listener in callStore updates UI reactively. Dialer UI includes loading state and error handling. Active call view shows state-specific UI (ringing/connecting vs active). Call controls (mute/hold/end) integrated with backend commands (stub implementations for Phase 6). Audio visualizer documented as mock implementation.
 
 #### Inbound Calls (56 hours)
 
