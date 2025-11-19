@@ -1,6 +1,7 @@
 // Application state for Tauri
 // Holds shared state accessible by Tauri commands
 
+use crate::commands::events::EventEmitter;
 use crate::domain::traits::CredentialStore;
 use crate::infrastructure::sip::client::SipClient;
 use crate::services::{AudioService, AuthService, CallService};
@@ -27,11 +28,13 @@ impl AppState {
     /// * `call_client` - SIP client instance for the CallService (can be same as client)
     /// * `audio_service` - Audio service instance
     /// * `credential_store` - Credential store instance for secure credential persistence
+    /// * `event_emitter` - Event emitter for sending events to frontend
     pub fn new(
         client: SipClient,
         call_client: SipClient,
         audio_service: AudioService,
         credential_store: Arc<dyn CredentialStore>,
+        event_emitter: EventEmitter,
     ) -> Self {
         // Clone credential store for AuthService
         let credential_store_for_auth = Arc::clone(&credential_store);
@@ -49,6 +52,7 @@ impl AppState {
             call_service: Arc::new(Mutex::new(CallService::new(
                 call_client,
                 auth_service_for_call,
+                Some(event_emitter),
             ))),
             credential_store,
         }

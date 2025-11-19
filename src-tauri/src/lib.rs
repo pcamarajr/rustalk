@@ -16,9 +16,10 @@ pub mod commands;
 pub mod state;
 
 use commands::{
-    get_input_device, get_output_device, get_registration_status, greet, initiate_call,
-    list_input_devices, list_output_devices, load_saved_credentials, register_account,
-    set_input_device, set_output_device, unregister_account,
+    events::EventEmitter,
+    get_input_device, get_output_device, get_registration_status, greet, hangup_call, hold_call,
+    initiate_call, list_input_devices, list_output_devices, load_saved_credentials, mute_call,
+    register_account, set_input_device, set_output_device, unregister_account,
 };
 use domain::traits::CredentialStore;
 use infrastructure::audio::create_audio_engine;
@@ -96,8 +97,11 @@ pub fn run() {
             }
             eprintln!("DEBUG:[SETUP] Credential store created successfully");
 
+            eprintln!("DEBUG:[SETUP] Creating event emitter");
+            let event_emitter = EventEmitter::new(app.handle().clone());
+
             eprintln!("DEBUG:[SETUP] Creating AppState");
-            let app_state = AppState::new(client, call_client, audio_service, credential_store);
+            let app_state = AppState::new(client, call_client, audio_service, credential_store, event_emitter);
 
             app.manage(app_state);
             eprintln!("DEBUG:[SETUP] Setup complete");
@@ -115,7 +119,10 @@ pub fn run() {
             get_output_device,
             set_input_device,
             set_output_device,
-            initiate_call
+            initiate_call,
+            hangup_call,
+            mute_call,
+            hold_call
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
