@@ -3,22 +3,39 @@
 use crate::domain::entities::call::{Call, CallId, CallState};
 use crate::domain::entities::registration::RegistrationState;
 use crate::domain::errors::SipError;
+use crate::infrastructure::rtp::session::{RtpSession, RtpSessionConfig};
+use crate::infrastructure::rtp::codec::G711Type;
 use crate::infrastructure::sip::client::SipClient;
 use crate::infrastructure::sip::invite::build_invite_with_sdp;
+use crate::infrastructure::sip::sdp::{parse_sdp, CodecInfo};
 use crate::services::auth_service::AuthService;
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
-use tokio::sync::{Mutex, RwLock};
+use tokio::sync::{mpsc, Mutex, RwLock};
+
+/// RTP session data for a call
+struct CallRtpSession {
+    /// RTP session (wrapped in Mutex for mutable access)
+    session: Arc<Mutex<RtpSession>>,
+    /// Audio input channel (sends audio to RTP encoder)
+    audio_tx: mpsc::Sender<Vec<i16>>,
+    /// Audio output channel (receives decoded audio from RTP)
+    audio_rx: mpsc::Receiver<Vec<i16>>,
+}
 
 /// Call service managing outbound call lifecycle
 pub struct CallService {
     /// Active calls (thread-safe)
     active_calls: Arc<RwLock<HashMap<CallId, Call>>>,
+    /// RTP sessions for active calls
+    rtp_sessions: Arc<RwLock<HashMap<CallId, CallRtpSession>>>,
     /// SIP client for sending messages
     sip_client: Arc<Mutex<SipClient>>,
     /// Reference to auth service for credentials and registration state
     auth_service: Arc<Mutex<AuthService>>,
+    /// Local RTP port for outbound calls (from SDP offer)
+    local_rtp_port: Arc<Mutex<Option<u16>>>,
 }
 
 impl CallService {
@@ -30,8 +47,10 @@ impl CallService {
     pub fn new(sip_client: SipClient, auth_service: Arc<Mutex<AuthService>>) -> Self {
         Self {
             active_calls: Arc::new(RwLock::new(HashMap::new())),
+            rtp_sessions: Arc::new(RwLock::new(HashMap::new())),
             sip_client: Arc::new(Mutex::new(sip_client)),
             auth_service,
+            local_rtp_port: Arc::new(Mutex::new(None)),
         }
     }
 
@@ -214,6 +233,12 @@ impl CallService {
         let mut calls = self.active_calls.write().await;
         calls.insert(call_id.clone(), call);
 
+        // Store local RTP port for this call
+        {
+            let mut local_port = self.local_rtp_port.lock().await;
+            *local_port = Some(rtp_port);
+        }
+
         eprintln!(
             "DEBUG:[CALL_SERVICE/INITIATE] Call stored with ID: {}",
             call_id.as_str()
@@ -251,12 +276,13 @@ impl CallService {
     /// Updates call state based on SIP response status code:
     /// - 100 Trying: Stay in Ringing
     /// - 180 Ringing: Transition to Connecting
-    /// - 200 OK: Transition to Active, set start_time
+    /// - 200 OK: Transition to Active, set start_time, create RTP session
     /// - 4xx/5xx/6xx: Transition to Ended
     ///
     /// # Arguments
     /// * `call_id` - Call identifier
     /// * `status_code` - SIP response status code
+    /// * `sdp_body` - Optional SDP body from response (required for 200 OK)
     ///
     /// # Returns
     /// `Ok(())` if state was updated successfully, `Err(SipError)` otherwise
@@ -264,6 +290,7 @@ impl CallService {
         &self,
         call_id: &CallId,
         status_code: u16,
+        sdp_body: Option<&str>,
     ) -> Result<(), SipError> {
         eprintln!(
             "DEBUG:[CALL_SERVICE/HANDLE_RESPONSE] Handling response for call {}: status={}",
@@ -301,7 +328,7 @@ impl CallService {
                     e
                 })
             }
-            // 200 OK: Transition to Active
+            // 200 OK: Transition to Active and start RTP session
             200 => {
                 eprintln!("DEBUG:[CALL_SERVICE/HANDLE_RESPONSE] 200 OK - transitioning to Active");
                 call.transition_to_active().map_err(|e| {
@@ -310,7 +337,21 @@ impl CallService {
                         e
                     );
                     e
-                })
+                })?;
+
+                // Create RTP session if SDP is provided
+                if let Some(sdp_str) = sdp_body {
+                    eprintln!("DEBUG:[CALL_SERVICE/HANDLE_RESPONSE] Parsing SDP and creating RTP session");
+                    if let Err(e) = self.create_rtp_session(call_id, sdp_str).await {
+                        eprintln!("DEBUG:[CALL_SERVICE/HANDLE_RESPONSE] Failed to create RTP session: {}", e);
+                        // Don't fail the call transition, but log the error
+                        // In production, we might want to handle this differently
+                    }
+                } else {
+                    eprintln!("DEBUG:[CALL_SERVICE/HANDLE_RESPONSE] Warning: 200 OK received without SDP body");
+                }
+
+                Ok(())
             }
             // 4xx/5xx/6xx: Transition to Ended
             code if (400..=699).contains(&code) => {
@@ -346,6 +387,7 @@ impl CallService {
     /// End a call
     ///
     /// Transitions call to Ended state and sets end_time.
+    /// Stops RTP session if active.
     /// The call remains in active_calls but is marked as ended.
     ///
     /// # Arguments
@@ -358,6 +400,9 @@ impl CallService {
             "DEBUG:[CALL_SERVICE/END_CALL] Ending call: {}",
             call_id.as_str()
         );
+
+        // Stop RTP session if active
+        self.stop_rtp_session(call_id).await;
 
         let mut calls = self.active_calls.write().await;
         let call = calls.get_mut(call_id).ok_or_else(|| {
@@ -385,6 +430,141 @@ impl CallService {
 
         Ok(())
     }
+
+    /// Create RTP session for a call
+    ///
+    /// Parses SDP from 200 OK response and creates RTP session with appropriate codec.
+    ///
+    /// # Arguments
+    /// * `call_id` - Call identifier
+    /// * `sdp_str` - SDP body from 200 OK response
+    ///
+    /// # Returns
+    /// `Ok(())` if RTP session was created successfully, `Err(SipError)` otherwise
+    async fn create_rtp_session(&self, call_id: &CallId, sdp_str: &str) -> Result<(), SipError> {
+        eprintln!("DEBUG:[CALL_SERVICE/RTP] Creating RTP session for call: {}", call_id.as_str());
+
+        // Parse SDP
+        let parsed_sdp = parse_sdp(sdp_str).map_err(|e| {
+            eprintln!("DEBUG:[CALL_SERVICE/RTP] Failed to parse SDP: {}", e);
+            SipError::from(e)
+        })?;
+
+        // Get local RTP port (from the offer we sent)
+        let local_port = {
+            let local_port_guard = self.local_rtp_port.lock().await;
+            local_port_guard.ok_or_else(|| SipError::InvalidMessage {
+                reason: "Local RTP port not set".to_string(),
+            })?
+        };
+
+        // Select codec (prefer PCMU over PCMA)
+        let codec_type = select_codec(&parsed_sdp.codecs)?;
+
+        // Build remote address
+        let remote_addr = SocketAddr::new(parsed_sdp.connection_ip, parsed_sdp.rtp_port);
+
+        eprintln!(
+            "DEBUG:[CALL_SERVICE/RTP] RTP config: local_port={}, remote={}, codec={:?}",
+            local_port, remote_addr, codec_type
+        );
+
+        // Create RTP session config
+        let rtp_config = RtpSessionConfig {
+            local_port,
+            remote_addr,
+            codec_type,
+            ssrc: None, // Generate random SSRC
+        };
+
+        // Create and start RTP session
+        let mut rtp_session = RtpSession::new(rtp_config);
+        let (audio_tx, audio_rx) = rtp_session.start().await.map_err(|e| {
+            eprintln!("DEBUG:[CALL_SERVICE/RTP] Failed to start RTP session: {}", e);
+            SipError::from(e)
+        })?;
+
+        // Store RTP session
+        let rtp_data = CallRtpSession {
+            session: Arc::new(Mutex::new(rtp_session)),
+            audio_tx,
+            audio_rx,
+        };
+
+        let mut rtp_sessions = self.rtp_sessions.write().await;
+        rtp_sessions.insert(call_id.clone(), rtp_data);
+
+        eprintln!("DEBUG:[CALL_SERVICE/RTP] RTP session created and started successfully");
+
+        Ok(())
+    }
+
+    /// Stop RTP session for a call
+    ///
+    /// # Arguments
+    /// * `call_id` - Call identifier
+    async fn stop_rtp_session(&self, call_id: &CallId) {
+        eprintln!("DEBUG:[CALL_SERVICE/RTP] Stopping RTP session for call: {}", call_id.as_str());
+
+        let mut rtp_sessions = self.rtp_sessions.write().await;
+        if let Some(rtp_data) = rtp_sessions.remove(call_id) {
+            let mut session = rtp_data.session.lock().await;
+            if let Err(e) = session.stop().await {
+                eprintln!("DEBUG:[CALL_SERVICE/RTP] Error stopping RTP session: {}", e);
+            } else {
+                eprintln!("DEBUG:[CALL_SERVICE/RTP] RTP session stopped successfully");
+            }
+        }
+    }
+
+    /// Get audio input channel for a call's RTP session
+    ///
+    /// # Arguments
+    /// * `call_id` - Call identifier
+    ///
+    /// # Returns
+    /// `Some(audio_tx)` if RTP session exists, `None` otherwise
+    pub async fn get_rtp_audio_input(&self, call_id: &CallId) -> Option<mpsc::Sender<Vec<i16>>> {
+        let rtp_sessions = self.rtp_sessions.read().await;
+        rtp_sessions.get(call_id).map(|rtp_data| rtp_data.audio_tx.clone())
+    }
+
+    /// Get audio output channel for a call's RTP session
+    ///
+    /// Note: This consumes the receiver from the RTP session.
+    /// Only call this once per call.
+    ///
+    /// # Arguments
+    /// * `call_id` - Call identifier
+    ///
+    /// # Returns
+    /// `Some(audio_rx)` if RTP session exists, `None` otherwise
+    pub async fn take_rtp_audio_output(&self, call_id: &CallId) -> Option<mpsc::Receiver<Vec<i16>>> {
+        let mut rtp_sessions = self.rtp_sessions.write().await;
+        rtp_sessions.get_mut(call_id).map(|rtp_data| {
+            // Replace with a dummy receiver (we can't clone, so we create a new channel)
+            let (_dummy_tx, dummy_rx) = mpsc::channel(1);
+            std::mem::replace(&mut rtp_data.audio_rx, dummy_rx)
+        })
+    }
+}
+
+/// Select codec from SDP codec list
+/// Prefers PCMU (payload type 0) over PCMA (payload type 8)
+fn select_codec(codecs: &[CodecInfo]) -> Result<G711Type, SipError> {
+    // Prefer PCMU
+    if codecs.iter().any(|c| c.codec_name == "PCMU" && c.clock_rate == 8000) {
+        return Ok(G711Type::Pcmu);
+    }
+
+    // Fall back to PCMA
+    if codecs.iter().any(|c| c.codec_name == "PCMA" && c.clock_rate == 8000) {
+        return Ok(G711Type::Pcma);
+    }
+
+    Err(SipError::InvalidMessage {
+        reason: "No supported codec (PCMU/PCMA) found in SDP".to_string(),
+    })
 }
 
 #[cfg(test)]
@@ -490,7 +670,7 @@ mod tests {
         let service = create_test_call_service().await;
         let call_id = CallId::new("nonexistent".to_string());
 
-        let result = service.handle_invite_response(&call_id, 200).await;
+        let result = service.handle_invite_response(&call_id, 200, None).await;
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("not found"));
     }

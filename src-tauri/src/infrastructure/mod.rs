@@ -2,5 +2,6 @@
 // Implements domain traits with concrete platform services
 
 pub mod audio;
+pub mod rtp;
 pub mod sip;
 pub mod storage;

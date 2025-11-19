@@ -135,6 +135,91 @@ pub enum SipError {
     },
 }
 
+/// Errors that can occur during RTP operations
+#[derive(Debug, Error, Clone, PartialEq, Eq)]
+pub enum RtpError {
+    /// Failed to bind RTP socket
+    #[error("Socket bind failed: {message}")]
+    SocketBindFailed {
+        /// Error message
+        message: String,
+    },
+
+    /// Failed to send RTP packet
+    #[error("Packet send failed: {message}")]
+    SendFailed {
+        /// Error message
+        message: String,
+    },
+
+    /// Failed to receive RTP packet
+    #[error("Packet receive failed: {message}")]
+    ReceiveFailed {
+        /// Error message
+        message: String,
+    },
+
+    /// Invalid RTP packet format
+    #[error("Invalid packet format: {message}")]
+    InvalidPacket {
+        /// Error message
+        message: String,
+    },
+
+    /// Codec encoding/decoding error
+    #[error("Codec error: {message}")]
+    CodecError {
+        /// Error message
+        message: String,
+    },
+
+    /// Session already started
+    #[error("Session already started")]
+    SessionAlreadyStarted,
+
+    /// Session not started
+    #[error("Session not started")]
+    SessionNotStarted,
+
+    /// Invalid configuration
+    #[error("Invalid configuration: {message}")]
+    InvalidConfiguration {
+        /// Error message
+        message: String,
+    },
+}
+
+impl From<RtpError> for SipError {
+    fn from(err: RtpError) -> Self {
+        match err {
+            RtpError::SocketBindFailed { message } => SipError::TransportError {
+                message: format!("RTP socket bind failed: {}", message),
+            },
+            RtpError::SendFailed { message } => SipError::TransportError {
+                message: format!("RTP send failed: {}", message),
+            },
+            RtpError::ReceiveFailed { message } => SipError::TransportError {
+                message: format!("RTP receive failed: {}", message),
+            },
+            RtpError::InvalidPacket { message } => SipError::InvalidMessage {
+                reason: format!("Invalid RTP packet: {}", message),
+            },
+            RtpError::CodecError { message } => SipError::InvalidMessage {
+                reason: format!("RTP codec error: {}", message),
+            },
+            RtpError::SessionAlreadyStarted => SipError::InvalidMessage {
+                reason: "RTP session already started".to_string(),
+            },
+            RtpError::SessionNotStarted => SipError::InvalidMessage {
+                reason: "RTP session not started".to_string(),
+            },
+            RtpError::InvalidConfiguration { message } => SipError::InvalidMessage {
+                reason: format!("RTP configuration error: {}", message),
+            },
+        }
+    }
+}
+
 impl From<std::io::Error> for SipError {
     fn from(err: std::io::Error) -> Self {
         SipError::TransportError {
