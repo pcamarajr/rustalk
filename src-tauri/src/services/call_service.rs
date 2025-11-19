@@ -76,6 +76,7 @@ impl CallService {
     ///
     /// # Returns
     /// `Ok(CallId)` if call was initiated successfully, `Err(SipError)` otherwise
+    #[allow(clippy::too_many_arguments)]
     pub async fn initiate_outbound_call(
         &self,
         number: String,
