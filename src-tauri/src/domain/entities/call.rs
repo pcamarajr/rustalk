@@ -242,8 +242,8 @@ impl Call {
     }
 
     /// Get the SDP offer (if available)
-    pub fn sdp_offer(&self) -> Option<&String> {
-        self.sdp_offer.as_ref()
+    pub fn sdp_offer(&self) -> Option<&str> {
+        self.sdp_offer.as_deref()
     }
 
     /// Set the SDP offer
@@ -582,7 +582,7 @@ mod tests {
         call.set_sdp_offer(sdp.clone());
 
         // Verify SDP offer is stored
-        assert_eq!(call.sdp_offer(), Some(&sdp));
+        assert_eq!(call.sdp_offer(), Some(sdp.as_str()));
     }
 
     #[test]
@@ -594,6 +594,6 @@ mod tests {
         // Can still set SDP offer if needed
         let sdp = "v=0\r\no=bob 2890844527 2890844527 IN IP4 192.168.1.200\r\ns=-\r\nc=IN IP4 192.168.1.200\r\nt=0 0\r\nm=audio 49174 RTP/AVP 0 8\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\n".to_string();
         call.set_sdp_offer(sdp.clone());
-        assert_eq!(call.sdp_offer(), Some(&sdp));
+        assert_eq!(call.sdp_offer(), Some(sdp.as_str()));
     }
 }
