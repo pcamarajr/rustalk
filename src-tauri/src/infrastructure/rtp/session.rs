@@ -259,16 +259,38 @@ impl RtpSession {
 
         // Send stop signal
         if let Some(stop_tx) = self.stop_tx.take() {
-            let _ = stop_tx.send(());
+            if let Err(e) = stop_tx.send(()) {
+                eprintln!("DEBUG:[RTP/STOP] Warning: Failed to send stop signal (no receivers): {}", e);
+            }
         }
 
         // Wait for tasks to complete
         if let Some(handle) = self.send_handle.take() {
-            let _ = handle.await;
+            match handle.await {
+                Ok(Ok(())) => {
+                    eprintln!("DEBUG:[RTP/STOP] Send task completed successfully");
+                }
+                Ok(Err(e)) => {
+                    eprintln!("DEBUG:[RTP/STOP] Send task returned error: {}", e);
+                }
+                Err(e) => {
+                    eprintln!("DEBUG:[RTP/STOP] Send task join error: {}", e);
+                }
+            }
         }
 
         if let Some(handle) = self.receive_handle.take() {
-            let _ = handle.await;
+            match handle.await {
+                Ok(Ok(())) => {
+                    eprintln!("DEBUG:[RTP/STOP] Receive task completed successfully");
+                }
+                Ok(Err(e)) => {
+                    eprintln!("DEBUG:[RTP/STOP] Receive task returned error: {}", e);
+                }
+                Err(e) => {
+                    eprintln!("DEBUG:[RTP/STOP] Receive task join error: {}", e);
+                }
+            }
         }
 
         // Close socket
