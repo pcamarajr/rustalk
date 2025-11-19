@@ -2,7 +2,6 @@
 // Tests that the message receiver correctly receives SIP responses, extracts Call-ID,
 // matches it to active calls, and routes responses to CallService.handle_invite_response()
 
-use rustalk_lib::domain::entities::call::CallId;
 use rustalk_lib::domain::traits::CredentialStore;
 use rustalk_lib::infrastructure::sip::client::SipClient;
 use rustalk_lib::services::auth_service::AuthService;
