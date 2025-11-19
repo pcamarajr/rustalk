@@ -117,6 +117,46 @@ impl Call {
         }
     }
 
+    /// Create a new inbound call in Ringing state
+    ///
+    /// Inbound calls start in Ringing state because the caller is ringing us.
+    ///
+    /// # Arguments
+    /// * `remote_number` - Remote phone number or URI (from Request-URI or From header)
+    /// * `call_id_header` - SIP Call-ID header value from INVITE
+    /// * `from_tag` - SIP From tag from INVITE (optional)
+    ///
+    /// # Returns
+    /// A new Call instance in Ringing state
+    pub fn new_inbound(
+        remote_number: String,
+        call_id_header: String,
+        from_tag: Option<String>,
+    ) -> Self {
+        // Generate a simple CallId from timestamp
+        let call_id = format!(
+            "call_{}",
+            SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_nanos()
+        );
+
+        Self {
+            id: CallId::new(call_id),
+            direction: CallDirection::Inbound,
+            remote_number,
+            state: CallState::Ringing, // Inbound calls start in Ringing state
+            start_time: None,
+            end_time: None,
+            call_id_header: Some(call_id_header),
+            from_tag,
+            to_tag: None,
+            local_uri: None,
+            remote_uri: None,
+        }
+    }
+
     /// Get the call ID
     pub fn id(&self) -> &CallId {
         &self.id
@@ -199,6 +239,9 @@ impl Call {
 
     /// Check if a transition to the given state is valid
     ///
+    /// Validates transitions for both outbound and inbound calls.
+    /// Inbound calls start in Ringing state, so they can transition directly to Active or Ended.
+    ///
     /// # Arguments
     /// * `target_state` - The target state to transition to
     ///
@@ -206,13 +249,13 @@ impl Call {
     /// `true` if the transition is valid, `false` otherwise
     pub fn can_transition_to(&self, target_state: &CallState) -> bool {
         match (&self.state, target_state) {
-            // Idle → Ringing (when INVITE sent)
+            // Idle → Ringing (when INVITE sent - outbound only)
             (CallState::Idle, CallState::Ringing) => true,
-            // Ringing → Connecting (on 180 Ringing)
+            // Ringing → Connecting (on 180 Ringing - outbound only)
             (CallState::Ringing, CallState::Connecting) => true,
-            // Ringing → Active (on 200 OK, skipping Connecting)
+            // Ringing → Active (on 200 OK, skipping Connecting - both inbound and outbound)
             (CallState::Ringing, CallState::Active) => true,
-            // Connecting → Active (on 200 OK)
+            // Connecting → Active (on 200 OK - outbound only)
             (CallState::Connecting, CallState::Active) => true,
             // Any → Ended (on BYE, error, or timeout)
             (_, CallState::Ended) => true,
@@ -451,5 +494,62 @@ mod tests {
         assert_eq!(call_id1.as_str(), "call-123");
         assert_eq!(call_id1, call_id2);
         assert_ne!(call_id1, call_id3);
+    }
+
+    #[test]
+    fn test_new_inbound_call() {
+        let call = Call::new_inbound(
+            "sip:alice@example.com".to_string(),
+            "abc123@example.com".to_string(),
+            Some("from-tag-123".to_string()),
+        );
+        assert!(matches!(call.state(), CallState::Ringing));
+        assert!(matches!(call.direction(), CallDirection::Inbound));
+        assert_eq!(call.remote_number(), "sip:alice@example.com");
+        assert_eq!(
+            call.call_id_header(),
+            Some(&"abc123@example.com".to_string())
+        );
+        assert_eq!(call.from_tag(), Some(&"from-tag-123".to_string()));
+        assert!(call.start_time().is_none());
+        assert!(call.end_time().is_none());
+    }
+
+    #[test]
+    fn test_new_inbound_call_no_from_tag() {
+        let call = Call::new_inbound(
+            "sip:alice@example.com".to_string(),
+            "abc123@example.com".to_string(),
+            None,
+        );
+        assert!(matches!(call.state(), CallState::Ringing));
+        assert!(matches!(call.direction(), CallDirection::Inbound));
+        assert!(call.from_tag().is_none());
+    }
+
+    #[test]
+    fn test_inbound_call_ringing_to_active() {
+        let mut call = Call::new_inbound(
+            "sip:alice@example.com".to_string(),
+            "abc123@example.com".to_string(),
+            Some("from-tag-123".to_string()),
+        );
+        // Inbound calls start in Ringing, can transition directly to Active
+        assert!(call.transition_to_active().is_ok());
+        assert!(matches!(call.state(), CallState::Active));
+        assert!(call.start_time().is_some());
+    }
+
+    #[test]
+    fn test_inbound_call_ringing_to_ended() {
+        let mut call = Call::new_inbound(
+            "sip:alice@example.com".to_string(),
+            "abc123@example.com".to_string(),
+            Some("from-tag-123".to_string()),
+        );
+        // Inbound calls can be rejected/ended from Ringing
+        assert!(call.transition_to_ended().is_ok());
+        assert!(matches!(call.state(), CallState::Ended));
+        assert!(call.end_time().is_some());
     }
 }

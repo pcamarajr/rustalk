@@ -58,6 +58,14 @@ Open-source white-label VoIP desktop application built with Rust and Tauri.
 - ✅ Load credentials on app startup and auto-login (SEC-6.9)
 - ✅ E2E test suite (POL-7.3)
 
+**Phase 5 (In Progress):**
+
+- ✅ INVITE listener for incoming calls (IN-3.1)
+  - Background task receives and filters INVITE requests
+  - Creates inbound Call entities in Ringing state
+  - Sends 100 Trying provisional response (RFC 3261)
+  - Validates registration state before accepting calls
+
 ## Quick Start
 
 ### Prerequisites

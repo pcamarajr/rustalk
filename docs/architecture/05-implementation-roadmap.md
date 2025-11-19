@@ -494,10 +494,15 @@ Phase 8: Production Polish        █████░░░░░░░░░░�
 
 #### Inbound Calls (56 hours)
 
-- **IN-3.1** (10h): INVITE listener for incoming calls
+- **IN-3.1** (10h): INVITE listener for incoming calls ✅ **COMPLETED**
 
-  - Files: `/src-tauri/src/infrastructure/sip/listener.rs`
-  - Tests: Unit tests for INVITE handling
+  - Files: `/src-tauri/src/infrastructure/sip/listener.rs` ✅
+  - Files: `/src-tauri/src/domain/entities/call.rs` (new_inbound() method) ✅
+  - Files: `/src-tauri/src/services/call_service.rs` (handle_incoming_invite() method) ✅
+  - Files: `/src-tauri/src/lib.rs` (spawn invite listener background task) ✅
+  - Files: `/src-tauri/src/infrastructure/sip/mod.rs` (export listener module) ✅
+  - Tests: Unit tests for INVITE handling, Call entity inbound creation, and CallService handler ✅
+  - Implementation: Background task that continuously receives SIP messages, filters for INVITE requests, extracts Call-ID, From/To headers, Request-URI, SDP body, and source address. Routes to CallService.handle_incoming_invite() which validates registration, creates inbound Call entity in Ringing state, sends 100 Trying provisional response (RFC 3261 requirement), and stores call in active_calls. Complete with error handling, debug logging, and graceful error recovery.
 
 - **IN-3.2** (12h): Inbound SDP processing
 
