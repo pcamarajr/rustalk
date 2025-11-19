@@ -451,11 +451,12 @@ Phase 8: Production Polish        █████░░░░░░░░░░�
   - Dependencies: `webrtc-sdp` (v0.3)
   - Implementation: Complete SDP offer/answer generation and parsing with RFC 4566 compliance, codec negotiation (PCMU/PCMA), and integration with INVITE construction
 
-- **OUT-2.3** (12h): Call state machine for outbound calls
+- **OUT-2.3** (12h): Call state machine for outbound calls ✅
 
-  - Files: `/src-tauri/src/domain/entities/call.rs`
-  - Files: `/src-tauri/src/services/call_service.rs`
-  - Tests: Unit tests for state transitions (Idle → Ringing → Active)
+  - Files: `/src-tauri/src/domain/entities/call.rs` ✅
+  - Files: `/src-tauri/src/services/call_service.rs` ✅
+  - Tests: Unit tests for state transitions (Idle → Ringing → Active) ✅
+  - Implementation: Complete Call entity with state machine (Idle → Ringing → Connecting → Active → Ended), CallService with initiate_outbound_call, handle_invite_response, and end_call methods. All state transitions validated with comprehensive unit tests (20 tests passing).
 
 - **OUT-2.4** (20h): RTP session setup and audio streaming
 
