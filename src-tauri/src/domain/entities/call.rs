@@ -82,6 +82,8 @@ pub struct Call {
     local_uri: Option<String>,
     /// Remote SIP URI
     remote_uri: Option<String>,
+    /// SDP offer from incoming INVITE (raw string, stored for later answer generation)
+    sdp_offer: Option<String>,
 }
 
 impl Call {
@@ -114,6 +116,7 @@ impl Call {
             to_tag: None,
             local_uri: None,
             remote_uri: None,
+            sdp_offer: None,
         }
     }
 
@@ -154,6 +157,7 @@ impl Call {
             to_tag: None,
             local_uri: None,
             remote_uri: None,
+            sdp_offer: None,
         }
     }
 
@@ -235,6 +239,16 @@ impl Call {
     /// Set remote SIP URI
     pub fn set_remote_uri(&mut self, uri: String) {
         self.remote_uri = Some(uri);
+    }
+
+    /// Get the SDP offer (if available)
+    pub fn sdp_offer(&self) -> Option<&str> {
+        self.sdp_offer.as_deref()
+    }
+
+    /// Set the SDP offer
+    pub fn set_sdp_offer(&mut self, offer: String) {
+        self.sdp_offer = Some(offer);
     }
 
     /// Check if a transition to the given state is valid
@@ -551,5 +565,35 @@ mod tests {
         assert!(call.transition_to_ended().is_ok());
         assert!(matches!(call.state(), CallState::Ended));
         assert!(call.end_time().is_some());
+    }
+
+    #[test]
+    fn test_sdp_offer_getter_setter() {
+        let mut call = Call::new_inbound(
+            "sip:alice@example.com".to_string(),
+            "abc123@example.com".to_string(),
+            Some("from-tag-123".to_string()),
+        );
+        // Initially no SDP offer
+        assert!(call.sdp_offer().is_none());
+
+        // Set SDP offer
+        let sdp = "v=0\r\no=alice 2890844526 2890844526 IN IP4 192.168.1.100\r\ns=-\r\nc=IN IP4 192.168.1.100\r\nt=0 0\r\nm=audio 49172 RTP/AVP 0 8\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\n".to_string();
+        call.set_sdp_offer(sdp.clone());
+
+        // Verify SDP offer is stored
+        assert_eq!(call.sdp_offer(), Some(sdp.as_str()));
+    }
+
+    #[test]
+    fn test_sdp_offer_outbound_call() {
+        let mut call = Call::new_outbound("sip:bob@example.com".to_string());
+        // Outbound calls don't have SDP offer initially
+        assert!(call.sdp_offer().is_none());
+
+        // Can still set SDP offer if needed
+        let sdp = "v=0\r\no=bob 2890844527 2890844527 IN IP4 192.168.1.200\r\ns=-\r\nc=IN IP4 192.168.1.200\r\nt=0 0\r\nm=audio 49174 RTP/AVP 0 8\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\n".to_string();
+        call.set_sdp_offer(sdp.clone());
+        assert_eq!(call.sdp_offer(), Some(sdp.as_str()));
     }
 }

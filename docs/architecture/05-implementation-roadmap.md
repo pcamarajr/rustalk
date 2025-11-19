@@ -504,10 +504,13 @@ Phase 8: Production Polish        █████░░░░░░░░░░�
   - Tests: Unit tests for INVITE handling, Call entity inbound creation, and CallService handler ✅
   - Implementation: Background task that continuously receives SIP messages, filters for INVITE requests, extracts Call-ID, From/To headers, Request-URI, SDP body, and source address. Routes to CallService.handle_incoming_invite() which validates registration, creates inbound Call entity in Ringing state, sends 100 Trying provisional response (RFC 3261 requirement), and stores call in active_calls. Complete with error handling, debug logging, and graceful error recovery.
 
-- **IN-3.2** (12h): Inbound SDP processing
+- **IN-3.2** (12h): Inbound SDP processing ✅ **COMPLETED**
 
-  - Files: `/src-tauri/src/infrastructure/sip/sdp.rs` (extend)
-  - Tests: Unit tests for SDP answer generation
+  - Files: `/src-tauri/src/infrastructure/sip/sdp.rs` (parse_sdp function) ✅
+  - Files: `/src-tauri/src/services/call_service.rs` (handle_incoming_invite method - SDP parsing and storage) ✅
+  - Files: `/src-tauri/src/domain/entities/call.rs` (sdp_offer field and methods) ✅
+  - Tests: Integration test for SDP parsing and storage (`tests/inbound_sdp_integration_test.rs`) ✅
+  - Implementation: SDP offer from incoming INVITE is parsed using `parse_sdp()`, validated for audio codecs, and stored in Call entity via `set_sdp_offer()`. SDP is stored as raw String for later answer generation in IN-3.5. Graceful error handling - call creation continues even if SDP parsing fails. Complete with debug logging and validation of codec presence.
 
 - **IN-3.3** (10h): Call state machine for inbound calls
 
