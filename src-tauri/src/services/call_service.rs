@@ -85,15 +85,16 @@ impl CallService {
     }
 
     /// Emit call state changed event if event emitter is available
-    fn emit_state_changed(&self, call_id: &CallId, state: &CallState, start_time: Option<SystemTime>) {
+    fn emit_state_changed(
+        &self,
+        call_id: &CallId,
+        state: &CallState,
+        start_time: Option<SystemTime>,
+    ) {
         if let Some(emitter) = &self.event_emitter {
             let state_str = Self::call_state_to_string(state);
             let start_time_ts = start_time.and_then(Self::system_time_to_timestamp);
-            emitter.emit_call_state_changed(
-                call_id.as_str().to_string(),
-                state_str,
-                start_time_ts,
-            );
+            emitter.emit_call_state_changed(call_id.as_str().to_string(), state_str, start_time_ts);
         }
     }
 
@@ -726,7 +727,7 @@ mod tests {
             client_for_auth,
             credential_store,
         )));
-        CallService::new(client, auth_service)
+        CallService::new(client, auth_service, None)
     }
 
     #[tokio::test]
