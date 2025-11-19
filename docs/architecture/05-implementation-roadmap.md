@@ -12,8 +12,8 @@ Phase 0: Dev Container            ███░░░░░░░░░░░░�
 Phase 1: Hello World              ███░░░░░░░░░░░░░  0.5 weeks (20h) COMPLETED
 Phase 2: UI with Mocks            ██████░░░░░░░░░░  1.5 weeks (60h) COMPLETED
 Phase 3: Core Infrastructure      ████████░░░░░░░░  2.4 weeks (94h) COMPLETED
-Phase 4: Registration + Audio     ████░░░░░░░░░░░░  1.7 weeks (66h) PARTIALLY COMPLETED
-Phase 4.1: Credentials + E2E       ██░░░░░░░░░░░░░░  0.4 weeks (16h)
+Phase 4: Registration + Audio     ████░░░░░░░░░░░░  1.7 weeks (66h) COMPLETED
+Phase 4.1: Credentials + E2E       ██░░░░░░░░░░░░░░  0.4 weeks (16h) COMPLETED
 Phase 5: Call Flows               ████████░░░░░░░░  3.3 weeks (130h)
 Phase 6: Call Controls            ██░░░░░░░░░░░░░░  0.6 weeks (24h)
 Phase 7: Windows Platform         ████░░░░░░░░░░░░  1.3 weeks (32h)
@@ -350,8 +350,8 @@ Phase 8: Production Polish        █████░░░░░░░░░░�
 
 - ✅ Working SIP registration with real SIP server
 - ✅ Audio device selection in settings UI
-- ⏳ Persistent credential storage (moved to Phase 4.1)
-- ⏳ E2E test for registration flow (moved to Phase 4.1)
+- ✅ Persistent credential storage (completed in Phase 4.1)
+- ✅ E2E test for registration flow (completed in Phase 4.1)
 
 ### Milestone
 
@@ -361,8 +361,8 @@ Phase 8: Production Polish        █████░░░░░░░░░░�
 
 - [x] Successful registration with test SIP server (manually verified)
 - [x] Audio devices appear in UI dropdowns (manually verified)
-- [ ] Credentials persist across app restarts (moved to Phase 4.1)
-- [ ] E2E test passes: Login → Register → Settings → Select audio (moved to Phase 4.1)
+- [x] Credentials persist across app restarts (completed in Phase 4.1)
+- [x] E2E test passes: Login → Register → Settings → Select audio (completed in Phase 4.1)
 
 ---
 
@@ -381,7 +381,7 @@ Phase 8: Production Polish        █████░░░░░░░░░░�
   - Initialize KeychainCredentialStore in `lib.rs` setup
   - Update AppState::new() to accept credential store
 
-- **SEC-6.8** (3h): Save credentials after successful registration
+- **SEC-6.8** (3h): Save credentials after successful registration ✅ **COMPLETED**
 
   - Files: `src-tauri/src/services/auth_service.rs`
   - Files: `src-tauri/src/commands/auth.rs`
@@ -389,7 +389,7 @@ Phase 8: Production Polish        █████░░░░░░░░░░�
   - Use username@server as the key for credential storage
   - Handle save errors gracefully (log but don't fail registration)
 
-- ✅ **SEC-6.9** (3h): Load credentials on app startup and auto-login
+- **SEC-6.9** (3h): Load credentials on app startup and auto-login ✅ **COMPLETED**
   - Files: `src-tauri/src/lib.rs` (setup function)
   - Files: `src-tauri/src/commands/auth.rs` (new `load_saved_credentials` command)
   - Files: `src/lib/stores/authStore.ts` (auto-login logic)
@@ -402,7 +402,7 @@ Phase 8: Production Polish        █████░░░░░░░░░░�
 
 #### E2E Test Suite (6 hours)
 
-- ✅ **POL-7.3** (6h): Create E2E test for registration flow
+- **POL-7.3** (6h): Create E2E test for registration flow ✅ **COMPLETED**
   - Files: `tests/registration_flow_test.rs`
   - Test: Login → Register → Settings → Select audio
   - Uses real SIP server (configurable via env vars)
@@ -426,7 +426,7 @@ Phase 8: Production Polish        █████░░░░░░░░░░�
 - [x] Credentials loaded on app startup
 - [x] Auto-login works when credentials exist
 - [x] E2E test passes: Login → Register → Settings → Select audio
-- [ ] Manual verification: Close and reopen app, verify credentials persist
+- [x] Manual verification: Close and reopen app, verify credentials persist
 
 ---
 

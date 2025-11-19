@@ -6,8 +6,8 @@ Open-source white-label VoIP desktop application built with Rust and Tauri.
 
 ## Project Status
 
-**Phase 4 Partially Complete** ⚠️ - Registration + Audio (manually verified ✅)  
-**Phase 4.1 Next** 🔄 - Credential Persistence + E2E Testing
+**Phase 4 Complete** ✅ - Registration + Audio + Credential Persistence  
+**Phase 5 Next** 🔄 - Call Flows (Outbound + Inbound)
 
 ### Completed Features
 
@@ -39,7 +39,7 @@ Open-source white-label VoIP desktop application built with Rust and Tauri.
 - ✅ Input validation for Tauri commands
 - ✅ Integration tests for SIP transport (tested with Asterisk server)
 
-**Phase 4 (Partially Complete):**
+**Phase 4 (Complete):**
 
 - ✅ SIP registration backend (SIP-1.3, SIP-1.4, SIP-1.5)
 - ✅ Frontend registration UI (SIP-1.6) - Login page with form validation
@@ -51,7 +51,7 @@ Open-source white-label VoIP desktop application built with Rust and Tauri.
 - ✅ Frontend audio settings UI (AUD-5.6)
 - ✅ Manual verification: Registration and audio devices working
 
-**Phase 4.1 (Next):**
+**Phase 4.1 (Complete):**
 
 - ✅ Credential store integrated into AppState (SEC-6.7)
 - ✅ Save credentials after successful registration (SEC-6.8)
@@ -155,9 +155,9 @@ Phase 0: Dev Container            ✅ (Skipped - using local environment)
 Phase 1: Hello World              ✅ Complete (~0.5 weeks)
 Phase 2: UI with Mocks            ✅ Complete (~1.5 weeks)
 Phase 3: Core Infrastructure      ✅ Complete (~2.4 weeks)
-Phase 4: Registration + Audio     ⚠️ Partially Complete (~1.7 weeks)
-Phase 4.1: Credentials + E2E      🔄 Next (~0.4 weeks)
-Phase 5: Call Flows               📋 Planned (~3.3 weeks)
+Phase 4: Registration + Audio     ✅ Complete (~1.7 weeks)
+Phase 4.1: Credentials + E2E      ✅ Complete (~0.4 weeks)
+Phase 5: Call Flows               🔄 Next (~3.3 weeks)
 Phase 6: Call Controls            📋 Planned (~0.6 weeks)
 Phase 7: Windows Platform         📋 Planned (~1.3 weeks)
 Phase 8: Production Polish        📋 Planned (~1.3 weeks)
@@ -165,9 +165,9 @@ Phase 8: Production Polish        📋 Planned (~1.3 weeks)
 
 **Total Estimated Duration**: ~12.4 weeks for MVP
 
-## Current Phase: Phase 4.1 Next 🔄
+## Current Phase: Phase 5 Next 🔄
 
-Phase 4 core features (SIP registration and audio device selection) are complete and manually verified. Phase 4.1 will add credential persistence and E2E testing.
+Phase 4 and Phase 4.1 are complete. Phase 5 will implement full call lifecycle with bidirectional RTP audio for outbound and inbound calls.
 
 ### What Works
 
@@ -224,16 +224,27 @@ Phase 4 core features (SIP registration and audio device selection) are complete
 6. View call state transitions in the active call screen
 7. Browse mock contacts and call history
 
-## Next Steps: Phase 4.1
+## Next Steps: Phase 5
 
-Phase 4.1 will implement:
+Phase 5 will implement full call lifecycle with bidirectional RTP audio:
 
-- ✅ **SEC-6.7**: Integrate credential store into AppState (completed)
-- ✅ **SEC-6.8**: Save credentials after successful registration
-- ✅ **SEC-6.9**: Load credentials on app startup and auto-login
-- ✅ **POL-7.3**: Create E2E test for registration flow (Login → Register → Settings → Select audio)
+**Outbound Calls:**
 
-This will complete Phase 4 by adding credential persistence (so credentials survive app restarts) and comprehensive E2E testing.
+- **OUT-2.1**: INVITE message construction
+- **OUT-2.2**: SDP offer/answer negotiation
+- **OUT-2.3**: Call state machine for outbound calls
+- **OUT-2.4**: RTP session setup and audio streaming
+- **OUT-2.5**: Tauri `initiate_call` command
+- **OUT-2.6**: Frontend dialer UI + active call view
+
+**Inbound Calls:**
+
+- **IN-3.1**: INVITE listener for incoming calls
+- **IN-3.2**: Inbound SDP processing
+- **IN-3.3**: Call state machine for inbound calls
+- **IN-3.4**: Tauri `incoming_call` event emission
+- **IN-3.5**: Tauri `answer_call` command
+- **IN-3.6**: Frontend incoming call notification UI
 
 ## Project Goals
 
