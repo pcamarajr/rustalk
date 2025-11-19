@@ -39,10 +39,10 @@ impl AppState {
             client,
             credential_store_for_auth,
         )));
-        
+
         // Clone auth_service for CallService
         let auth_service_for_call = Arc::clone(&auth_service);
-        
+
         Self {
             auth_service,
             audio_service: Arc::new(Mutex::new(audio_service)),

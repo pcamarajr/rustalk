@@ -58,4 +58,3 @@ fn test_initiate_call_validation_whitespace_only() {
 //     // Execute: Call initiate_call with empty/invalid number
 //     // Verify: Check that validation error is returned
 // }
-

@@ -78,19 +78,21 @@ pub async fn initiate_call(
         let auth_service = state.auth_service.lock().await;
 
         // Get credentials
-        let creds = auth_service
-            .get_credentials()
-            .await
-            .ok_or_else(|| CommandError::ServiceError {
-                message: "No credentials available (not registered)".to_string(),
-            })?;
+        let creds =
+            auth_service
+                .get_credentials()
+                .await
+                .ok_or_else(|| CommandError::ServiceError {
+                    message: "No credentials available (not registered)".to_string(),
+                })?;
 
         // Get server address
-        let server = auth_service
-            .get_server_address()
-            .ok_or_else(|| CommandError::ServiceError {
-                message: "No server address available (not registered)".to_string(),
-            })?;
+        let server =
+            auth_service
+                .get_server_address()
+                .ok_or_else(|| CommandError::ServiceError {
+                    message: "No server address available (not registered)".to_string(),
+                })?;
 
         // Get contact URI
         let contact = auth_service
@@ -100,11 +102,13 @@ pub async fn initiate_call(
             })?;
 
         // Get local address from SIP client
-        let local_addr = auth_service.get_local_address().await.map_err(|e| {
-            CommandError::ServiceError {
-                message: format!("Failed to get local address: {}", e),
-            }
-        })?;
+        let local_addr =
+            auth_service
+                .get_local_address()
+                .await
+                .map_err(|e| CommandError::ServiceError {
+                    message: format!("Failed to get local address: {}", e),
+                })?;
 
         (creds, server, contact, local_addr)
     };
@@ -142,9 +146,11 @@ pub async fn initiate_call(
             })?
     };
 
-    eprintln!("DEBUG:[INITIATE_CALL] Call initiated successfully, CallId: {}", call_id.as_str());
+    eprintln!(
+        "DEBUG:[INITIATE_CALL] Call initiated successfully, CallId: {}",
+        call_id.as_str()
+    );
 
     // Return CallId as string
     Ok(call_id.as_str().to_string())
 }
-
