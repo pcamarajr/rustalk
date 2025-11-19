@@ -1053,7 +1053,7 @@ mod tests {
 
         // Set registration state to Registered
         {
-            let mut auth = service.auth_service.lock().await;
+            let auth = service.auth_service.lock().await;
             let result = crate::infrastructure::sip::registration::RegistrationResult {
                 status_code: 200,
                 expires: Some(3600),
@@ -1098,7 +1098,7 @@ mod tests {
 
         // Set registration state to Registered
         {
-            let mut auth = service.auth_service.lock().await;
+            let auth = service.auth_service.lock().await;
             let result = crate::infrastructure::sip::registration::RegistrationResult {
                 status_code: 200,
                 expires: Some(3600),
