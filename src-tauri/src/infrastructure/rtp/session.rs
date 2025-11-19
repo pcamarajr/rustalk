@@ -137,6 +137,12 @@ impl RtpSession {
         let mut stop_rx_send = stop_tx.subscribe();
 
         let send_handle = tokio::spawn(async move {
+            // 20ms interval is standard for G.711 (PCMU/PCMA) codecs
+            // This provides 50 packets/sec, which balances:
+            // - Low latency (20ms is acceptable for real-time audio)
+            // - Reasonable overhead (RTP header is 12 bytes, payload is 160 bytes for 20ms of G.711)
+            // - Compatibility with most SIP endpoints
+            // For future codecs (e.g., Opus), this may need to be configurable
             let mut interval = tokio::time::interval(tokio::time::Duration::from_millis(20)); // 20ms = 50 packets/sec
             interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
 
