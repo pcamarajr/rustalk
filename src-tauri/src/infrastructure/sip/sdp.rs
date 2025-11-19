@@ -603,10 +603,24 @@ mod tests {
             m=audio 49172 RTP/AVP 0 8\r\n";
 
         let result = parse_sdp(sdp);
-        // Should fail or handle gracefully - depends on webrtc-sdp behavior
-        // For now, we expect it might fail or use a default
-        // This test documents current behavior
-        let _ = result; // Acknowledge result for clippy
+        assert!(
+            result.is_err(),
+            "Should fail without connection information"
+        );
+        let err = result.unwrap_err();
+        match err {
+            SdpError::MissingField(msg) => assert!(msg.contains("connection")),
+            SdpError::ParseError(msg) => {
+                // webrtc-sdp may fail to parse SDP without connection info
+                // This is acceptable - the important thing is that it fails
+                assert!(
+                    msg.contains("connection") || msg.contains("Connection"),
+                    "Parse error should mention connection: {}",
+                    msg
+                );
+            }
+            _ => panic!("Expected MissingField or ParseError, got: {:?}", err),
+        }
     }
 
     #[test]
