@@ -2,7 +2,7 @@
 // Tests that the message receiver correctly receives SIP responses, extracts Call-ID,
 // matches it to active calls, and routes responses to CallService.handle_invite_response()
 
-use rustalk_lib::domain::entities::call::{Call, CallId};
+use rustalk_lib::domain::entities::call::CallId;
 use rustalk_lib::domain::traits::CredentialStore;
 use rustalk_lib::infrastructure::sip::client::SipClient;
 use rustalk_lib::services::auth_service::AuthService;
@@ -99,4 +99,3 @@ async fn test_find_call_by_call_id_header_not_found() {
 // - Send a SIP response with a known Call-ID
 // - Verify that CallService.handle_invite_response() was called
 // - Verify that call state transitions correctly (e.g., 180 → Connecting, 200 → Active)
-

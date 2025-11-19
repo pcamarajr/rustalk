@@ -125,7 +125,8 @@ pub fn run() {
             // Spawn message receiver background task
             eprintln!("DEBUG:[SETUP] Spawning message receiver background task");
             rt_handle.spawn(async move {
-                message_receiver::start_message_receiver(call_client_for_receiver, call_service).await;
+                message_receiver::start_message_receiver(call_client_for_receiver, call_service)
+                    .await;
             });
 
             eprintln!("DEBUG:[SETUP] Setup complete");

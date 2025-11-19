@@ -192,11 +192,7 @@ pub async fn start_message_receiver(
                         let result = {
                             let service = call_service.lock().await;
                             service
-                                .handle_invite_response(
-                                    &call_id,
-                                    status_code,
-                                    sdp_body.as_deref(),
-                                )
+                                .handle_invite_response(&call_id, status_code, sdp_body.as_deref())
                                 .await
                         };
 
@@ -236,4 +232,3 @@ pub async fn start_message_receiver(
         }
     }
 }
-
