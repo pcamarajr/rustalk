@@ -21,6 +21,9 @@
   // Current phone number state (derived from PhoneNumberInput)
   let currentPhoneNumber = $state("");
 
+  // Error state for call initiation
+  let callError = $state<string | null>(null);
+
   // Check if call button should be disabled
   let isCallDisabled = $derived(
     !currentPhoneNumber || currentPhoneNumber.length === 0
@@ -37,13 +40,26 @@
   }
 
   // Handle call button click
-  function handleCall() {
+  async function handleCall() {
     if (!isCallDisabled && phoneNumberInput) {
+      // Clear any previous error
+      callError = null;
+      
       const number = phoneNumberInput.getNumber();
       console.log("DEBUG:[DIALER/CALL] Initiating call to:", number);
       // Format number with +1 prefix if not already formatted
       const formattedNumber = number.startsWith("+") ? number : `+1${number}`;
-      callStore.initiateCall(formattedNumber);
+      try {
+        await callStore.initiateCall(formattedNumber);
+      } catch (error) {
+        console.error("DEBUG:[DIALER/CALL] Failed to initiate call:", error);
+        // Set error state for inline display
+        if (error instanceof Error) {
+          callError = error.message;
+        } else {
+          callError = "Failed to initiate call. Please try again.";
+        }
+      }
     }
   }
 
@@ -106,6 +122,14 @@
     {initialNumber}
     onNumberChange={handleNumberChange}
   />
+  
+  <!-- Error Display -->
+  {#if callError}
+    <div class="rounded-md bg-destructive/10 border border-destructive/20 p-3" role="alert">
+      <p class="text-sm text-destructive">{callError}</p>
+    </div>
+  {/if}
+  
   <DialPad onKeyPress={handleDialPadKey} />
   <CallButton disabled={isCallDisabled} onCall={handleCall} />
   <SimulateCallButton onSimulate={handleSimulateIncomingCall} />

@@ -271,10 +271,15 @@ impl CredentialStore for MockCredentialStore {
 
 /// Create test AppState with real SipClient and mock AudioEngine and CredentialStore
 async fn create_test_app_state() -> AppState {
-    // Create real UDP SIP client for actual SIP server connection
+    // Create real UDP SIP client for AuthService
     let client = SipClient::new_udp_any()
         .await
         .expect("Should create UDP client");
+
+    // Create real UDP SIP client for CallService
+    let call_client = SipClient::new_udp_any()
+        .await
+        .expect("Should create UDP client for calls");
 
     // Create mock audio engine
     let mock_audio_engine: Arc<dyn AudioEngine> = Arc::new(MockAudioEngine::new());
@@ -283,7 +288,7 @@ async fn create_test_app_state() -> AppState {
     // Create mock credential store
     let credential_store: Arc<dyn CredentialStore> = Arc::new(MockCredentialStore::new());
 
-    AppState::new(client, audio_service, credential_store)
+    AppState::new(client, call_client, audio_service, credential_store)
 }
 
 #[tokio::test]

@@ -68,6 +68,7 @@ impl CallService {
     /// # Arguments
     /// * `number` - Remote phone number or URI
     /// * `local_address` - Local socket address for Via header
+    /// * `server_addr` - SIP server address to send INVITE to
     /// * `contact_uri` - Contact header URI (e.g., "sip:user@192.168.1.100:5060")
     /// * `local_uri` - Local SIP URI (from credentials, e.g., "sip:alice@example.com")
     /// * `rtp_port` - RTP port for audio (must be even)
@@ -75,10 +76,12 @@ impl CallService {
     ///
     /// # Returns
     /// `Ok(CallId)` if call was initiated successfully, `Err(SipError)` otherwise
+    #[allow(clippy::too_many_arguments)]
     pub async fn initiate_outbound_call(
         &self,
         number: String,
         local_address: SocketAddr,
+        server_addr: SocketAddr,
         contact_uri: String,
         local_uri: String,
         rtp_port: u16,
@@ -212,10 +215,12 @@ impl CallService {
 
         eprintln!("DEBUG:[CALL_SERVICE/INITIATE] INVITE built, sending via SIP client");
 
-        // Get server address from auth service (we'll need to construct it)
-        // For now, we'll use the local_address as destination (this should be improved)
-        // In a real implementation, we'd resolve the SIP server address
-        let destination = local_address; // TODO: Get actual SIP server address
+        // Use server address as destination for the INVITE message
+        let destination = server_addr;
+        eprintln!(
+            "DEBUG:[CALL_SERVICE/INITIATE] Sending INVITE to server: {}",
+            destination
+        );
 
         // Send INVITE via SIP client
         let client = self.sip_client.lock().await;
@@ -659,11 +664,13 @@ mod tests {
     async fn test_initiate_outbound_call_not_registered() {
         let service = create_test_call_service().await;
         let local_addr: SocketAddr = "127.0.0.1:5060".parse().unwrap();
+        let server_addr: SocketAddr = "127.0.0.1:5060".parse().unwrap();
 
         let result = service
             .initiate_outbound_call(
                 "sip:bob@example.com".to_string(),
                 local_addr,
+                server_addr,
                 "sip:alice@127.0.0.1:5060".to_string(),
                 "sip:alice@example.com".to_string(),
                 49172,

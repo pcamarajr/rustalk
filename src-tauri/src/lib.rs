@@ -16,9 +16,9 @@ pub mod commands;
 pub mod state;
 
 use commands::{
-    get_input_device, get_output_device, get_registration_status, greet, list_input_devices,
-    list_output_devices, load_saved_credentials, register_account, set_input_device,
-    set_output_device, unregister_account,
+    get_input_device, get_output_device, get_registration_status, greet, initiate_call,
+    list_input_devices, list_output_devices, load_saved_credentials, register_account,
+    set_input_device, set_output_device, unregister_account,
 };
 use domain::traits::CredentialStore;
 use infrastructure::audio::create_audio_engine;
@@ -44,13 +44,19 @@ pub fn run() {
 
             eprintln!("DEBUG:[SETUP] Tokio runtime created successfully");
 
-            eprintln!("DEBUG:[SETUP] Creating SIP client");
-            // Initialize SIP client using the runtime
+            eprintln!("DEBUG:[SETUP] Creating SIP client for AuthService");
+            // Initialize SIP client for AuthService using the runtime
             let client = rt
                 .block_on(SipClient::new_udp_any())
                 .map_err(|e| format!("Failed to create SIP client: {}", e))?;
 
-            eprintln!("DEBUG:[SETUP] SIP client created, spawning runtime keeper thread");
+            eprintln!("DEBUG:[SETUP] Creating SIP client for CallService");
+            // Initialize SIP client for CallService using the runtime
+            let call_client = rt
+                .block_on(SipClient::new_udp_any())
+                .map_err(|e| format!("Failed to create SIP client for calls: {}", e))?;
+
+            eprintln!("DEBUG:[SETUP] SIP clients created, spawning runtime keeper thread");
 
             // Spawn a background task to keep the runtime alive
             // The runtime will be dropped when this thread exits, so we keep it running
@@ -91,7 +97,7 @@ pub fn run() {
             eprintln!("DEBUG:[SETUP] Credential store created successfully");
 
             eprintln!("DEBUG:[SETUP] Creating AppState");
-            let app_state = AppState::new(client, audio_service, credential_store);
+            let app_state = AppState::new(client, call_client, audio_service, credential_store);
 
             app.manage(app_state);
             eprintln!("DEBUG:[SETUP] Setup complete");
@@ -108,7 +114,8 @@ pub fn run() {
             get_input_device,
             get_output_device,
             set_input_device,
-            set_output_device
+            set_output_device,
+            initiate_call
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
