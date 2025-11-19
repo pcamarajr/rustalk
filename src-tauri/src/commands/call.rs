@@ -132,6 +132,7 @@ pub async fn initiate_call(
             .initiate_outbound_call(
                 number.clone(),
                 local_address,
+                server_addr,
                 contact_uri,
                 local_uri,
                 rtp_port,
