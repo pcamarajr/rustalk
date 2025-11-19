@@ -139,10 +139,7 @@ impl CallService {
             .lines()
             .find(|line| line.starts_with("Call-ID:") || line.starts_with("i:"))
         {
-            let call_id_value = call_id_line
-                .split(':')
-                .nth(1)
-                .map(|s| s.trim().to_string());
+            let call_id_value = call_id_line.split(':').nth(1).map(|s| s.trim().to_string());
             if let Some(call_id) = call_id_value {
                 if !call_id.is_empty() {
                     call.set_call_id_header(call_id);
@@ -168,10 +165,7 @@ impl CallService {
             .find(|line| line.starts_with("From:") || line.starts_with("f:"))
         {
             if let Some(tag_part) = from_line.split("tag=").nth(1) {
-                let from_tag = tag_part
-                    .split(';')
-                    .next()
-                    .map(|s| s.trim().to_string());
+                let from_tag = tag_part.split(';').next().map(|s| s.trim().to_string());
                 if let Some(tag) = from_tag {
                     if !tag.is_empty() {
                         call.set_from_tag(tag);
