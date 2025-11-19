@@ -4,13 +4,14 @@
 
   interface Props {
     disabled?: boolean;
+    loading?: boolean;
     onCall?: () => void;
   }
 
-  let { disabled = false, onCall }: Props = $props();
+  let { disabled = false, loading = false, onCall }: Props = $props();
 
   function handleCall() {
-    if (!disabled && onCall) {
+    if (!disabled && !loading && onCall) {
       onCall();
     }
   }
@@ -19,15 +20,20 @@
 <Button
   type="button"
   onclick={handleCall}
-  disabled={disabled}
+  disabled={disabled || loading}
   variant="default"
   size="lg"
   class="w-full h-12 text-base font-semibold bg-primary hover:bg-primary-hover"
-  aria-label="Make call"
+  aria-label={loading ? "Calling..." : "Make call"}
   aria-describedby={disabled ? "call-disabled-hint" : undefined}
 >
-  <Phone class="h-5 w-5 mr-2" />
-  Call
+  {#if loading}
+    <span class="mr-2">⏳</span>
+    Calling...
+  {:else}
+    <Phone class="h-5 w-5 mr-2" />
+    Call
+  {/if}
 </Button>
 {#if disabled}
   <span id="call-disabled-hint" class="sr-only"

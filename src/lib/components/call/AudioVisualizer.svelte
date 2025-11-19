@@ -1,6 +1,17 @@
 <script lang="ts">
   import { Volume2 } from "lucide-svelte";
 
+  /**
+   * Audio Visualizer Component
+   * 
+   * NOTE: This is a mock implementation for OUT-2.6.
+   * Real audio levels will be implemented when the backend provides
+   * a `get_audio_levels` Tauri command in a future phase.
+   * 
+   * The component currently displays simulated audio levels with random
+   * values for visual feedback during calls.
+   */
+
   // Self-contained mock audio level state
   let incomingLevel = $state(50);
   let outgoingLevel = $state(45);
