@@ -458,12 +458,13 @@ Phase 8: Production Polish        █████░░░░░░░░░░�
   - Tests: Unit tests for state transitions (Idle → Ringing → Active) ✅
   - Implementation: Complete Call entity with state machine (Idle → Ringing → Connecting → Active → Ended), CallService with initiate_outbound_call, handle_invite_response, and end_call methods. All state transitions validated with comprehensive unit tests (20 tests passing).
 
-- **OUT-2.4** (20h): RTP session setup and audio streaming
+- **OUT-2.4** (20h): RTP session setup and audio streaming ✅ **COMPLETED**
 
-  - Files: `/src-tauri/src/infrastructure/rtp/session.rs`
-  - Files: `/src-tauri/src/infrastructure/rtp/codec.rs` (G.711)
-  - Tests: Integration test - RTP session with mock peer
-  - Dependencies: `webrtc-rtp`
+  - Files: `/src-tauri/src/infrastructure/rtp/session.rs` ✅
+  - Files: `/src-tauri/src/infrastructure/rtp/codec.rs` (G.711) ✅
+  - Tests: Integration test - RTP session with mock peer ✅
+  - Dependencies: Custom RTP implementation (fallback path from tech decisions)
+  - Implementation: Complete RTP session management with bidirectional audio streaming, G.711 codec support (PCMU/PCMA), RTP packet encoding/decoding, and integration with CallService. Custom RTP stack provides direct control over packet handling and simpler SIP integration. Per-call RTP port storage to support concurrent calls.
 
 - **OUT-2.5** (6h): Tauri `initiate_call` command
 
