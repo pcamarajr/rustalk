@@ -34,8 +34,8 @@ pub struct CallService {
     sip_client: Arc<Mutex<SipClient>>,
     /// Reference to auth service for credentials and registration state
     auth_service: Arc<Mutex<AuthService>>,
-    /// Local RTP port for outbound calls (from SDP offer)
-    local_rtp_port: Arc<Mutex<Option<u16>>>,
+    /// Local RTP ports for outbound calls (from SDP offer), stored per-call
+    local_rtp_ports: Arc<RwLock<HashMap<CallId, u16>>>,
 }
 
 impl CallService {
@@ -50,7 +50,7 @@ impl CallService {
             rtp_sessions: Arc::new(RwLock::new(HashMap::new())),
             sip_client: Arc::new(Mutex::new(sip_client)),
             auth_service,
-            local_rtp_port: Arc::new(Mutex::new(None)),
+            local_rtp_ports: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
@@ -235,8 +235,8 @@ impl CallService {
 
         // Store local RTP port for this call
         {
-            let mut local_port = self.local_rtp_port.lock().await;
-            *local_port = Some(rtp_port);
+            let mut local_ports = self.local_rtp_ports.write().await;
+            local_ports.insert(call_id.clone(), rtp_port);
         }
 
         eprintln!(
@@ -460,10 +460,13 @@ impl CallService {
 
         // Get local RTP port (from the offer we sent)
         let local_port = {
-            let local_port_guard = self.local_rtp_port.lock().await;
-            local_port_guard.ok_or_else(|| SipError::InvalidMessage {
-                reason: "Local RTP port not set".to_string(),
-            })?
+            let local_ports = self.local_rtp_ports.read().await;
+            local_ports
+                .get(call_id)
+                .copied()
+                .ok_or_else(|| SipError::InvalidMessage {
+                    reason: format!("Local RTP port not set for call {}", call_id.as_str()),
+                })?
         };
 
         // Select codec (prefer PCMU over PCMA)
@@ -529,6 +532,10 @@ impl CallService {
                 eprintln!("DEBUG:[CALL_SERVICE/RTP] RTP session stopped successfully");
             }
         }
+
+        // Clean up RTP port for this call
+        let mut local_ports = self.local_rtp_ports.write().await;
+        local_ports.remove(call_id);
     }
 
     /// Get audio input channel for a call's RTP session
