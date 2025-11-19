@@ -768,6 +768,7 @@ impl CallService {
     ///
     /// # Returns
     /// `Ok(CallId)` if call was created successfully, `Err(SipError)` otherwise
+    #[allow(clippy::too_many_arguments)]
     pub async fn handle_incoming_invite(
         &self,
         call_id_header: &str,
@@ -1052,15 +1053,13 @@ mod tests {
 
         // Set registration state to Registered
         {
-            let auth = service.auth_service.lock().await;
-            let mut reg = auth.registration.write().await;
-            let creds = crate::domain::entities::credentials::Credentials {
-                username: "test".to_string(),
-                password: "test".to_string(),
-                server: "example.com".to_string(),
+            let mut auth = service.auth_service.lock().await;
+            let result = crate::infrastructure::sip::registration::RegistrationResult {
+                status_code: 200,
+                expires: Some(3600),
+                message: "OK".to_string(),
             };
-            reg.start_registering(creds).unwrap();
-            reg.set_registered(Some(3600)).unwrap();
+            auth.handle_registration_result(Ok(result)).await.unwrap();
         }
 
         let source_addr: SocketAddr = "127.0.0.1:5060".parse().unwrap();
@@ -1099,15 +1098,13 @@ mod tests {
 
         // Set registration state to Registered
         {
-            let auth = service.auth_service.lock().await;
-            let mut reg = auth.registration.write().await;
-            let creds = crate::domain::entities::credentials::Credentials {
-                username: "test".to_string(),
-                password: "test".to_string(),
-                server: "example.com".to_string(),
+            let mut auth = service.auth_service.lock().await;
+            let result = crate::infrastructure::sip::registration::RegistrationResult {
+                status_code: 200,
+                expires: Some(3600),
+                message: "OK".to_string(),
             };
-            reg.start_registering(creds).unwrap();
-            reg.set_registered(Some(3600)).unwrap();
+            auth.handle_registration_result(Ok(result)).await.unwrap();
         }
 
         let source_addr: SocketAddr = "127.0.0.1:5060".parse().unwrap();
