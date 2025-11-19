@@ -466,10 +466,14 @@ Phase 8: Production Polish        █████░░░░░░░░░░�
   - Dependencies: Custom RTP implementation (fallback path from tech decisions)
   - Implementation: Complete RTP session management with bidirectional audio streaming, G.711 codec support (PCMU/PCMA), RTP packet encoding/decoding, and integration with CallService. Custom RTP stack provides direct control over packet handling and simpler SIP integration. Per-call RTP port storage to support concurrent calls.
 
-- **OUT-2.5** (6h): Tauri `initiate_call` command
+- **OUT-2.5** (6h): Tauri `initiate_call` command ✅ **COMPLETED**
 
-  - Files: `/src-tauri/src/commands/call.rs`
-  - Tests: Integration test - initiate call via IPC
+  - Files: `/src-tauri/src/commands/call.rs` ✅
+  - Files: `/src-tauri/src/state.rs` (CallService added to AppState) ✅
+  - Files: `/src-tauri/src/lib.rs` (CallService initialization) ✅
+  - Files: `/src/lib/stores/callStore.ts` (updated to use real command) ✅
+  - Tests: Integration test - initiate call via IPC ✅
+  - Implementation: Complete Tauri command that validates phone number, checks registration state, gets registration info from AuthService, generates RTP port, and calls CallService to initiate outbound call. Frontend updated to use real Tauri command with proper error handling.
 
 - **OUT-2.6** (10h): Frontend dialer UI + active call view
   - Files: `/src/lib/components/Dialer.svelte`

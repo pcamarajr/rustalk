@@ -1,4 +1,5 @@
 import { writable, derived, get, type Readable } from "svelte/store";
+import { invoke } from "@tauri-apps/api/core";
 import { historyStore, type CallHistoryEntry, type CallDirection } from "./historyStore";
 import { contactsStore } from "./contactsStore";
 
@@ -69,61 +70,55 @@ export const callStore = {
   isCallRinging,
 
   // Initiate an outbound call
-  initiateCall: (number: string) => {
+  initiateCall: async (number: string) => {
     console.log("DEBUG:[CALLSTORE/INITIATE] Initiating call to:", number);
     
     // Find contact name if available
     const name = findContactName(number);
     
-    const call: ActiveCall = {
-      id: Date.now().toString(),
-      number,
-      name,
-      direction: "outgoing",
-      state: "ringing",
-      startTime: null,
-      duration: 0,
-      isMuted: false,
-      isOnHold: false,
-    };
+    try {
+      // Call Tauri command to initiate call
+      const callId = await invoke<string>("initiate_call", { number });
+      console.log("DEBUG:[CALLSTORE/INITIATE] Call initiated successfully, CallId:", callId);
+      
+      // Create call object with real CallId from backend
+      const call: ActiveCall = {
+        id: callId,
+        number,
+        name,
+        direction: "outgoing",
+        state: "ringing",
+        startTime: null,
+        duration: 0,
+        isMuted: false,
+        isOnHold: false,
+      };
 
-    set(call);
+      set(call);
 
-    // Clear any existing timeouts for this call ID (shouldn't happen, but safety check)
-    clearCallTimeouts(call.id);
+      // Clear any existing timeouts for this call ID (shouldn't happen, but safety check)
+      clearCallTimeouts(call.id);
 
-    // Track timeouts for this call
-    const timeouts: ReturnType<typeof setTimeout>[] = [];
-
-    // Mock state transitions: ringing → connecting → active
-    const timeout1 = setTimeout(() => {
-      update((currentCall) => {
-        if (currentCall && currentCall.id === call.id && currentCall.state !== "ended") {
-          console.log("DEBUG:[CALLSTORE/TRANSITION] Call connecting...");
-          return { ...currentCall, state: "connecting" };
+      // Note: State transitions (ringing → connecting → active) will be handled
+      // by the backend CallService when SIP responses are received.
+      // For now, we keep the call in "ringing" state until backend updates it.
+    } catch (error) {
+      console.error("DEBUG:[CALLSTORE/INITIATE] Failed to initiate call:", error);
+      
+      // Handle specific error cases
+      if (error instanceof Error) {
+        const errorMessage = error.message.toLowerCase();
+        if (errorMessage.includes("not registered") || errorMessage.includes("registration")) {
+          throw new Error("Cannot initiate call: Account is not registered. Please register your SIP account first.");
+        } else if (errorMessage.includes("validation")) {
+          throw new Error(`Invalid phone number: ${error.message}`);
+        } else {
+          throw new Error(`Failed to initiate call: ${error.message}`);
         }
-        return currentCall;
-      });
-    }, 1000);
-    timeouts.push(timeout1);
-
-    const timeout2 = setTimeout(() => {
-      update((currentCall) => {
-        if (currentCall && currentCall.id === call.id && currentCall.state !== "ended") {
-          console.log("DEBUG:[CALLSTORE/TRANSITION] Call active");
-          return {
-            ...currentCall,
-            state: "active",
-            startTime: new Date(),
-          };
-        }
-        return currentCall;
-      });
-    }, 2000);
-    timeouts.push(timeout2);
-
-    // Store timeouts for potential cleanup
-    pendingTimeouts.set(call.id, timeouts);
+      } else {
+        throw new Error("Failed to initiate call: Unknown error");
+      }
+    }
   },
 
   // Simulate an incoming call

@@ -37,13 +37,23 @@
   }
 
   // Handle call button click
-  function handleCall() {
+  async function handleCall() {
     if (!isCallDisabled && phoneNumberInput) {
       const number = phoneNumberInput.getNumber();
       console.log("DEBUG:[DIALER/CALL] Initiating call to:", number);
       // Format number with +1 prefix if not already formatted
       const formattedNumber = number.startsWith("+") ? number : `+1${number}`;
-      callStore.initiateCall(formattedNumber);
+      try {
+        await callStore.initiateCall(formattedNumber);
+      } catch (error) {
+        console.error("DEBUG:[DIALER/CALL] Failed to initiate call:", error);
+        // Error handling: could show a toast notification here
+        if (error instanceof Error) {
+          alert(error.message);
+        } else {
+          alert("Failed to initiate call. Please try again.");
+        }
+      }
     }
   }
 

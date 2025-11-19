@@ -435,6 +435,43 @@ impl AuthService {
         }
     }
 
+    /// Get credentials if registered
+    ///
+    /// # Returns
+    /// * `Some(Credentials)` if registered and credentials are available
+    /// * `None` if not registered or credentials not available
+    pub async fn get_credentials(&self) -> Option<Credentials> {
+        let reg = self.registration.read().await;
+        reg.credentials().cloned()
+    }
+
+    /// Get server address if registered
+    ///
+    /// # Returns
+    /// * `Some(SocketAddr)` if registered and server address is available
+    /// * `None` if not registered or server address not available
+    pub fn get_server_address(&self) -> Option<SocketAddr> {
+        self.server_addr
+    }
+
+    /// Get contact URI if registered
+    ///
+    /// # Returns
+    /// * `Some(String)` if registered and contact URI is available
+    /// * `None` if not registered or contact URI not available
+    pub fn get_contact_uri(&self) -> Option<String> {
+        self.contact_uri.clone()
+    }
+
+    /// Get local address from SIP client
+    ///
+    /// # Returns
+    /// * `SocketAddr` - Local address the SIP client is bound to
+    pub async fn get_local_address(&self) -> Result<SocketAddr, SipError> {
+        let client = self.client.lock().await;
+        Ok(client.local_address())
+    }
+
     /// Start background task to monitor registration expiration
     ///
     /// This spawns a background task that periodically checks for expiration
