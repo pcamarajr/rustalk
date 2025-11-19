@@ -313,7 +313,7 @@ mod tests {
         let tag2 = generate_from_tag().unwrap();
 
         // Tags should be unique (timestamp-based, so they should differ)
-        // Note: In very fast tests, they might be the same, but in practice they'll differ
+        assert_ne!(tag1, tag2, "From tags should be unique");
         assert!(!tag1.is_empty(), "From tag should not be empty");
         assert!(!tag2.is_empty(), "From tag should not be empty");
     }
