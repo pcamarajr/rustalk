@@ -3,36 +3,11 @@
 
 use crate::domain::errors::SipError;
 use crate::infrastructure::sip::client::SipClient;
+use crate::infrastructure::sip::headers::extract_call_id_header;
 use crate::services::call_service::CallService;
 use rsip::SipMessage;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-
-/// Extract Call-ID header from a SIP message
-fn extract_call_id_header(message: &SipMessage) -> Result<String, SipError> {
-    // Convert SipMessage to bytes
-    let message_bytes: Vec<u8> = message.clone().into();
-    let message_str = String::from_utf8_lossy(&message_bytes);
-
-    // Look for Call-ID header (case-insensitive, can be "Call-ID:" or "i:")
-    for line in message_str.lines() {
-        let line_lower = line.to_lowercase();
-        if line_lower.starts_with("call-id:") || line_lower.starts_with("i:") {
-            // Extract value after colon using split_once to limit splits to first colon only
-            // This handles edge cases where the Call-ID value itself might contain a colon
-            if let Some((_, call_id_value)) = line.split_once(':') {
-                let call_id = call_id_value.trim().to_string();
-                if !call_id.is_empty() {
-                    return Ok(call_id);
-                }
-            }
-        }
-    }
-
-    Err(SipError::InvalidMessage {
-        reason: "Call-ID header not found in message".to_string(),
-    })
-}
 
 /// Extract status code from a SIP response message
 fn extract_status_code(message: &SipMessage) -> Result<u16, SipError> {
