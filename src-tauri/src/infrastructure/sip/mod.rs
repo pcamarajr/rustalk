@@ -4,6 +4,7 @@
 pub mod client;
 pub mod invite;
 pub mod message_builder;
+pub mod message_receiver;
 pub mod parser;
 pub mod registration;
 pub mod sdp;

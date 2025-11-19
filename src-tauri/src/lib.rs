@@ -24,6 +24,7 @@ use commands::{
 use domain::traits::CredentialStore;
 use infrastructure::audio::create_audio_engine;
 use infrastructure::sip::client::SipClient;
+use infrastructure::sip::message_receiver;
 #[cfg(target_os = "macos")]
 use infrastructure::storage::KeychainCredentialStore;
 use services::AudioService;
@@ -57,7 +58,10 @@ pub fn run() {
                 .block_on(SipClient::new_udp_any())
                 .map_err(|e| format!("Failed to create SIP client for calls: {}", e))?;
 
-            eprintln!("DEBUG:[SETUP] SIP clients created, spawning runtime keeper thread");
+            eprintln!("DEBUG:[SETUP] SIP clients created, getting runtime handle");
+
+            // Get runtime handle before moving runtime into thread
+            let rt_handle = rt.handle().clone();
 
             // Spawn a background task to keep the runtime alive
             // The runtime will be dropped when this thread exits, so we keep it running
@@ -101,6 +105,10 @@ pub fn run() {
             let event_emitter = EventEmitter::new(app.handle().clone());
 
             eprintln!("DEBUG:[SETUP] Creating AppState");
+            // Wrap call_client in Arc<Mutex<>> so we can share it with message receiver
+            let call_client = Arc::new(tokio::sync::Mutex::new(call_client));
+            let call_client_for_receiver = Arc::clone(&call_client);
+
             let app_state = AppState::new(
                 client,
                 call_client,
@@ -109,7 +117,18 @@ pub fn run() {
                 event_emitter,
             );
 
+            // Get references for message receiver before managing app_state
+            let call_service = Arc::clone(&app_state.call_service);
+
             app.manage(app_state);
+
+            // Spawn message receiver background task
+            eprintln!("DEBUG:[SETUP] Spawning message receiver background task");
+            rt_handle.spawn(async move {
+                message_receiver::start_message_receiver(call_client_for_receiver, call_service)
+                    .await;
+            });
+
             eprintln!("DEBUG:[SETUP] Setup complete");
             Ok(())
         })
