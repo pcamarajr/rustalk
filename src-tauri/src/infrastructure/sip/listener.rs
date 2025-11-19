@@ -282,10 +282,7 @@ pub async fn start_invite_listener(
                 // Extract From header
                 let from_header = match extract_from_header(&message) {
                     Ok(from) => {
-                        eprintln!(
-                            "DEBUG:[INVITE_LISTENER/EXTRACT] Extracted From: {}",
-                            from
-                        );
+                        eprintln!("DEBUG:[INVITE_LISTENER/EXTRACT] Extracted From: {}", from);
                         from
                     }
                     Err(e) => {
@@ -528,4 +525,3 @@ mod tests {
         assert!(result.is_err());
     }
 }
-

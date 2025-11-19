@@ -731,7 +731,10 @@ impl CallService {
             .send_bytes(&response_bytes, &source_addr)
             .await
             .map_err(|e| {
-                eprintln!("DEBUG:[CALL_SERVICE/100_TRYING] Failed to send 100 Trying: {}", e);
+                eprintln!(
+                    "DEBUG:[CALL_SERVICE/100_TRYING] Failed to send 100 Trying: {}",
+                    e
+                );
                 e
             })?;
 
@@ -1086,10 +1089,7 @@ mod tests {
         assert!(matches!(call.direction(), CallDirection::Inbound));
         assert!(matches!(call.state(), CallState::Ringing));
         assert_eq!(call.remote_number(), "sip:bob@example.com");
-        assert_eq!(
-            call.call_id_header(),
-            Some(&"call-id-123".to_string())
-        );
+        assert_eq!(call.call_id_header(), Some(&"call-id-123".to_string()));
         assert_eq!(call.from_tag(), Some(&"from-tag-123".to_string()));
     }
 

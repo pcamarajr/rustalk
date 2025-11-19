@@ -140,8 +140,11 @@ pub fn run() {
             let call_client_for_listener = Arc::clone(&call_client_for_receiver);
             let call_service_for_listener = Arc::clone(&call_service);
             rt_handle.spawn(async move {
-                listener::start_invite_listener(call_client_for_listener, call_service_for_listener)
-                    .await;
+                listener::start_invite_listener(
+                    call_client_for_listener,
+                    call_service_for_listener,
+                )
+                .await;
             });
 
             eprintln!("DEBUG:[SETUP] Setup complete");
