@@ -470,22 +470,24 @@ async fn test_registration_and_audio_flow() {
     // Step 4: List Audio Devices
     println!("DEBUG:[E2E] Step 4: Listing audio devices");
     let audio_service = app_state.audio_service.lock().await;
-    let input_devices = match timeout(Duration::from_secs(3), audio_service.list_input_devices()).await {
-        Ok(Ok(devices)) => devices,
-        Ok(Err(e)) => panic!("Failed to list input devices: {:?}", e),
-        Err(_) => panic!("Timeout waiting for input device list"),
-    };
+    let input_devices =
+        match timeout(Duration::from_secs(3), audio_service.list_input_devices()).await {
+            Ok(Ok(devices)) => devices,
+            Ok(Err(e)) => panic!("Failed to list input devices: {:?}", e),
+            Err(_) => panic!("Timeout waiting for input device list"),
+        };
     assert!(
         !input_devices.is_empty(),
         "Expected at least one input device"
     );
     println!("DEBUG:[E2E] Found {} input device(s)", input_devices.len());
 
-    let output_devices = match timeout(Duration::from_secs(3), audio_service.list_output_devices()).await {
-        Ok(Ok(devices)) => devices,
-        Ok(Err(e)) => panic!("Failed to list output devices: {:?}", e),
-        Err(_) => panic!("Timeout waiting for output device list"),
-    };
+    let output_devices =
+        match timeout(Duration::from_secs(3), audio_service.list_output_devices()).await {
+            Ok(Ok(devices)) => devices,
+            Ok(Err(e)) => panic!("Failed to list output devices: {:?}", e),
+            Err(_) => panic!("Timeout waiting for output device list"),
+        };
     assert!(
         !output_devices.is_empty(),
         "Expected at least one output device"
@@ -528,11 +530,12 @@ async fn test_registration_and_audio_flow() {
 
     // Step 6: Verify Audio Device Persistence
     println!("DEBUG:[E2E] Step 6: Verifying audio device persistence");
-    let selected_input = match timeout(Duration::from_secs(3), audio_service.get_input_device()).await {
-        Ok(Ok(device)) => device,
-        Ok(Err(e)) => panic!("Failed to get input device: {:?}", e),
-        Err(_) => panic!("Timeout waiting for input device"),
-    };
+    let selected_input =
+        match timeout(Duration::from_secs(3), audio_service.get_input_device()).await {
+            Ok(Ok(device)) => device,
+            Ok(Err(e)) => panic!("Failed to get input device: {:?}", e),
+            Err(_) => panic!("Timeout waiting for input device"),
+        };
     assert!(
         selected_input.is_some(),
         "Expected input device to be selected"
@@ -544,11 +547,12 @@ async fn test_registration_and_audio_flow() {
     );
     println!("DEBUG:[E2E] Input device persistence verified");
 
-    let selected_output = match timeout(Duration::from_secs(3), audio_service.get_output_device()).await {
-        Ok(Ok(device)) => device,
-        Ok(Err(e)) => panic!("Failed to get output device: {:?}", e),
-        Err(_) => panic!("Timeout waiting for output device"),
-    };
+    let selected_output =
+        match timeout(Duration::from_secs(3), audio_service.get_output_device()).await {
+            Ok(Ok(device)) => device,
+            Ok(Err(e)) => panic!("Failed to get output device: {:?}", e),
+            Err(_) => panic!("Timeout waiting for output device"),
+        };
     assert!(
         selected_output.is_some(),
         "Expected output device to be selected"

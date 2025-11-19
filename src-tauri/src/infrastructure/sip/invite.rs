@@ -176,9 +176,7 @@ pub fn build_invite_request(
 
     // Add Content-Type and body if SDP is provided
     if let Some(sdp) = sdp_body {
-        builder = builder
-            .header("Content-Type", "application/sdp")
-            .body(sdp);
+        builder = builder.header("Content-Type", "application/sdp").body(sdp);
     }
 
     // Build the message
@@ -250,21 +248,39 @@ mod tests {
         let local_addr: SocketAddr = "192.168.1.100:5060".parse().unwrap();
         let contact_uri = "sip:alice@192.168.1.100:5060";
 
-        let bytes = build_invite_request(remote_uri, local_uri, &local_addr, contact_uri, None, 1)
-            .unwrap();
+        let bytes =
+            build_invite_request(remote_uri, local_uri, &local_addr, contact_uri, None, 1).unwrap();
         let message_str = String::from_utf8_lossy(&bytes);
 
         // Check all required headers are present
-        assert!(message_str.contains("INVITE"), "Should contain INVITE method");
+        assert!(
+            message_str.contains("INVITE"),
+            "Should contain INVITE method"
+        );
         assert!(message_str.contains("Via:"), "Should contain Via header");
-        assert!(message_str.contains("Max-Forwards:"), "Should contain Max-Forwards header");
+        assert!(
+            message_str.contains("Max-Forwards:"),
+            "Should contain Max-Forwards header"
+        );
         assert!(message_str.contains("To:"), "Should contain To header");
         assert!(message_str.contains("From:"), "Should contain From header");
-        assert!(message_str.contains("Call-ID:"), "Should contain Call-ID header");
+        assert!(
+            message_str.contains("Call-ID:"),
+            "Should contain Call-ID header"
+        );
         assert!(message_str.contains("CSeq:"), "Should contain CSeq header");
-        assert!(message_str.contains("Contact:"), "Should contain Contact header");
-        assert!(message_str.contains("User-Agent:"), "Should contain User-Agent header");
-        assert!(message_str.contains("Content-Length:"), "Should contain Content-Length header");
+        assert!(
+            message_str.contains("Contact:"),
+            "Should contain Contact header"
+        );
+        assert!(
+            message_str.contains("User-Agent:"),
+            "Should contain User-Agent header"
+        );
+        assert!(
+            message_str.contains("Content-Length:"),
+            "Should contain Content-Length header"
+        );
     }
 
     #[test]
@@ -281,8 +297,14 @@ mod tests {
         assert!(call_id2.contains('@'), "Call-ID should contain @");
 
         // Call-ID should end with domain
-        assert!(call_id1.ends_with("@example.com"), "Call-ID should end with domain");
-        assert!(call_id2.ends_with("@example.com"), "Call-ID should end with domain");
+        assert!(
+            call_id1.ends_with("@example.com"),
+            "Call-ID should end with domain"
+        );
+        assert!(
+            call_id2.ends_with("@example.com"),
+            "Call-ID should end with domain"
+        );
     }
 
     #[test]
@@ -322,8 +344,8 @@ mod tests {
         let local_addr: SocketAddr = "192.168.1.100:5060".parse().unwrap();
         let contact_uri = "sip:alice@192.168.1.100:5060";
 
-        let bytes = build_invite_request(remote_uri, local_uri, &local_addr, contact_uri, None, 1)
-            .unwrap();
+        let bytes =
+            build_invite_request(remote_uri, local_uri, &local_addr, contact_uri, None, 1).unwrap();
 
         // Verify it can be parsed back
         let parsed = parse_message(&bytes);
@@ -392,17 +414,23 @@ mod tests {
         let local_addr: SocketAddr = "192.168.1.100:5060".parse().unwrap();
         let contact_uri = "sip:alice@192.168.1.100:5060";
 
-        let bytes1 = build_invite_request(remote_uri, local_uri, &local_addr, contact_uri, None, 1)
-            .unwrap();
-        let bytes2 = build_invite_request(remote_uri, local_uri, &local_addr, contact_uri, None, 2)
-            .unwrap();
+        let bytes1 =
+            build_invite_request(remote_uri, local_uri, &local_addr, contact_uri, None, 1).unwrap();
+        let bytes2 =
+            build_invite_request(remote_uri, local_uri, &local_addr, contact_uri, None, 2).unwrap();
 
         let message_str1 = String::from_utf8_lossy(&bytes1);
         let message_str2 = String::from_utf8_lossy(&bytes2);
 
         // Check CSeq values
-        assert!(message_str1.contains("CSeq: 1 INVITE"), "First message should have CSeq 1");
-        assert!(message_str2.contains("CSeq: 2 INVITE"), "Second message should have CSeq 2");
+        assert!(
+            message_str1.contains("CSeq: 1 INVITE"),
+            "First message should have CSeq 1"
+        );
+        assert!(
+            message_str2.contains("CSeq: 2 INVITE"),
+            "Second message should have CSeq 2"
+        );
     }
 
     #[test]
@@ -412,8 +440,8 @@ mod tests {
         let local_addr: SocketAddr = "192.168.1.100:5060".parse().unwrap();
         let contact_uri = "sip:alice@192.168.1.100:5060";
 
-        let bytes = build_invite_request(remote_uri, local_uri, &local_addr, contact_uri, None, 1)
-            .unwrap();
+        let bytes =
+            build_invite_request(remote_uri, local_uri, &local_addr, contact_uri, None, 1).unwrap();
         let message_str = String::from_utf8_lossy(&bytes);
 
         // To header should be in format <sip:uri>
@@ -430,8 +458,8 @@ mod tests {
         let local_addr: SocketAddr = "192.168.1.100:5060".parse().unwrap();
         let contact_uri = "sip:alice@192.168.1.100:5060";
 
-        let bytes = build_invite_request(remote_uri, local_uri, &local_addr, contact_uri, None, 1)
-            .unwrap();
+        let bytes =
+            build_invite_request(remote_uri, local_uri, &local_addr, contact_uri, None, 1).unwrap();
         let message_str = String::from_utf8_lossy(&bytes);
 
         // From header should contain tag
@@ -448,8 +476,8 @@ mod tests {
         let local_addr: SocketAddr = "192.168.1.100:5060".parse().unwrap();
         let contact_uri = "sip:alice@192.168.1.100:5060";
 
-        let bytes = build_invite_request(remote_uri, local_uri, &local_addr, contact_uri, None, 1)
-            .unwrap();
+        let bytes =
+            build_invite_request(remote_uri, local_uri, &local_addr, contact_uri, None, 1).unwrap();
         let message_str = String::from_utf8_lossy(&bytes);
 
         // Via header should contain branch starting with z9hG4bK
@@ -463,4 +491,3 @@ mod tests {
         );
     }
 }
-
