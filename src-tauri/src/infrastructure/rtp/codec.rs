@@ -305,7 +305,11 @@ mod tests {
         let decoded = ulaw_to_linear(encoded);
         // G.711 has a bias, so zero may not decode to exactly zero
         // Just verify it's close to zero (within reasonable range)
-        assert!(decoded.abs() < 100, "Zero should decode close to zero, got {}", decoded);
+        assert!(
+            decoded.abs() < 100,
+            "Zero should decode close to zero, got {}",
+            decoded
+        );
     }
 
     #[test]
@@ -314,6 +318,10 @@ mod tests {
         let decoded = alaw_to_linear(encoded);
         // G.711 has a bias, so zero may not decode to exactly zero
         // Just verify it's close to zero (within reasonable range)
-        assert!(decoded.abs() < 100, "Zero should decode close to zero, got {}", decoded);
+        assert!(
+            decoded.abs() < 100,
+            "Zero should decode close to zero, got {}",
+            decoded
+        );
     }
 }
