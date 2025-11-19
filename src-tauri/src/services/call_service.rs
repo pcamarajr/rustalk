@@ -21,7 +21,8 @@ struct CallRtpSession {
     /// Audio input channel (sends audio to RTP encoder)
     audio_tx: mpsc::Sender<Vec<i16>>,
     /// Audio output channel (receives decoded audio from RTP)
-    audio_rx: mpsc::Receiver<Vec<i16>>,
+    /// Option allows taking ownership via take() method
+    audio_rx: Option<mpsc::Receiver<Vec<i16>>>,
 }
 
 /// Call service managing outbound call lifecycle
@@ -502,7 +503,7 @@ impl CallService {
         let rtp_data = CallRtpSession {
             session: Arc::new(Mutex::new(rtp_session)),
             audio_tx,
-            audio_rx,
+            audio_rx: Some(audio_rx),
         };
 
         let mut rtp_sessions = self.rtp_sessions.write().await;
@@ -567,11 +568,9 @@ impl CallService {
         call_id: &CallId,
     ) -> Option<mpsc::Receiver<Vec<i16>>> {
         let mut rtp_sessions = self.rtp_sessions.write().await;
-        rtp_sessions.get_mut(call_id).map(|rtp_data| {
-            // Replace with a dummy receiver (we can't clone, so we create a new channel)
-            let (_dummy_tx, dummy_rx) = mpsc::channel(1);
-            std::mem::replace(&mut rtp_data.audio_rx, dummy_rx)
-        })
+        rtp_sessions
+            .get_mut(call_id)
+            .and_then(|rtp_data| rtp_data.audio_rx.take())
     }
 }
 
