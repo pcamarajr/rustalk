@@ -902,7 +902,6 @@ fn select_codec(codecs: &[CodecInfo]) -> Result<G711Type, SipError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::entities::call::CallDirection;
     use crate::domain::traits::CredentialStore;
     use crate::infrastructure::sip::client::SipClient;
     use crate::services::auth_service::AuthService;
