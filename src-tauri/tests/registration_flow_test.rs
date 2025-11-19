@@ -294,7 +294,7 @@ async fn create_test_app_state() -> AppState {
     let event_emitter = EventEmitter::new(app.handle().clone());
     AppState::new(
         client,
-        call_client,
+        Arc::new(tokio::sync::Mutex::new(call_client)),
         audio_service,
         credential_store,
         event_emitter,

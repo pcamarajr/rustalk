@@ -484,12 +484,13 @@ Phase 8: Production Polish        █████░░░░░░░░░░�
   - Files: `/src-tauri/src/services/call_service.rs` (event emission) ✅
   - Implementation: Complete frontend-backend integration with Tauri event system for real-time call state synchronization. Backend emits `call_state_changed` events on state transitions (ringing → connecting → active → ended). Frontend event listener in callStore updates UI reactively. Dialer UI includes loading state and error handling. Active call view shows state-specific UI (ringing/connecting vs active). Call controls (mute/hold/end) integrated with backend commands (stub implementations for Phase 6). Audio visualizer documented as mock implementation.
 
-- **OUT-2.6.1** (8h): SIP message receiver loop for outbound call responses
-  - Files: `/src-tauri/src/infrastructure/sip/message_receiver.rs` (new)
-  - Files: `/src-tauri/src/lib.rs` (spawn background task in setup)
-  - Files: `/src-tauri/src/services/call_service.rs` (add method to match Call-ID)
-  - Tests: Integration test - receive and process SIP responses
-  - Implementation: Background task that continuously receives SIP messages from CallService's SIP client, parses responses, matches Call-ID to active calls, extracts status code and SDP body, and routes to CallService.handle_invite_response(). Required for call state transitions (ringing → connecting → active).
+- **OUT-2.6.1** (8h): SIP message receiver loop for outbound call responses ✅ **COMPLETED**
+  - Files: `/src-tauri/src/infrastructure/sip/message_receiver.rs` (new) ✅
+  - Files: `/src-tauri/src/lib.rs` (spawn background task in setup) ✅
+  - Files: `/src-tauri/src/services/call_service.rs` (add method to match Call-ID) ✅
+  - Files: `/src-tauri/src/state.rs` (updated to accept Arc<Mutex<SipClient>>) ✅
+  - Tests: Integration test - receive and process SIP responses ✅
+  - Implementation: Background task that continuously receives SIP messages from CallService's SIP client, parses responses, matches Call-ID to active calls, extracts status code and SDP body, and routes to CallService.handle_invite_response(). Required for call state transitions (ringing → connecting → active). Complete with error handling, debug logging, and graceful error recovery.
 
 #### Inbound Calls (56 hours)
 
@@ -536,7 +537,7 @@ Phase 8: Production Polish        █████░░░░░░░░░░�
 ### Completion Criteria
 
 - [ ] Two-way audio working in test calls (manual verification)
-- [ ] Call state transitions correctly (Idle → Ringing → Active → Ended) - requires OUT-2.6.1 (SIP response handling)
+- [x] Call state transitions correctly (Idle → Ringing → Active → Ended) - requires OUT-2.6.1 (SIP response handling) ✅
 - [ ] UI updates reflect call status in real-time
 - [ ] E2E tests pass: Outbound call + Inbound call + Audio quality check
 

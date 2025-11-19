@@ -47,18 +47,18 @@ impl CallService {
     /// Create a new CallService with a SIP client and auth service
     ///
     /// # Arguments
-    /// * `sip_client` - SIP client for sending/receiving messages
+    /// * `sip_client` - SIP client for sending/receiving messages (wrapped in Arc<Mutex<>>)
     /// * `auth_service` - Auth service for checking registration state
     /// * `event_emitter` - Optional event emitter for sending events to frontend
     pub fn new(
-        sip_client: SipClient,
+        sip_client: Arc<Mutex<SipClient>>,
         auth_service: Arc<Mutex<AuthService>>,
         event_emitter: Option<EventEmitter>,
     ) -> Self {
         Self {
             active_calls: Arc::new(RwLock::new(HashMap::new())),
             rtp_sessions: Arc::new(RwLock::new(HashMap::new())),
-            sip_client: Arc::new(Mutex::new(sip_client)),
+            sip_client,
             auth_service,
             local_rtp_ports: Arc::new(RwLock::new(HashMap::new())),
             event_emitter,
@@ -322,6 +322,28 @@ impl CallService {
     pub async fn get_call_state(&self, call_id: &CallId) -> Option<CallState> {
         let calls = self.active_calls.read().await;
         calls.get(call_id).map(|call| call.state().clone())
+    }
+
+    /// Find a call by Call-ID header value
+    ///
+    /// Searches active_calls HashMap for a call with matching Call-ID header value.
+    /// This is used to match incoming SIP responses to active calls.
+    ///
+    /// # Arguments
+    /// * `call_id_header` - Call-ID header value from SIP message
+    ///
+    /// # Returns
+    /// `Some(CallId)` if call found, `None` otherwise
+    pub async fn find_call_by_call_id_header(&self, call_id_header: &str) -> Option<CallId> {
+        let calls = self.active_calls.read().await;
+        for (call_id, call) in calls.iter() {
+            if let Some(stored_call_id_header) = call.call_id_header() {
+                if stored_call_id_header == call_id_header {
+                    return Some(call_id.clone());
+                }
+            }
+        }
+        None
     }
 
     /// Handle INVITE response and update call state
@@ -721,6 +743,7 @@ mod tests {
 
     async fn create_test_call_service() -> CallService {
         let client = SipClient::new_udp_any().await.unwrap();
+        let client = Arc::new(Mutex::new(client));
         let credential_store = Arc::new(MockCredentialStore) as Arc<dyn CredentialStore>;
         let client_for_auth = SipClient::new_udp_any().await.unwrap();
         let auth_service = Arc::new(Mutex::new(AuthService::new(

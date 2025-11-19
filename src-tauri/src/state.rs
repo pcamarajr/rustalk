@@ -25,13 +25,13 @@ impl AppState {
     ///
     /// # Arguments
     /// * `client` - SIP client instance for the AuthService
-    /// * `call_client` - SIP client instance for the CallService (can be same as client)
+    /// * `call_client` - SIP client instance for the CallService (wrapped in Arc<Mutex<>>)
     /// * `audio_service` - Audio service instance
     /// * `credential_store` - Credential store instance for secure credential persistence
     /// * `event_emitter` - Event emitter for sending events to frontend
     pub fn new(
         client: SipClient,
-        call_client: SipClient,
+        call_client: Arc<tokio::sync::Mutex<SipClient>>,
         audio_service: AudioService,
         credential_store: Arc<dyn CredentialStore>,
         event_emitter: EventEmitter,
