@@ -48,7 +48,10 @@ async fn test_rtp_session_bidirectional_flow() {
         // Verify that we received audio data (G.711 is lossy, so exact match is not expected)
         assert_eq!(received_samples.len(), test_samples1.len());
         // Just verify that we got some non-zero samples (indicating audio was transmitted)
-        assert!(received_samples.iter().any(|&s| s != 0), "Received all zeros");
+        assert!(
+            received_samples.iter().any(|&s| s != 0),
+            "Received all zeros"
+        );
     } else {
         panic!("Session2 did not receive audio from session1");
     }
@@ -65,7 +68,10 @@ async fn test_rtp_session_bidirectional_flow() {
     if let Ok(Some(received_samples)) = received {
         assert_eq!(received_samples.len(), test_samples2.len());
         // Just verify that we got some non-zero samples (indicating audio was transmitted)
-        assert!(received_samples.iter().any(|&s| s != 0), "Received all zeros");
+        assert!(
+            received_samples.iter().any(|&s| s != 0),
+            "Received all zeros"
+        );
     } else {
         panic!("Session1 did not receive audio from session2");
     }
@@ -107,7 +113,7 @@ async fn test_rtp_session_packet_structure() {
         Ok(Ok((len, _addr))) => {
             // Verify RTP packet structure
             assert!(len >= 12, "RTP packet too short");
-            
+
             // Check version (bits 6-7 should be 2)
             let vpxcc = buf[0];
             let version = (vpxcc >> 6) & 0x03;
@@ -148,14 +154,20 @@ async fn test_rtp_session_codec_roundtrip() {
     let decoded = codec.decode(&encoded).unwrap();
     assert_eq!(decoded.len(), original.len());
 
-        // G.711 is lossy, so we just verify that encoding/decoding produces output
-        // The exact values may differ due to quantization and bias
-        // Verify that we get output and non-zero values produce non-zero output
-        assert!(decoded.iter().any(|&s| s != 0), "All decoded values are zero");
-        // Verify that large input values produce large output values (relative check)
-        let max_orig = original.iter().map(|&s| s.abs()).max().unwrap();
-        let max_dec = decoded.iter().map(|&s| s.abs()).max().unwrap();
-        assert!(max_dec > 0, "Decoded max should be non-zero when input has non-zero values");
+    // G.711 is lossy, so we just verify that encoding/decoding produces output
+    // The exact values may differ due to quantization and bias
+    // Verify that we get output and non-zero values produce non-zero output
+    assert!(
+        decoded.iter().any(|&s| s != 0),
+        "All decoded values are zero"
+    );
+    // Verify that large input values produce large output values (relative check)
+    let _max_orig = original.iter().map(|&s| s.abs()).max().unwrap();
+    let max_dec = decoded.iter().map(|&s| s.abs()).max().unwrap();
+    assert!(
+        max_dec > 0,
+        "Decoded max should be non-zero when input has non-zero values"
+    );
 }
 
 #[tokio::test]
@@ -179,4 +191,3 @@ async fn test_rtp_session_start_stop() {
     // Stop session
     session.stop().await.unwrap();
 }
-

@@ -3,8 +3,8 @@
 use crate::domain::entities::call::{Call, CallId, CallState};
 use crate::domain::entities::registration::RegistrationState;
 use crate::domain::errors::SipError;
-use crate::infrastructure::rtp::session::{RtpSession, RtpSessionConfig};
 use crate::infrastructure::rtp::codec::G711Type;
+use crate::infrastructure::rtp::session::{RtpSession, RtpSessionConfig};
 use crate::infrastructure::sip::client::SipClient;
 use crate::infrastructure::sip::invite::build_invite_with_sdp;
 use crate::infrastructure::sip::sdp::{parse_sdp, CodecInfo};
@@ -341,9 +341,14 @@ impl CallService {
 
                 // Create RTP session if SDP is provided
                 if let Some(sdp_str) = sdp_body {
-                    eprintln!("DEBUG:[CALL_SERVICE/HANDLE_RESPONSE] Parsing SDP and creating RTP session");
+                    eprintln!(
+                        "DEBUG:[CALL_SERVICE/HANDLE_RESPONSE] Parsing SDP and creating RTP session"
+                    );
                     if let Err(e) = self.create_rtp_session(call_id, sdp_str).await {
-                        eprintln!("DEBUG:[CALL_SERVICE/HANDLE_RESPONSE] Failed to create RTP session: {}", e);
+                        eprintln!(
+                            "DEBUG:[CALL_SERVICE/HANDLE_RESPONSE] Failed to create RTP session: {}",
+                            e
+                        );
                         // Don't fail the call transition, but log the error
                         // In production, we might want to handle this differently
                     }
@@ -442,7 +447,10 @@ impl CallService {
     /// # Returns
     /// `Ok(())` if RTP session was created successfully, `Err(SipError)` otherwise
     async fn create_rtp_session(&self, call_id: &CallId, sdp_str: &str) -> Result<(), SipError> {
-        eprintln!("DEBUG:[CALL_SERVICE/RTP] Creating RTP session for call: {}", call_id.as_str());
+        eprintln!(
+            "DEBUG:[CALL_SERVICE/RTP] Creating RTP session for call: {}",
+            call_id.as_str()
+        );
 
         // Parse SDP
         let parsed_sdp = parse_sdp(sdp_str).map_err(|e| {
@@ -480,7 +488,10 @@ impl CallService {
         // Create and start RTP session
         let mut rtp_session = RtpSession::new(rtp_config);
         let (audio_tx, audio_rx) = rtp_session.start().await.map_err(|e| {
-            eprintln!("DEBUG:[CALL_SERVICE/RTP] Failed to start RTP session: {}", e);
+            eprintln!(
+                "DEBUG:[CALL_SERVICE/RTP] Failed to start RTP session: {}",
+                e
+            );
             SipError::from(e)
         })?;
 
@@ -504,7 +515,10 @@ impl CallService {
     /// # Arguments
     /// * `call_id` - Call identifier
     async fn stop_rtp_session(&self, call_id: &CallId) {
-        eprintln!("DEBUG:[CALL_SERVICE/RTP] Stopping RTP session for call: {}", call_id.as_str());
+        eprintln!(
+            "DEBUG:[CALL_SERVICE/RTP] Stopping RTP session for call: {}",
+            call_id.as_str()
+        );
 
         let mut rtp_sessions = self.rtp_sessions.write().await;
         if let Some(rtp_data) = rtp_sessions.remove(call_id) {
@@ -526,7 +540,9 @@ impl CallService {
     /// `Some(audio_tx)` if RTP session exists, `None` otherwise
     pub async fn get_rtp_audio_input(&self, call_id: &CallId) -> Option<mpsc::Sender<Vec<i16>>> {
         let rtp_sessions = self.rtp_sessions.read().await;
-        rtp_sessions.get(call_id).map(|rtp_data| rtp_data.audio_tx.clone())
+        rtp_sessions
+            .get(call_id)
+            .map(|rtp_data| rtp_data.audio_tx.clone())
     }
 
     /// Get audio output channel for a call's RTP session
@@ -539,7 +555,10 @@ impl CallService {
     ///
     /// # Returns
     /// `Some(audio_rx)` if RTP session exists, `None` otherwise
-    pub async fn take_rtp_audio_output(&self, call_id: &CallId) -> Option<mpsc::Receiver<Vec<i16>>> {
+    pub async fn take_rtp_audio_output(
+        &self,
+        call_id: &CallId,
+    ) -> Option<mpsc::Receiver<Vec<i16>>> {
         let mut rtp_sessions = self.rtp_sessions.write().await;
         rtp_sessions.get_mut(call_id).map(|rtp_data| {
             // Replace with a dummy receiver (we can't clone, so we create a new channel)
@@ -553,12 +572,18 @@ impl CallService {
 /// Prefers PCMU (payload type 0) over PCMA (payload type 8)
 fn select_codec(codecs: &[CodecInfo]) -> Result<G711Type, SipError> {
     // Prefer PCMU
-    if codecs.iter().any(|c| c.codec_name == "PCMU" && c.clock_rate == 8000) {
+    if codecs
+        .iter()
+        .any(|c| c.codec_name == "PCMU" && c.clock_rate == 8000)
+    {
         return Ok(G711Type::Pcmu);
     }
 
     // Fall back to PCMA
-    if codecs.iter().any(|c| c.codec_name == "PCMA" && c.clock_rate == 8000) {
+    if codecs
+        .iter()
+        .any(|c| c.codec_name == "PCMA" && c.clock_rate == 8000)
+    {
         return Ok(G711Type::Pcma);
     }
 

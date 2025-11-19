@@ -86,12 +86,17 @@ impl RtpSession {
 
     /// Start the RTP session
     /// Creates UDP socket and starts send/receive tasks
-    pub async fn start(&mut self) -> Result<(mpsc::Sender<Vec<i16>>, mpsc::Receiver<Vec<i16>>), RtpError> {
+    pub async fn start(
+        &mut self,
+    ) -> Result<(mpsc::Sender<Vec<i16>>, mpsc::Receiver<Vec<i16>>), RtpError> {
         if self.socket.is_some() {
             return Err(RtpError::SessionAlreadyStarted);
         }
 
-        eprintln!("DEBUG:[RTP/START] Starting RTP session on port {}", self.config.local_port);
+        eprintln!(
+            "DEBUG:[RTP/START] Starting RTP session on port {}",
+            self.config.local_port
+        );
 
         // Validate RTP port is even
         if !self.config.local_port.is_multiple_of(2) {
@@ -293,7 +298,13 @@ impl RtpSession {
 /// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 /// |           synchronization source (SSRC) identifier              |
 /// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-fn build_rtp_packet(payload_type: u8, sequence: u16, timestamp: u32, ssrc: u32, payload: &[u8]) -> Vec<u8> {
+fn build_rtp_packet(
+    payload_type: u8,
+    sequence: u16,
+    timestamp: u32,
+    ssrc: u32,
+    payload: &[u8],
+) -> Vec<u8> {
     let mut packet = Vec::with_capacity(12 + payload.len());
 
     // Version (2 bits) = 2, Padding (1 bit) = 0, Extension (1 bit) = 0, CC (4 bits) = 0
@@ -376,4 +387,3 @@ mod tests {
         assert!(parse_rtp_packet(&data).is_err());
     }
 }
-

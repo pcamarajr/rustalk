@@ -171,7 +171,7 @@ fn ulaw_to_linear(ulaw_byte: u8) -> i16 {
     let ulaw = !ulaw_byte;
 
     let sign = (ulaw & 0x80) as i16;
-    let exponent = ((ulaw >> 4) & 0x07) as u8;
+    let exponent = (ulaw >> 4) & 0x07;
     let mantissa = (ulaw & 0x0f) as u16;
 
     // Reconstruct linear value
@@ -233,7 +233,7 @@ fn alaw_to_linear(alaw_byte: u8) -> i16 {
     let alaw = alaw_byte ^ 0x55;
 
     let sign = (alaw & 0x80) as i16;
-    let exponent = ((alaw >> 4) & 0x07) as u8;
+    let exponent = (alaw >> 4) & 0x07;
     let mantissa = (alaw & 0x0f) as u16;
 
     // Reconstruct linear value
@@ -309,4 +309,3 @@ mod tests {
         assert_eq!(decoded, 0);
     }
 }
-
