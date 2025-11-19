@@ -4,6 +4,7 @@
 use crate::domain::errors::SipError;
 use crate::infrastructure::sip::message_builder::SipMessageBuilder;
 use crate::infrastructure::sip::parser::parse_message;
+use crate::infrastructure::sip::sdp::{generate_sdp_offer, SdpOfferParams};
 use std::net::SocketAddr;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -188,6 +189,85 @@ pub fn build_invite_request(
     Ok(message_bytes)
 }
 
+/// Build an INVITE request with auto-generated SDP offer
+///
+/// This is a convenience function that automatically generates an SDP offer
+/// for outbound calls. It extracts the IP address from the local_address
+/// and generates appropriate SDP parameters.
+///
+/// # Arguments
+/// * `remote_uri` - Target SIP URI (e.g., "sip:bob@example.com")
+/// * `local_uri` - Local SIP URI (from credentials, e.g., "sip:alice@example.com")
+/// * `local_address` - Local socket address for Via header
+/// * `contact_uri` - Contact header URI (e.g., "sip:alice@192.168.1.100:5060")
+/// * `rtp_port` - RTP port for audio (must be even)
+/// * `username` - Username for SDP origin (typically from local_uri)
+/// * `cseq` - CSeq sequence number (default: 1)
+///
+/// # Returns
+/// Raw INVITE message bytes with SDP body, or `SipError` if construction fails
+///
+/// # Example
+/// ```
+/// use rustalk_lib::infrastructure::sip::invite::build_invite_with_sdp;
+/// use std::net::SocketAddr;
+///
+/// let remote_uri = "sip:bob@example.com";
+/// let local_uri = "sip:alice@example.com";
+/// let local_addr: SocketAddr = "192.168.1.100:5060".parse().unwrap();
+/// let contact_uri = "sip:alice@192.168.1.100:5060";
+///
+/// let invite = build_invite_with_sdp(
+///     remote_uri,
+///     local_uri,
+///     &local_addr,
+///     contact_uri,
+///     49172,
+///     "alice",
+///     1,
+/// ).unwrap();
+/// ```
+pub fn build_invite_with_sdp(
+    remote_uri: &str,
+    local_uri: &str,
+    local_address: &SocketAddr,
+    contact_uri: &str,
+    rtp_port: u16,
+    username: &str,
+    cseq: u32,
+) -> Result<Vec<u8>, SipError> {
+    // Extract IP address from local_address
+    let local_ip = local_address.ip();
+
+    // Generate session ID (timestamp-based for uniqueness)
+    let session_id = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|e| SipError::InvalidMessage {
+            reason: format!("System time error: {}", e),
+        })?
+        .as_secs();
+
+    // Generate SDP offer
+    let sdp_params = SdpOfferParams {
+        local_ip,
+        rtp_port,
+        username: username.to_string(),
+        session_id,
+    };
+
+    let sdp_body = generate_sdp_offer(&sdp_params)?;
+
+    // Build INVITE with SDP
+    build_invite_request(
+        remote_uri,
+        local_uri,
+        local_address,
+        contact_uri,
+        Some(&sdp_body),
+        cseq,
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -209,7 +289,7 @@ mod tests {
     }
 
     #[test]
-    fn test_build_invite_with_sdp() {
+    fn test_build_invite_with_sdp_body() {
         let remote_uri = "sip:bob@example.com";
         let local_uri = "sip:alice@example.com";
         let local_addr: SocketAddr = "192.168.1.100:5060".parse().unwrap();
@@ -489,5 +569,56 @@ mod tests {
             via_line.contains("branch=z9hG4bK"),
             "Via header should contain branch starting with z9hG4bK"
         );
+    }
+
+    #[test]
+    fn test_build_invite_with_sdp() {
+        let remote_uri = "sip:bob@example.com";
+        let local_uri = "sip:alice@example.com";
+        let local_addr: SocketAddr = "192.168.1.100:5060".parse().unwrap();
+        let contact_uri = "sip:alice@192.168.1.100:5060";
+
+        let result = build_invite_with_sdp(
+            remote_uri,
+            local_uri,
+            &local_addr,
+            contact_uri,
+            49172,
+            "alice",
+            1,
+        );
+
+        assert!(
+            result.is_ok(),
+            "Should build INVITE with auto-generated SDP"
+        );
+        let bytes = result.unwrap();
+        assert!(!bytes.is_empty(), "Message should not be empty");
+
+        // Verify SDP is in the message
+        let message_str = String::from_utf8_lossy(&bytes);
+        assert!(message_str.contains("Content-Type: application/sdp"));
+        assert!(message_str.contains("v=0"));
+        assert!(message_str.contains("m=audio 49172 RTP/AVP"));
+    }
+
+    #[test]
+    fn test_build_invite_with_sdp_odd_port() {
+        let remote_uri = "sip:bob@example.com";
+        let local_uri = "sip:alice@example.com";
+        let local_addr: SocketAddr = "192.168.1.100:5060".parse().unwrap();
+        let contact_uri = "sip:alice@192.168.1.100:5060";
+
+        let result = build_invite_with_sdp(
+            remote_uri,
+            local_uri,
+            &local_addr,
+            contact_uri,
+            49173, // Odd port
+            "alice",
+            1,
+        );
+
+        assert!(result.is_err(), "Should reject odd RTP port");
     }
 }

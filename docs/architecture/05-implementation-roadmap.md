@@ -444,11 +444,12 @@ Phase 8: Production Polish        █████░░░░░░░░░░�
   - Tests: Unit tests for INVITE generation (12 tests passing)
   - Implementation: Complete INVITE message construction with Call-ID, From tag, Via branch generation, and all required RFC 3261 headers
 
-- **OUT-2.2** (16h): SDP offer/answer negotiation
+- **OUT-2.2** (16h): SDP offer/answer negotiation ✅ **COMPLETED**
 
   - Files: `/src-tauri/src/infrastructure/sip/sdp.rs`
-  - Tests: Unit tests for SDP parsing and generation
-  - Dependencies: `webrtc-sdp`
+  - Tests: Unit tests for SDP parsing and generation (15 tests passing)
+  - Dependencies: `webrtc-sdp` (v0.3)
+  - Implementation: Complete SDP offer/answer generation and parsing with RFC 4566 compliance, codec negotiation (PCMU/PCMA), and integration with INVITE construction
 
 - **OUT-2.3** (12h): Call state machine for outbound calls
 
