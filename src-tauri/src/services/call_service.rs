@@ -1,5 +1,6 @@
 // Call service - Orchestrates outbound call lifecycle
 
+use crate::commands::events::EventEmitter;
 use crate::domain::entities::call::{Call, CallId, CallState};
 use crate::domain::entities::registration::RegistrationState;
 use crate::domain::errors::SipError;
@@ -12,6 +13,7 @@ use crate::services::auth_service::AuthService;
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
+use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::sync::{mpsc, Mutex, RwLock};
 
 /// RTP session data for a call
@@ -37,6 +39,8 @@ pub struct CallService {
     auth_service: Arc<Mutex<AuthService>>,
     /// Local RTP ports for outbound calls (from SDP offer), stored per-call
     local_rtp_ports: Arc<RwLock<HashMap<CallId, u16>>>,
+    /// Event emitter for sending events to frontend
+    event_emitter: Option<EventEmitter>,
 }
 
 impl CallService {
@@ -45,13 +49,52 @@ impl CallService {
     /// # Arguments
     /// * `sip_client` - SIP client for sending/receiving messages
     /// * `auth_service` - Auth service for checking registration state
-    pub fn new(sip_client: SipClient, auth_service: Arc<Mutex<AuthService>>) -> Self {
+    /// * `event_emitter` - Optional event emitter for sending events to frontend
+    pub fn new(
+        sip_client: SipClient,
+        auth_service: Arc<Mutex<AuthService>>,
+        event_emitter: Option<EventEmitter>,
+    ) -> Self {
         Self {
             active_calls: Arc::new(RwLock::new(HashMap::new())),
             rtp_sessions: Arc::new(RwLock::new(HashMap::new())),
             sip_client: Arc::new(Mutex::new(sip_client)),
             auth_service,
             local_rtp_ports: Arc::new(RwLock::new(HashMap::new())),
+            event_emitter,
+        }
+    }
+
+    /// Helper to convert CallState to string
+    fn call_state_to_string(state: &CallState) -> String {
+        match state {
+            CallState::Idle => "idle".to_string(),
+            CallState::Ringing => "ringing".to_string(),
+            CallState::Connecting => "connecting".to_string(),
+            CallState::Active => "active".to_string(),
+            CallState::OnHold => "onHold".to_string(),
+            CallState::Ended => "ended".to_string(),
+        }
+    }
+
+    /// Helper to convert SystemTime to Unix timestamp in milliseconds
+    fn system_time_to_timestamp(time: SystemTime) -> Option<u64> {
+        time.duration_since(UNIX_EPOCH)
+            .ok()
+            .map(|d| d.as_millis() as u64)
+    }
+
+    /// Emit call state changed event if event emitter is available
+    fn emit_state_changed(
+        &self,
+        call_id: &CallId,
+        state: &CallState,
+        start_time: Option<SystemTime>,
+    ) {
+        if let Some(emitter) = &self.event_emitter {
+            let state_str = Self::call_state_to_string(state);
+            let start_time_ts = start_time.and_then(Self::system_time_to_timestamp);
+            emitter.emit_call_state_changed(call_id.as_str().to_string(), state_str, start_time_ts);
         }
     }
 
@@ -236,6 +279,7 @@ impl CallService {
 
         // Store call in active_calls
         let call_id = call.id().clone();
+        let call_state = call.state().clone();
         let mut calls = self.active_calls.write().await;
         calls.insert(call_id.clone(), call);
 
@@ -249,6 +293,9 @@ impl CallService {
             "DEBUG:[CALL_SERVICE/INITIATE] Call stored with ID: {}",
             call_id.as_str()
         );
+
+        // Emit ringing state event
+        self.emit_state_changed(&call_id, &call_state, None);
 
         Ok(call_id)
     }
@@ -332,7 +379,11 @@ impl CallService {
                         e
                     );
                     e
-                })
+                })?;
+                // Emit connecting state event
+                let new_state = call.state().clone();
+                self.emit_state_changed(call_id, &new_state, None);
+                Ok(())
             }
             // 200 OK: Transition to Active and start RTP session
             200 => {
@@ -344,6 +395,10 @@ impl CallService {
                     );
                     e
                 })?;
+
+                // Get start_time before emitting event
+                let start_time = call.start_time();
+                let new_state = call.state().clone();
 
                 // Create RTP session if SDP is provided
                 if let Some(sdp_str) = sdp_body {
@@ -362,6 +417,9 @@ impl CallService {
                     eprintln!("DEBUG:[CALL_SERVICE/HANDLE_RESPONSE] Warning: 200 OK received without SDP body");
                 }
 
+                // Emit active state event with start_time
+                self.emit_state_changed(call_id, &new_state, start_time);
+
                 Ok(())
             }
             // 4xx/5xx/6xx: Transition to Ended
@@ -376,7 +434,11 @@ impl CallService {
                         e
                     );
                     e
-                })
+                })?;
+                // Emit ended state event
+                let new_state = call.state().clone();
+                self.emit_state_changed(call_id, &new_state, None);
+                Ok(())
             }
             // Unknown status code
             _ => {
@@ -390,7 +452,11 @@ impl CallService {
                         e
                     );
                     e
-                })
+                })?;
+                // Emit ended state event
+                let new_state = call.state().clone();
+                self.emit_state_changed(call_id, &new_state, None);
+                Ok(())
             }
         }
     }
@@ -433,6 +499,10 @@ impl CallService {
             );
             e
         })?;
+
+        // Emit ended state event
+        let new_state = call.state().clone();
+        self.emit_state_changed(call_id, &new_state, None);
 
         eprintln!(
             "DEBUG:[CALL_SERVICE/END_CALL] Call ended successfully: {}",
@@ -657,7 +727,7 @@ mod tests {
             client_for_auth,
             credential_store,
         )));
-        CallService::new(client, auth_service)
+        CallService::new(client, auth_service, None)
     }
 
     #[tokio::test]

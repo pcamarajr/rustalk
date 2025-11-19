@@ -288,7 +288,17 @@ async fn create_test_app_state() -> AppState {
     // Create mock credential store
     let credential_store: Arc<dyn CredentialStore> = Arc::new(MockCredentialStore::new());
 
-    AppState::new(client, call_client, audio_service, credential_store)
+    // Create a mock event emitter for tests using tauri::test::mock_app()
+    use rustalk_lib::commands::events::EventEmitter;
+    let app = tauri::test::mock_app();
+    let event_emitter = EventEmitter::new(app.handle().clone());
+    AppState::new(
+        client,
+        call_client,
+        audio_service,
+        credential_store,
+        event_emitter,
+    )
 }
 
 #[tokio::test]

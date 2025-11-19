@@ -4,6 +4,7 @@
 pub mod audio;
 pub mod auth;
 pub mod call;
+pub mod events;
 pub mod validation;
 
 pub use audio::{
@@ -13,7 +14,7 @@ pub use audio::{
 pub use auth::{
     get_registration_status, load_saved_credentials, register_account, unregister_account,
 };
-pub use call::initiate_call;
+pub use call::{hangup_call, hold_call, initiate_call, mute_call};
 pub use validation::*;
 
 use crate::domain::CommandError;
