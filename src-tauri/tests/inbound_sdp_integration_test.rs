@@ -4,52 +4,8 @@
 // This test focuses on verifying that SDP can be parsed, stored, and used to generate answers.
 
 use rustalk_lib::domain::entities::call::Call;
-use rustalk_lib::domain::traits::CredentialStore;
-use rustalk_lib::infrastructure::sip::client::SipClient;
 use rustalk_lib::infrastructure::sip::sdp::{generate_sdp_answer, parse_sdp, SdpAnswerParams};
-use rustalk_lib::services::auth_service::AuthService;
-use rustalk_lib::services::call_service::CallService;
-use std::net::{IpAddr, SocketAddr};
-use std::sync::Arc;
-use tokio::sync::Mutex;
-
-// Mock credential store for testing
-struct MockCredentialStore;
-
-#[async_trait::async_trait]
-impl CredentialStore for MockCredentialStore {
-    async fn save(
-        &self,
-        _key: &str,
-        _credentials: &rustalk_lib::domain::entities::credentials::Credentials,
-    ) -> Result<(), rustalk_lib::domain::errors::CredentialStoreError> {
-        Ok(())
-    }
-
-    async fn load(
-        &self,
-        _key: &str,
-    ) -> Result<
-        Option<rustalk_lib::domain::entities::credentials::Credentials>,
-        rustalk_lib::domain::errors::CredentialStoreError,
-    > {
-        Ok(None)
-    }
-
-    async fn delete(
-        &self,
-        _key: &str,
-    ) -> Result<(), rustalk_lib::domain::errors::CredentialStoreError> {
-        Ok(())
-    }
-
-    async fn exists(
-        &self,
-        _key: &str,
-    ) -> Result<bool, rustalk_lib::domain::errors::CredentialStoreError> {
-        Ok(false)
-    }
-}
+use std::net::IpAddr;
 
 #[tokio::test]
 async fn test_sdp_round_trip_parse_and_generate_answer() {
@@ -109,11 +65,14 @@ async fn test_sdp_round_trip_parse_and_generate_answer() {
         session_version: parsed_sdp.session_version + 1,
     };
 
-    let sdp_answer = generate_sdp_answer(&parsed_sdp, &answer_params)
-        .expect("Should generate SDP answer");
+    let sdp_answer =
+        generate_sdp_answer(&parsed_sdp, &answer_params).expect("Should generate SDP answer");
 
     // Verify answer is valid
-    assert!(sdp_answer.contains("v=0"), "Answer should contain protocol version");
+    assert!(
+        sdp_answer.contains("v=0"),
+        "Answer should contain protocol version"
+    );
     assert!(sdp_answer.contains("o=bob"), "Answer should contain origin");
     assert!(
         sdp_answer.contains("c=IN IP4 192.168.1.200"),
@@ -130,7 +89,10 @@ async fn test_sdp_round_trip_parse_and_generate_answer() {
 
     // Verify answer can be parsed
     let parsed_answer = parse_sdp(&sdp_answer).expect("Should parse SDP answer");
-    assert_eq!(parsed_answer.rtp_port, 49174, "Answer RTP port should match");
+    assert_eq!(
+        parsed_answer.rtp_port, 49174,
+        "Answer RTP port should match"
+    );
     assert_eq!(
         parsed_answer.connection_ip,
         "192.168.1.200".parse::<IpAddr>().unwrap(),
@@ -153,7 +115,10 @@ async fn test_call_entity_sdp_storage() {
     );
 
     // Initially no SDP offer
-    assert!(call.sdp_offer().is_none(), "Call should not have SDP offer initially");
+    assert!(
+        call.sdp_offer().is_none(),
+        "Call should not have SDP offer initially"
+    );
 
     // Set SDP offer
     let sdp_offer = "v=0\r\n\
@@ -167,7 +132,10 @@ async fn test_call_entity_sdp_storage() {
     call.set_sdp_offer(sdp_offer.to_string());
 
     // Verify SDP offer is stored
-    assert!(call.sdp_offer().is_some(), "Call should have SDP offer after setting");
+    assert!(
+        call.sdp_offer().is_some(),
+        "Call should have SDP offer after setting"
+    );
     assert_eq!(
         call.sdp_offer().unwrap(),
         sdp_offer,

@@ -888,7 +888,9 @@ impl CallService {
 
         // Parse and store SDP offer if present (for later answer generation in IN-3.5)
         if let Some(sdp_str) = sdp_body {
-            eprintln!("DEBUG:[CALL_SERVICE/INCOMING_INVITE] SDP offer received, parsing and storing");
+            eprintln!(
+                "DEBUG:[CALL_SERVICE/INCOMING_INVITE] SDP offer received, parsing and storing"
+            );
             // Validate SDP by parsing it (but don't fail call creation if parsing fails)
             match parse_sdp(sdp_str) {
                 Ok(parsed_sdp) => {
@@ -1210,10 +1212,7 @@ mod tests {
         // Test get_sdp_offer with non-existent call
         let result = service.get_sdp_offer(&call_id).await;
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("not found"));
+        assert!(result.unwrap_err().to_string().contains("not found"));
     }
 
     #[tokio::test]
