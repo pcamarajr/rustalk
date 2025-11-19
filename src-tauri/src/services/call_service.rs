@@ -142,9 +142,24 @@ impl CallService {
             let call_id_value = call_id_line
                 .split(':')
                 .nth(1)
-                .map(|s| s.trim().to_string())
-                .unwrap_or_default();
-            call.set_call_id_header(call_id_value);
+                .map(|s| s.trim().to_string());
+            if let Some(call_id) = call_id_value {
+                if !call_id.is_empty() {
+                    call.set_call_id_header(call_id);
+                } else {
+                    eprintln!(
+                        "DEBUG:[CALL_SERVICE/INITIATE] Warning: Call-ID header found but value is empty"
+                    );
+                }
+            } else {
+                eprintln!(
+                    "DEBUG:[CALL_SERVICE/INITIATE] Warning: Failed to extract Call-ID value from header line"
+                );
+            }
+        } else {
+            eprintln!(
+                "DEBUG:[CALL_SERVICE/INITIATE] Warning: Call-ID header not found in INVITE message"
+            );
         }
 
         // Extract From tag from INVITE message
@@ -156,10 +171,29 @@ impl CallService {
                 let from_tag = tag_part
                     .split(';')
                     .next()
-                    .map(|s| s.trim().to_string())
-                    .unwrap_or_default();
-                call.set_from_tag(from_tag);
+                    .map(|s| s.trim().to_string());
+                if let Some(tag) = from_tag {
+                    if !tag.is_empty() {
+                        call.set_from_tag(tag);
+                    } else {
+                        eprintln!(
+                            "DEBUG:[CALL_SERVICE/INITIATE] Warning: From tag found but value is empty"
+                        );
+                    }
+                } else {
+                    eprintln!(
+                        "DEBUG:[CALL_SERVICE/INITIATE] Warning: Failed to extract From tag value"
+                    );
+                }
+            } else {
+                eprintln!(
+                    "DEBUG:[CALL_SERVICE/INITIATE] Warning: From tag not found in From header"
+                );
             }
+        } else {
+            eprintln!(
+                "DEBUG:[CALL_SERVICE/INITIATE] Warning: From header not found in INVITE message"
+            );
         }
 
         eprintln!("DEBUG:[CALL_SERVICE/INITIATE] INVITE built, sending via SIP client");
