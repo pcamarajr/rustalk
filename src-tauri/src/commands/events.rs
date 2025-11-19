@@ -3,7 +3,6 @@
 
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use tauri::{AppHandle, Emitter};
 
 /// Call state changed event payload
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -18,16 +17,29 @@ pub struct CallStateChangedPayload {
 
 /// Event emitter for Tauri events
 /// Wraps AppHandle to allow event emission from services
+/// Uses a trait object to support both real and mock AppHandles
 #[derive(Clone)]
 pub struct EventEmitter {
-    app: Arc<AppHandle>,
+    app: Arc<dyn EmitEvent + Send + Sync>,
+}
+
+/// Trait for emitting events (allows both real and mock AppHandles)
+trait EmitEvent {
+    fn emit(&self, event: &str, payload: &CallStateChangedPayload) -> Result<(), String>;
+}
+
+// Implement for real AppHandle
+impl<R: tauri::Runtime> EmitEvent for tauri::AppHandle<R> {
+    fn emit(&self, event: &str, payload: &CallStateChangedPayload) -> Result<(), String> {
+        tauri::Emitter::emit(self, event, payload).map_err(|e| e.to_string())
+    }
 }
 
 impl EventEmitter {
     /// Create a new EventEmitter from an AppHandle
-    pub fn new(app: AppHandle) -> Self {
+    pub fn new<R: tauri::Runtime>(app: tauri::AppHandle<R>) -> Self {
         Self {
-            app: Arc::new(app),
+            app: Arc::new(app) as Arc<dyn EmitEvent + Send + Sync>,
         }
     }
 
@@ -37,12 +49,7 @@ impl EventEmitter {
     /// * `call_id` - Call identifier
     /// * `state` - New call state as string
     /// * `start_time` - Optional start time as Unix timestamp (milliseconds)
-    pub fn emit_call_state_changed(
-        &self,
-        call_id: String,
-        state: String,
-        start_time: Option<u64>,
-    ) {
+    pub fn emit_call_state_changed(&self, call_id: String, state: String, start_time: Option<u64>) {
         let payload = CallStateChangedPayload {
             call_id,
             state,
@@ -62,4 +69,3 @@ impl EventEmitter {
         }
     }
 }
-
