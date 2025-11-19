@@ -812,9 +812,9 @@ impl CallService {
 
         // Extract remote number from From header or Request-URI
         // Try to extract from From header first (more reliable), fall back to Request-URI
-        let remote_number = if let Some(uri_start) = to_header.find('<') {
-            if let Some(uri_end) = to_header[uri_start + 1..].find('>') {
-                to_header[uri_start + 1..uri_start + 1 + uri_end].to_string()
+        let remote_number = if let Some(uri_start) = from_header.find('<') {
+            if let Some(uri_end) = from_header[uri_start + 1..].find('>') {
+                from_header[uri_start + 1..uri_start + 1 + uri_end].to_string()
             } else {
                 remote_uri.to_string()
             }
