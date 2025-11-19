@@ -438,10 +438,11 @@ Phase 8: Production Polish        █████░░░░░░░░░░�
 
 #### Outbound Calls (74 hours)
 
-- **OUT-2.1** (10h): INVITE message construction
+- **OUT-2.1** (10h): INVITE message construction ✅ **COMPLETED**
 
   - Files: `/src-tauri/src/infrastructure/sip/invite.rs`
-  - Tests: Unit tests for INVITE generation
+  - Tests: Unit tests for INVITE generation (12 tests passing)
+  - Implementation: Complete INVITE message construction with Call-ID, From tag, Via branch generation, and all required RFC 3261 headers
 
 - **OUT-2.2** (16h): SDP offer/answer negotiation
 
