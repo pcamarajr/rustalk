@@ -233,7 +233,7 @@ Phase 5 will implement full call lifecycle with bidirectional RTP audio:
 - **OUT-2.1**: INVITE message construction ✅
 - **OUT-2.2**: SDP offer/answer negotiation ✅
 - **OUT-2.3**: Call state machine for outbound calls ✅
-- **OUT-2.4**: RTP session setup and audio streaming
+- **OUT-2.4**: RTP session setup and audio streaming ✅
 - **OUT-2.5**: Tauri `initiate_call` command
 - **OUT-2.6**: Frontend dialer UI + active call view
 
