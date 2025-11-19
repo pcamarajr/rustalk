@@ -18,8 +18,9 @@ fn extract_call_id_header(message: &SipMessage) -> Result<String, SipError> {
     for line in message_str.lines() {
         let line_lower = line.to_lowercase();
         if line_lower.starts_with("call-id:") || line_lower.starts_with("i:") {
-            // Extract value after colon
-            if let Some(call_id_value) = line.split(':').nth(1) {
+            // Extract value after colon using split_once to limit splits to first colon only
+            // This handles edge cases where the Call-ID value itself might contain a colon
+            if let Some((_, call_id_value)) = line.split_once(':') {
                 let call_id = call_id_value.trim().to_string();
                 if !call_id.is_empty() {
                     return Ok(call_id);
@@ -71,7 +72,9 @@ fn extract_sdp_body(message: &SipMessage) -> Option<String> {
                 has_sdp_content_type = true;
             }
         } else if line_lower.starts_with("content-length:") {
-            if let Some(length_str) = line.split(':').nth(1) {
+            // Extract value after colon using split_once to limit splits to first colon only
+            // This handles edge cases where the value itself might contain a colon
+            if let Some((_, length_str)) = line.split_once(':') {
                 if let Ok(length) = length_str.trim().parse::<usize>() {
                     content_length = Some(length);
                 }
@@ -87,7 +90,24 @@ fn extract_sdp_body(message: &SipMessage) -> Option<String> {
             // If Content-Length is specified, use it to trim the body
             if let Some(length) = content_length {
                 if body.len() >= length {
+                    // Validate that body length matches Content-Length exactly
+                    if body.len() != length {
+                        eprintln!(
+                            "DEBUG:[MESSAGE_RECEIVER/SDP] Body length ({}) doesn't match Content-Length ({}), using Content-Length",
+                            body.len(),
+                            length
+                        );
+                    }
                     return Some(body[..length].to_string());
+                } else {
+                    // Handle incomplete message case
+                    eprintln!(
+                        "DEBUG:[MESSAGE_RECEIVER/SDP] Body length ({}) is less than Content-Length ({}), message may be incomplete",
+                        body.len(),
+                        length
+                    );
+                    // Return what we have, but log the issue
+                    return Some(body);
                 }
             }
             // Otherwise, return the entire body after separator
