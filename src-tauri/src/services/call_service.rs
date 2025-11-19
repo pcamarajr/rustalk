@@ -171,13 +171,13 @@ impl CallService {
 
         // Send INVITE via SIP client
         let client = self.sip_client.lock().await;
-        client.send_bytes(&invite_bytes, &destination).await.map_err(|e| {
-            eprintln!(
-                "DEBUG:[CALL_SERVICE/INITIATE] Failed to send INVITE: {}",
+        client
+            .send_bytes(&invite_bytes, &destination)
+            .await
+            .map_err(|e| {
+                eprintln!("DEBUG:[CALL_SERVICE/INITIATE] Failed to send INVITE: {}", e);
                 e
-            );
-            e
-        })?;
+            })?;
 
         eprintln!("DEBUG:[CALL_SERVICE/INITIATE] INVITE sent, storing call");
 
@@ -257,9 +257,7 @@ impl CallService {
         match status_code {
             // 100 Trying: Stay in Ringing
             100 => {
-                eprintln!(
-                    "DEBUG:[CALL_SERVICE/HANDLE_RESPONSE] 100 Trying - staying in Ringing"
-                );
+                eprintln!("DEBUG:[CALL_SERVICE/HANDLE_RESPONSE] 100 Trying - staying in Ringing");
                 Ok(())
             }
             // 180 Ringing: Transition to Connecting
@@ -277,9 +275,7 @@ impl CallService {
             }
             // 200 OK: Transition to Active
             200 => {
-                eprintln!(
-                    "DEBUG:[CALL_SERVICE/HANDLE_RESPONSE] 200 OK - transitioning to Active"
-                );
+                eprintln!("DEBUG:[CALL_SERVICE/HANDLE_RESPONSE] 200 OK - transitioning to Active");
                 call.transition_to_active().map_err(|e| {
                     eprintln!(
                         "DEBUG:[CALL_SERVICE/HANDLE_RESPONSE] Failed to transition to active: {}",
@@ -366,9 +362,9 @@ impl CallService {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::traits::CredentialStore;
     use crate::infrastructure::sip::client::SipClient;
     use crate::services::auth_service::AuthService;
-    use crate::domain::traits::CredentialStore;
     use std::net::SocketAddr;
 
     // Mock credential store for testing
@@ -387,15 +383,24 @@ mod tests {
         async fn load(
             &self,
             _key: &str,
-        ) -> Result<Option<crate::domain::entities::credentials::Credentials>, crate::domain::errors::CredentialStoreError> {
+        ) -> Result<
+            Option<crate::domain::entities::credentials::Credentials>,
+            crate::domain::errors::CredentialStoreError,
+        > {
             Ok(None)
         }
 
-        async fn delete(&self, _key: &str) -> Result<(), crate::domain::errors::CredentialStoreError> {
+        async fn delete(
+            &self,
+            _key: &str,
+        ) -> Result<(), crate::domain::errors::CredentialStoreError> {
             Ok(())
         }
 
-        async fn exists(&self, _key: &str) -> Result<bool, crate::domain::errors::CredentialStoreError> {
+        async fn exists(
+            &self,
+            _key: &str,
+        ) -> Result<bool, crate::domain::errors::CredentialStoreError> {
             Ok(false)
         }
     }
@@ -404,7 +409,10 @@ mod tests {
         let client = SipClient::new_udp_any().await.unwrap();
         let credential_store = Arc::new(MockCredentialStore) as Arc<dyn CredentialStore>;
         let client_for_auth = SipClient::new_udp_any().await.unwrap();
-        let auth_service = Arc::new(Mutex::new(AuthService::new(client_for_auth, credential_store)));
+        let auth_service = Arc::new(Mutex::new(AuthService::new(
+            client_for_auth,
+            credential_store,
+        )));
         CallService::new(client, auth_service)
     }
 
@@ -469,4 +477,3 @@ mod tests {
         assert!(result.unwrap_err().to_string().contains("not found"));
     }
 }
-
