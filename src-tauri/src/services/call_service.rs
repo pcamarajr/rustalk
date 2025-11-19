@@ -8,7 +8,7 @@ use crate::infrastructure::rtp::codec::G711Type;
 use crate::infrastructure::rtp::session::{RtpSession, RtpSessionConfig};
 use crate::infrastructure::sip::client::SipClient;
 use crate::infrastructure::sip::invite::build_invite_with_sdp;
-use crate::infrastructure::sip::sdp::{parse_sdp, CodecInfo};
+use crate::infrastructure::sip::sdp::{parse_sdp, CodecInfo, ParsedSdp};
 use crate::services::auth_service::AuthService;
 use std::collections::HashMap;
 use std::net::SocketAddr;
@@ -322,6 +322,60 @@ impl CallService {
     pub async fn get_call_state(&self, call_id: &CallId) -> Option<CallState> {
         let calls = self.active_calls.read().await;
         calls.get(call_id).map(|call| call.state().clone())
+    }
+
+    /// Get parsed SDP offer for a call
+    ///
+    /// Retrieves the stored SDP offer from the call and parses it.
+    /// This method is used by answer_call command (IN-3.5) to generate SDP answer.
+    ///
+    /// # Arguments
+    /// * `call_id` - Call identifier
+    ///
+    /// # Returns
+    /// * `Ok(Some(parsed_sdp))` if call exists and has SDP offer
+    /// * `Ok(None)` if call exists but has no SDP offer
+    /// * `Err(SipError)` if call doesn't exist or SDP parsing fails
+    pub async fn get_sdp_offer(&self, call_id: &CallId) -> Result<Option<ParsedSdp>, SipError> {
+        let calls = self.active_calls.read().await;
+        let call = calls.get(call_id).ok_or_else(|| {
+            eprintln!(
+                "DEBUG:[CALL_SERVICE/GET_SDP] Call not found: {}",
+                call_id.as_str()
+            );
+            SipError::InvalidMessage {
+                reason: format!("Call not found: {}", call_id.as_str()),
+            }
+        })?;
+
+        // Get raw SDP string from call
+        let sdp_str = match call.sdp_offer() {
+            Some(sdp) => sdp,
+            None => {
+                eprintln!(
+                    "DEBUG:[CALL_SERVICE/GET_SDP] Call {} has no SDP offer",
+                    call_id.as_str()
+                );
+                return Ok(None);
+            }
+        };
+
+        // Parse SDP string to ParsedSdp
+        let parsed_sdp = parse_sdp(sdp_str).map_err(|e| {
+            eprintln!(
+                "DEBUG:[CALL_SERVICE/GET_SDP] Failed to parse SDP for call {}: {}",
+                call_id.as_str(),
+                e
+            );
+            SipError::from(e)
+        })?;
+
+        eprintln!(
+            "DEBUG:[CALL_SERVICE/GET_SDP] Successfully retrieved and parsed SDP for call {}",
+            call_id.as_str()
+        );
+
+        Ok(Some(parsed_sdp))
     }
 
     /// Find a call by Call-ID header value
@@ -832,10 +886,35 @@ impl CallService {
         // Set remote URI
         call.set_remote_uri(remote_uri.to_string());
 
-        // Store SDP offer if present (for later answer generation in IN-3.2)
-        if sdp_body.is_some() {
-            eprintln!("DEBUG:[CALL_SERVICE/INCOMING_INVITE] SDP offer received, will be used for answer generation");
-            // TODO: Store SDP offer in call entity or separate storage for IN-3.2
+        // Parse and store SDP offer if present (for later answer generation in IN-3.5)
+        if let Some(sdp_str) = sdp_body {
+            eprintln!("DEBUG:[CALL_SERVICE/INCOMING_INVITE] SDP offer received, parsing and storing");
+            // Validate SDP by parsing it (but don't fail call creation if parsing fails)
+            match parse_sdp(sdp_str) {
+                Ok(parsed_sdp) => {
+                    // Validate that SDP contains audio media (required for calls)
+                    if parsed_sdp.codecs.is_empty() {
+                        eprintln!("DEBUG:[CALL_SERVICE/INCOMING_INVITE] Warning: SDP offer has no codecs, storing anyway");
+                    } else {
+                        eprintln!(
+                            "DEBUG:[CALL_SERVICE/INCOMING_INVITE] SDP offer parsed successfully: {} codecs, RTP port {}",
+                            parsed_sdp.codecs.len(),
+                            parsed_sdp.rtp_port
+                        );
+                    }
+                    // Store raw SDP string in call entity
+                    call.set_sdp_offer(sdp_str.to_string());
+                }
+                Err(e) => {
+                    eprintln!(
+                        "DEBUG:[CALL_SERVICE/INCOMING_INVITE] Failed to parse SDP offer: {}, continuing without SDP",
+                        e
+                    );
+                    // Continue without SDP - call can still be created
+                }
+            }
+        } else {
+            eprintln!("DEBUG:[CALL_SERVICE/INCOMING_INVITE] No SDP offer in INVITE");
         }
 
         // Store call first so we can reference it
@@ -1052,4 +1131,112 @@ mod tests {
     // is set up through the normal public API flow. The "not registered" test above
     // verifies the validation logic works correctly.
     // Testing with SDP also requires registered state, which is better tested via integration tests.
+
+    #[tokio::test]
+    async fn test_get_sdp_offer_with_sdp() {
+        let service = create_test_call_service().await;
+
+        // Create a call directly with SDP offer (bypassing registration check)
+        let mut call = Call::new_inbound(
+            "sip:alice@example.com".to_string(),
+            "call-id-123".to_string(),
+            Some("from-tag-123".to_string()),
+        );
+        let valid_sdp = "v=0\r\n\
+            o=alice 2890844526 2890844526 IN IP4 192.168.1.100\r\n\
+            s=-\r\n\
+            c=IN IP4 192.168.1.100\r\n\
+            t=0 0\r\n\
+            m=audio 49172 RTP/AVP 0 8\r\n\
+            a=rtpmap:0 PCMU/8000\r\n\
+            a=rtpmap:8 PCMA/8000\r\n";
+        call.set_sdp_offer(valid_sdp.to_string());
+
+        // Store call directly
+        let call_id = call.id().clone();
+        {
+            let mut calls = service.active_calls.write().await;
+            calls.insert(call_id.clone(), call);
+        }
+
+        // Test get_sdp_offer
+        let result = service.get_sdp_offer(&call_id).await;
+        assert!(result.is_ok());
+        let parsed_sdp = result.unwrap();
+        assert!(parsed_sdp.is_some());
+        let sdp = parsed_sdp.unwrap();
+        assert_eq!(sdp.rtp_port, 49172);
+        assert_eq!(sdp.codecs.len(), 2);
+        assert!(sdp
+            .codecs
+            .iter()
+            .any(|c| c.payload_type == 0 && c.codec_name == "PCMU"));
+        assert!(sdp
+            .codecs
+            .iter()
+            .any(|c| c.payload_type == 8 && c.codec_name == "PCMA"));
+    }
+
+    #[tokio::test]
+    async fn test_get_sdp_offer_without_sdp() {
+        let service = create_test_call_service().await;
+
+        // Create a call without SDP offer
+        let call = Call::new_inbound(
+            "sip:alice@example.com".to_string(),
+            "call-id-123".to_string(),
+            Some("from-tag-123".to_string()),
+        );
+
+        // Store call directly
+        let call_id = call.id().clone();
+        {
+            let mut calls = service.active_calls.write().await;
+            calls.insert(call_id.clone(), call);
+        }
+
+        // Test get_sdp_offer
+        let result = service.get_sdp_offer(&call_id).await;
+        assert!(result.is_ok());
+        let parsed_sdp = result.unwrap();
+        assert!(parsed_sdp.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_get_sdp_offer_call_not_found() {
+        let service = create_test_call_service().await;
+        let call_id = CallId::new("nonexistent".to_string());
+
+        // Test get_sdp_offer with non-existent call
+        let result = service.get_sdp_offer(&call_id).await;
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("not found"));
+    }
+
+    #[tokio::test]
+    async fn test_get_sdp_offer_invalid_sdp() {
+        let service = create_test_call_service().await;
+
+        // Create a call with invalid SDP
+        let mut call = Call::new_inbound(
+            "sip:alice@example.com".to_string(),
+            "call-id-123".to_string(),
+            Some("from-tag-123".to_string()),
+        );
+        call.set_sdp_offer("invalid sdp".to_string());
+
+        // Store call directly
+        let call_id = call.id().clone();
+        {
+            let mut calls = service.active_calls.write().await;
+            calls.insert(call_id.clone(), call);
+        }
+
+        // Test get_sdp_offer with invalid SDP
+        let result = service.get_sdp_offer(&call_id).await;
+        assert!(result.is_err(), "Should fail to parse invalid SDP");
+    }
 }
