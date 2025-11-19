@@ -24,6 +24,7 @@ use commands::{
 use domain::traits::CredentialStore;
 use infrastructure::audio::create_audio_engine;
 use infrastructure::sip::client::SipClient;
+use infrastructure::sip::listener;
 use infrastructure::sip::message_receiver;
 #[cfg(target_os = "macos")]
 use infrastructure::storage::KeychainCredentialStore;
@@ -124,8 +125,22 @@ pub fn run() {
 
             // Spawn message receiver background task
             eprintln!("DEBUG:[SETUP] Spawning message receiver background task");
+            let call_client_for_receiver_clone = Arc::clone(&call_client_for_receiver);
+            let call_service_for_receiver = Arc::clone(&call_service);
             rt_handle.spawn(async move {
-                message_receiver::start_message_receiver(call_client_for_receiver, call_service)
+                message_receiver::start_message_receiver(
+                    call_client_for_receiver_clone,
+                    call_service_for_receiver,
+                )
+                .await;
+            });
+
+            // Spawn INVITE listener background task
+            eprintln!("DEBUG:[SETUP] Spawning INVITE listener background task");
+            let call_client_for_listener = Arc::clone(&call_client_for_receiver);
+            let call_service_for_listener = Arc::clone(&call_service);
+            rt_handle.spawn(async move {
+                listener::start_invite_listener(call_client_for_listener, call_service_for_listener)
                     .await;
             });
 
