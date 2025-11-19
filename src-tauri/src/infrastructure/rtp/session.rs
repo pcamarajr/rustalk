@@ -266,7 +266,10 @@ impl RtpSession {
         // Send stop signal
         if let Some(stop_tx) = self.stop_tx.take() {
             if let Err(e) = stop_tx.send(()) {
-                eprintln!("DEBUG:[RTP/STOP] Warning: Failed to send stop signal (no receivers): {}", e);
+                eprintln!(
+                    "DEBUG:[RTP/STOP] Warning: Failed to send stop signal (no receivers): {}",
+                    e
+                );
             }
         }
 
