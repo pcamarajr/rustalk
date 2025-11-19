@@ -2,6 +2,7 @@
 // Provides SIP message parsing, generation, transport, and client functionality
 
 pub mod client;
+pub mod invite;
 pub mod message_builder;
 pub mod parser;
 pub mod registration;
@@ -9,6 +10,7 @@ pub mod tls;
 pub mod transport;
 
 pub use client::{SipClient, TransportType};
+pub use invite::build_invite_request;
 pub use message_builder::SipMessageBuilder;
 pub use parser::{parse_message, parse_request, parse_response};
 pub use registration::{

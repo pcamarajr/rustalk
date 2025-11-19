@@ -230,7 +230,7 @@ Phase 5 will implement full call lifecycle with bidirectional RTP audio:
 
 **Outbound Calls:**
 
-- **OUT-2.1**: INVITE message construction
+- **OUT-2.1**: INVITE message construction ✅
 - **OUT-2.2**: SDP offer/answer negotiation
 - **OUT-2.3**: Call state machine for outbound calls
 - **OUT-2.4**: RTP session setup and audio streaming
