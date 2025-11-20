@@ -1,15 +1,12 @@
 // Integration test for answer_call command (IN-3.5)
 // Tests that handle_inbound_answer() generates SDP answer, sends 200 OK, creates RTP session, and transitions to Active
 
-use rustalk_lib::domain::entities::call::Call;
 use rustalk_lib::domain::entities::call::CallId;
-use rustalk_lib::domain::entities::call::CallState;
 use rustalk_lib::domain::traits::CredentialStore;
 use rustalk_lib::infrastructure::sip::client::SipClient;
 use rustalk_lib::infrastructure::sip::sdp::parse_sdp;
 use rustalk_lib::services::auth_service::AuthService;
 use rustalk_lib::services::call_service::CallService;
-use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -80,7 +77,7 @@ async fn test_handle_inbound_answer_success() {
     // 3. Creates RTP session
     // 4. Transitions call to Active state
 
-    let service = create_test_call_service().await;
+    let _service = create_test_call_service().await;
 
     // Note: Full integration test for handle_inbound_answer() would require:
     // 1. Setting up registration state to Registered
