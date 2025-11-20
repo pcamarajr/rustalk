@@ -1096,6 +1096,7 @@ impl CallService {
     ///
     /// # Returns
     /// `Ok(())` if response was sent successfully, `Err(SipError)` otherwise
+    #[allow(clippy::too_many_arguments)]
     async fn send_200_ok(
         &self,
         call_id_header: &str,
