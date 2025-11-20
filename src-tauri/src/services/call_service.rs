@@ -982,7 +982,10 @@ impl CallService {
         })?;
 
         // Validate call is inbound
-        if !matches!(call.direction(), crate::domain::entities::call::CallDirection::Inbound) {
+        if !matches!(
+            call.direction(),
+            crate::domain::entities::call::CallDirection::Inbound
+        ) {
             eprintln!(
                 "DEBUG:[CALL_SERVICE/INBOUND_ANSWER] Call is not inbound: {}",
                 call_id.as_str()
@@ -1058,7 +1061,10 @@ impl CallService {
         })?;
 
         // Validate call is inbound
-        if !matches!(call.direction(), crate::domain::entities::call::CallDirection::Inbound) {
+        if !matches!(
+            call.direction(),
+            crate::domain::entities::call::CallDirection::Inbound
+        ) {
             eprintln!(
                 "DEBUG:[CALL_SERVICE/INBOUND_REJECT] Call is not inbound: {}",
                 call_id.as_str()
@@ -1132,7 +1138,10 @@ impl CallService {
         })?;
 
         // Validate call is inbound
-        if !matches!(call.direction(), crate::domain::entities::call::CallDirection::Inbound) {
+        if !matches!(
+            call.direction(),
+            crate::domain::entities::call::CallDirection::Inbound
+        ) {
             eprintln!(
                 "DEBUG:[CALL_SERVICE/INBOUND_CANCEL] Call is not inbound: {}",
                 call_id.as_str()
@@ -1209,7 +1218,10 @@ impl CallService {
         })?;
 
         // Validate call is inbound
-        if !matches!(call.direction(), crate::domain::entities::call::CallDirection::Inbound) {
+        if !matches!(
+            call.direction(),
+            crate::domain::entities::call::CallDirection::Inbound
+        ) {
             eprintln!(
                 "DEBUG:[CALL_SERVICE/INBOUND_BYE] Call is not inbound: {}",
                 call_id.as_str()
@@ -1587,11 +1599,11 @@ mod tests {
 
         // Try to answer (should fail - already active)
         let result = service.handle_inbound_answer(&call_id).await;
-        assert!(result.is_err(), "Answer should fail - call not in Ringing state");
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("expected Ringing"));
+        assert!(
+            result.is_err(),
+            "Answer should fail - call not in Ringing state"
+        );
+        assert!(result.unwrap_err().to_string().contains("expected Ringing"));
     }
 
     #[tokio::test]
@@ -1674,11 +1686,11 @@ mod tests {
 
         // Try to reject (should fail - not in Ringing)
         let result = service.handle_inbound_reject(&call_id).await;
-        assert!(result.is_err(), "Reject should fail - call not in Ringing state");
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("expected Ringing"));
+        assert!(
+            result.is_err(),
+            "Reject should fail - call not in Ringing state"
+        );
+        assert!(result.unwrap_err().to_string().contains("expected Ringing"));
     }
 
     #[tokio::test]
@@ -1761,11 +1773,11 @@ mod tests {
 
         // Try to cancel (should fail - not in Ringing)
         let result = service.handle_inbound_cancel(&call_id).await;
-        assert!(result.is_err(), "Cancel should fail - call not in Ringing state");
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("expected Ringing"));
+        assert!(
+            result.is_err(),
+            "Cancel should fail - call not in Ringing state"
+        );
+        assert!(result.unwrap_err().to_string().contains("expected Ringing"));
     }
 
     #[tokio::test]
@@ -1848,11 +1860,11 @@ mod tests {
 
         // Try to handle BYE (should fail - not Active)
         let result = service.handle_inbound_bye(&call_id).await;
-        assert!(result.is_err(), "BYE should fail - call not in Active state");
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("expected Active"));
+        assert!(
+            result.is_err(),
+            "BYE should fail - call not in Active state"
+        );
+        assert!(result.unwrap_err().to_string().contains("expected Active"));
     }
 
     #[tokio::test]
