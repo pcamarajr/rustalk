@@ -944,6 +944,15 @@ impl CallService {
             e
         })?;
 
+        // Emit incoming_call event to notify frontend
+        if let Some(emitter) = &self.event_emitter {
+            emitter.emit_incoming_call(
+                call_id.as_str().to_string(),
+                remote_number.clone(),
+                call_id_header.to_string(),
+            );
+        }
+
         // Emit ringing state event
         self.emit_state_changed(&call_id, &call_state, None);
 
