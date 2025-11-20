@@ -8,10 +8,13 @@ use crate::infrastructure::rtp::codec::G711Type;
 use crate::infrastructure::rtp::session::{RtpSession, RtpSessionConfig};
 use crate::infrastructure::sip::client::SipClient;
 use crate::infrastructure::sip::invite::build_invite_with_sdp;
-use crate::infrastructure::sip::sdp::{parse_sdp, CodecInfo, ParsedSdp};
+use crate::infrastructure::sip::sdp::{
+    generate_sdp_answer, parse_sdp, CodecInfo, ParsedSdp, SdpAnswerParams,
+};
 use crate::services::auth_service::AuthService;
 use std::collections::HashMap;
 use std::net::SocketAddr;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::sync::{mpsc, Mutex, RwLock};
@@ -27,6 +30,21 @@ struct CallRtpSession {
     audio_rx: Option<mpsc::Receiver<Vec<i16>>>,
 }
 
+/// INVITE metadata needed for building 200 OK response
+#[derive(Debug, Clone)]
+pub struct InviteMetadata {
+    /// From header from INVITE
+    from_header: String,
+    /// To header from INVITE
+    to_header: String,
+    /// Via header from INVITE (first Via)
+    via_header: String,
+    /// CSeq header from INVITE
+    cseq_header: String,
+    /// Source address of the INVITE
+    source_addr: SocketAddr,
+}
+
 /// Call service managing outbound call lifecycle
 pub struct CallService {
     /// Active calls (thread-safe)
@@ -39,6 +57,8 @@ pub struct CallService {
     auth_service: Arc<Mutex<AuthService>>,
     /// Local RTP ports for outbound calls (from SDP offer), stored per-call
     local_rtp_ports: Arc<RwLock<HashMap<CallId, u16>>>,
+    /// INVITE metadata for inbound calls (needed for 200 OK response)
+    invite_metadata: Arc<RwLock<HashMap<CallId, InviteMetadata>>>,
     /// Event emitter for sending events to frontend
     event_emitter: Option<EventEmitter>,
 }
@@ -61,6 +81,7 @@ impl CallService {
             sip_client,
             auth_service,
             local_rtp_ports: Arc::new(RwLock::new(HashMap::new())),
+            invite_metadata: Arc::new(RwLock::new(HashMap::new())),
             event_emitter,
         }
     }
@@ -665,6 +686,73 @@ impl CallService {
         Ok(())
     }
 
+    /// Create RTP session for inbound call answer
+    ///
+    /// Creates RTP session using the parsed SDP offer from the INVITE.
+    /// This is used when answering an inbound call (IN-3.5).
+    ///
+    /// # Arguments
+    /// * `call_id` - Call identifier
+    /// * `parsed_offer` - Parsed SDP offer from INVITE
+    /// * `local_rtp_port` - Local RTP port for audio
+    ///
+    /// # Returns
+    /// `Ok(())` if RTP session was created successfully, `Err(SipError)` otherwise
+    async fn create_rtp_session_for_answer(
+        &self,
+        call_id: &CallId,
+        parsed_offer: &ParsedSdp,
+        local_rtp_port: u16,
+    ) -> Result<(), SipError> {
+        eprintln!(
+            "DEBUG:[CALL_SERVICE/RTP] Creating RTP session for inbound call answer: {}",
+            call_id.as_str()
+        );
+
+        // Select codec (prefer PCMU over PCMA)
+        let codec_type = select_codec(&parsed_offer.codecs)?;
+
+        // Build remote address from parsed offer
+        let remote_addr = SocketAddr::new(parsed_offer.connection_ip, parsed_offer.rtp_port);
+
+        eprintln!(
+            "DEBUG:[CALL_SERVICE/RTP] RTP config: local_port={}, remote={}, codec={:?}",
+            local_rtp_port, remote_addr, codec_type
+        );
+
+        // Create RTP session config
+        let rtp_config = RtpSessionConfig {
+            local_port: local_rtp_port,
+            remote_addr,
+            codec_type,
+            ssrc: None, // Generate random SSRC
+        };
+
+        // Create and start RTP session
+        let mut rtp_session = RtpSession::new(rtp_config);
+        let (audio_tx, audio_rx) = rtp_session.start().await.map_err(|e| {
+            eprintln!(
+                "DEBUG:[CALL_SERVICE/RTP] Failed to start RTP session: {}",
+                e
+            );
+            SipError::from(e)
+        })?;
+
+        // Store RTP session
+        let rtp_data = CallRtpSession {
+            session: Arc::new(Mutex::new(rtp_session)),
+            audio_tx,
+            audio_rx: Some(audio_rx),
+        };
+
+        let mut rtp_sessions = self.rtp_sessions.write().await;
+        rtp_sessions.insert(call_id.clone(), rtp_data);
+
+        eprintln!("DEBUG:[CALL_SERVICE/RTP] RTP session created and started successfully for inbound call");
+
+        Ok(())
+    }
+
     /// Stop RTP session for a call
     ///
     /// # Arguments
@@ -926,6 +1014,19 @@ impl CallService {
         calls.insert(call_id.clone(), call);
         drop(calls); // Release lock before async operation
 
+        // Store INVITE metadata for later use in 200 OK response (IN-3.5)
+        {
+            let metadata = InviteMetadata {
+                from_header: from_header.to_string(),
+                to_header: to_header.to_string(),
+                via_header: via_header.to_string(),
+                cseq_header: cseq_header.to_string(),
+                source_addr,
+            };
+            let mut invite_metadata = self.invite_metadata.write().await;
+            invite_metadata.insert(call_id.clone(), metadata);
+        }
+
         // Send 100 Trying provisional response (RFC 3261 requirement)
         self.send_100_trying(
             call_id_header,
@@ -964,9 +1065,117 @@ impl CallService {
         Ok(call_id)
     }
 
+    /// Generate a To tag for SIP responses
+    ///
+    /// Uses timestamp + counter for uniqueness (RFC 3261 requirement)
+    ///
+    /// # Returns
+    /// A unique To tag string
+    fn generate_to_tag() -> Result<String, SipError> {
+        static TO_TAG_COUNTER: AtomicU64 = AtomicU64::new(0);
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map_err(|e| SipError::InvalidMessage {
+                reason: format!("System time error: {}", e),
+            })?
+            .as_nanos();
+        let counter = TO_TAG_COUNTER.fetch_add(1, Ordering::Relaxed);
+        Ok(format!("{}{}", timestamp, counter))
+    }
+
+    /// Build and send 200 OK response with SDP answer
+    ///
+    /// # Arguments
+    /// * `call_id_header` - Call-ID header from INVITE
+    /// * `from_header` - From header from INVITE
+    /// * `to_header` - To header from INVITE (will add tag)
+    /// * `via_header` - Via header from INVITE
+    /// * `cseq_header` - CSeq header from INVITE
+    /// * `sdp_answer` - SDP answer body
+    /// * `source_addr` - Source address to send response to
+    ///
+    /// # Returns
+    /// `Ok(())` if response was sent successfully, `Err(SipError)` otherwise
+    async fn send_200_ok(
+        &self,
+        call_id_header: &str,
+        from_header: &str,
+        to_header: &str,
+        via_header: &str,
+        cseq_header: &str,
+        sdp_answer: &str,
+        source_addr: SocketAddr,
+    ) -> Result<(), SipError> {
+        eprintln!("DEBUG:[CALL_SERVICE/200_OK] Building 200 OK response");
+
+        // Generate To tag for the response
+        let to_tag = Self::generate_to_tag()?;
+
+        // Add To tag to To header (if not already present)
+        let to_header_with_tag = if to_header.contains("tag=") {
+            to_header.to_string()
+        } else {
+            format!("{};tag={}", to_header.trim_end_matches('\r'), to_tag)
+        };
+
+        // Build 200 OK response
+        let mut response = "SIP/2.0 200 OK\r\n".to_string();
+
+        // Copy Via header (required)
+        response.push_str(&format!("Via: {}\r\n", via_header));
+
+        // Copy From header (required)
+        response.push_str(&format!("From: {}\r\n", from_header));
+
+        // To header with tag (required)
+        response.push_str(&format!("To: {}\r\n", to_header_with_tag));
+
+        // Copy Call-ID header (required)
+        response.push_str(&format!("Call-ID: {}\r\n", call_id_header));
+
+        // Copy CSeq header (required)
+        response.push_str(&format!("CSeq: {}\r\n", cseq_header));
+
+        // Content-Type for SDP
+        response.push_str("Content-Type: application/sdp\r\n");
+
+        // Content-Length
+        response.push_str(&format!("Content-Length: {}\r\n", sdp_answer.len()));
+
+        // End of headers
+        response.push_str("\r\n");
+
+        // Add SDP body
+        response.push_str(sdp_answer);
+
+        // Parse to validate
+        let response_bytes = response.into_bytes();
+        crate::infrastructure::sip::parser::parse_message(&response_bytes)?;
+
+        // Send via SIP client
+        let client = self.sip_client.lock().await;
+        client
+            .send_bytes(&response_bytes, &source_addr)
+            .await
+            .map_err(|e| {
+                eprintln!("DEBUG:[CALL_SERVICE/200_OK] Failed to send 200 OK: {}", e);
+                e
+            })?;
+
+        eprintln!("DEBUG:[CALL_SERVICE/200_OK] 200 OK sent to {}", source_addr);
+
+        Ok(())
+    }
+
     /// Handle inbound call answer
     ///
-    /// Called when user answers an inbound call. Transitions call from Ringing to Active state.
+    /// Called when user answers an inbound call. This method:
+    /// 1. Validates call is inbound and in Ringing state
+    /// 2. Retrieves stored SDP offer
+    /// 3. Generates SDP answer
+    /// 4. Builds and sends 200 OK response with SDP answer
+    /// 5. Creates RTP session
+    /// 6. Transitions call to Active state
     ///
     /// # Arguments
     /// * `call_id` - Call identifier
@@ -979,58 +1188,195 @@ impl CallService {
             call_id.as_str()
         );
 
-        let mut calls = self.active_calls.write().await;
-        let call = calls.get_mut(call_id).ok_or_else(|| {
-            eprintln!(
-                "DEBUG:[CALL_SERVICE/INBOUND_ANSWER] Call not found: {}",
-                call_id.as_str()
-            );
-            SipError::InvalidMessage {
-                reason: format!("Call not found: {}", call_id.as_str()),
+        // Validate call exists, is inbound, and is in Ringing state
+        let (sdp_offer_str, call_id_header) = {
+            let calls = self.active_calls.read().await;
+            let call = calls.get(call_id).ok_or_else(|| {
+                eprintln!(
+                    "DEBUG:[CALL_SERVICE/INBOUND_ANSWER] Call not found: {}",
+                    call_id.as_str()
+                );
+                SipError::InvalidMessage {
+                    reason: format!("Call not found: {}", call_id.as_str()),
+                }
+            })?;
+
+            // Validate call is inbound
+            if !matches!(
+                call.direction(),
+                crate::domain::entities::call::CallDirection::Inbound
+            ) {
+                eprintln!(
+                    "DEBUG:[CALL_SERVICE/INBOUND_ANSWER] Call is not inbound: {}",
+                    call_id.as_str()
+                );
+                return Err(SipError::InvalidMessage {
+                    reason: format!("Call {} is not an inbound call", call_id.as_str()),
+                });
             }
-        })?;
 
-        // Validate call is inbound
-        if !matches!(
-            call.direction(),
-            crate::domain::entities::call::CallDirection::Inbound
-        ) {
-            eprintln!(
-                "DEBUG:[CALL_SERVICE/INBOUND_ANSWER] Call is not inbound: {}",
-                call_id.as_str()
-            );
-            return Err(SipError::InvalidMessage {
-                reason: format!("Call {} is not an inbound call", call_id.as_str()),
-            });
-        }
-
-        // Validate call is in Ringing state
-        if !matches!(call.state(), CallState::Ringing) {
-            eprintln!(
-                "DEBUG:[CALL_SERVICE/INBOUND_ANSWER] Call is not in Ringing state: {} (state: {:?})",
-                call_id.as_str(),
-                call.state()
-            );
-            return Err(SipError::InvalidMessage {
-                reason: format!(
-                    "Cannot answer call: call is in {:?} state, expected Ringing",
+            // Validate call is in Ringing state
+            if !matches!(call.state(), CallState::Ringing) {
+                eprintln!(
+                    "DEBUG:[CALL_SERVICE/INBOUND_ANSWER] Call is not in Ringing state: {} (state: {:?})",
+                    call_id.as_str(),
                     call.state()
-                ),
-            });
-        }
+                );
+                return Err(SipError::InvalidMessage {
+                    reason: format!(
+                        "Cannot answer call: call is in {:?} state, expected Ringing",
+                        call.state()
+                    ),
+                });
+            }
 
-        // Transition to Active state
-        call.transition_to_active().map_err(|e| {
+            // Get SDP offer from call
+            let sdp_offer_str = call.sdp_offer().ok_or_else(|| {
+                eprintln!(
+                    "DEBUG:[CALL_SERVICE/INBOUND_ANSWER] Call {} has no SDP offer",
+                    call_id.as_str()
+                );
+                SipError::InvalidMessage {
+                    reason: format!("Call {} has no SDP offer", call_id.as_str()),
+                }
+            })?;
+
+            // Get Call-ID header from call
+            let call_id_header = call
+                .call_id_header()
+                .ok_or_else(|| SipError::InvalidMessage {
+                    reason: format!("Call {} has no Call-ID header", call_id.as_str()),
+                })?;
+
+            (sdp_offer_str.to_string(), call_id_header.to_string())
+        };
+
+        // Parse SDP offer
+        let parsed_offer = parse_sdp(&sdp_offer_str).map_err(|e| {
             eprintln!(
-                "DEBUG:[CALL_SERVICE/INBOUND_ANSWER] Failed to transition to active: {}",
+                "DEBUG:[CALL_SERVICE/INBOUND_ANSWER] Failed to parse SDP offer: {}",
                 e
             );
-            e
+            SipError::from(e)
         })?;
 
-        // Get start_time before emitting event
-        let start_time = call.start_time();
-        let new_state = call.state().clone();
+        // Get INVITE metadata
+        let invite_meta = {
+            let invite_metadata = self.invite_metadata.read().await;
+            invite_metadata.get(call_id).cloned().ok_or_else(|| {
+                eprintln!(
+                    "DEBUG:[CALL_SERVICE/INBOUND_ANSWER] INVITE metadata not found for call {}",
+                    call_id.as_str()
+                );
+                SipError::InvalidMessage {
+                    reason: format!("INVITE metadata not found for call {}", call_id.as_str()),
+                }
+            })?
+        };
+
+        // Generate RTP port (even number in 49152-65534 range) before any await
+        use rand::Rng;
+        let rtp_port = {
+            let mut rng = rand::thread_rng();
+            let port = rng.gen_range(49152..=65534);
+            if port % 2 == 0 {
+                port
+            } else {
+                port - 1
+            }
+        };
+
+        eprintln!(
+            "DEBUG:[CALL_SERVICE/INBOUND_ANSWER] Generated RTP port: {}",
+            rtp_port
+        );
+
+        // Get local IP address and credentials from auth service
+        let (local_address, username) = {
+            let auth = self.auth_service.lock().await;
+            let local_addr = auth.get_local_address().await?;
+            let creds = auth
+                .get_credentials()
+                .await
+                .ok_or_else(|| SipError::InvalidMessage {
+                    reason: "No credentials available (not registered)".to_string(),
+                })?;
+            (local_addr, creds.username.clone())
+        };
+        let local_ip = local_address.ip();
+
+        // Generate SDP answer
+        let session_version = parsed_offer.session_version + 1;
+        let sdp_answer_params = SdpAnswerParams {
+            local_ip,
+            rtp_port,
+            username: username.clone(),
+            session_id: parsed_offer.session_id,
+            session_version,
+        };
+
+        let sdp_answer = generate_sdp_answer(&parsed_offer, &sdp_answer_params).map_err(|e| {
+            eprintln!(
+                "DEBUG:[CALL_SERVICE/INBOUND_ANSWER] Failed to generate SDP answer: {}",
+                e
+            );
+            SipError::from(e)
+        })?;
+
+        eprintln!(
+            "DEBUG:[CALL_SERVICE/INBOUND_ANSWER] Generated SDP answer, building 200 OK response"
+        );
+
+        // Build and send 200 OK response with SDP answer
+        self.send_200_ok(
+            &call_id_header,
+            &invite_meta.from_header,
+            &invite_meta.to_header,
+            &invite_meta.via_header,
+            &invite_meta.cseq_header,
+            &sdp_answer,
+            invite_meta.source_addr,
+        )
+        .await?;
+
+        eprintln!("DEBUG:[CALL_SERVICE/INBOUND_ANSWER] 200 OK sent, creating RTP session");
+
+        // Store local RTP port for this call
+        {
+            let mut local_ports = self.local_rtp_ports.write().await;
+            local_ports.insert(call_id.clone(), rtp_port);
+        }
+
+        // Create RTP session
+        self.create_rtp_session_for_answer(call_id, &parsed_offer, rtp_port)
+            .await?;
+
+        // Transition to Active state
+        let (start_time, new_state) = {
+            let mut calls = self.active_calls.write().await;
+            let call = calls.get_mut(call_id).ok_or_else(|| {
+                eprintln!(
+                    "DEBUG:[CALL_SERVICE/INBOUND_ANSWER] Call not found after RTP session creation: {}",
+                    call_id.as_str()
+                );
+                SipError::InvalidMessage {
+                    reason: format!("Call not found: {}", call_id.as_str()),
+                }
+            })?;
+
+            call.transition_to_active().map_err(|e| {
+                eprintln!(
+                    "DEBUG:[CALL_SERVICE/INBOUND_ANSWER] Failed to transition to active: {}",
+                    e
+                );
+                e
+            })?;
+
+            // Get start_time before emitting event
+            let start_time = call.start_time();
+            let new_state = call.state().clone();
+            (start_time, new_state)
+        };
 
         // Emit active state event with start_time
         self.emit_state_changed(call_id, &new_state, start_time);
