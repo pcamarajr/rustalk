@@ -518,10 +518,11 @@ Phase 8: Production Polish        █████░░░░░░░░░░�
   - Tests: Unit tests for inbound state flow ✅
   - Implementation: Extended CallService with four methods for inbound call state transitions: `handle_inbound_answer()` (Ringing → Active), `handle_inbound_reject()` (Ringing → Ended), `handle_inbound_cancel()` (Ringing → Ended for CANCEL requests), and `handle_inbound_bye()` (Active → Ended with RTP session stop). All methods validate call direction, state, and emit events. Comprehensive unit tests cover all state transitions and error cases (20 tests passing).
 
-- **IN-3.4** (6h): Tauri `incoming_call` event emission
+- **IN-3.4** (6h): Tauri `incoming_call` event emission ✅ **COMPLETED**
 
-  - Files: `/src-tauri/src/commands/events.rs`
-  - Tests: Integration test - event emission
+  - Files: `/src-tauri/src/commands/events.rs` ✅
+  - Tests: Integration test - event emission ✅
+  - Implementation: Added `IncomingCallPayload` struct with `call_id`, `remote_number`, and `call_id_header` fields. Implemented `emit_incoming_call()` method in `EventEmitter` with debug logging. Updated `CallService.handle_incoming_invite()` to emit `incoming_call` event after successfully creating call and sending 100 Trying response, before emitting `call_state_changed` event. Created integration test verifying event emission with correct payload structure.
 
 - **IN-3.5** (8h): Tauri `answer_call` command
 
