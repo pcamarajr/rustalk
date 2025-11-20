@@ -94,16 +94,23 @@ async fn test_incoming_call_event_emission() {
     let event_received_clone = Arc::clone(&event_received);
     let listener = app_handle.listen("incoming_call", move |event| {
         eprintln!("DEBUG:[TEST/INCOMING_CALL] Received incoming_call event: {:?}", event.payload());
-        
+
         // Verify payload structure
-        if let Ok(payload) = serde_json::from_value::<IncomingCallPayload>(
-            serde_json::to_value(event.payload()).unwrap()
-        ) {
+        // Tauri events may serialize payloads as JSON strings, so try parsing as string first
+        let payload_result = if let Ok(payload_str) = serde_json::from_value::<String>(serde_json::to_value(event.payload()).unwrap()) {
+            serde_json::from_str::<IncomingCallPayload>(&payload_str)
+        } else {
+            serde_json::from_value::<IncomingCallPayload>(serde_json::to_value(event.payload()).unwrap())
+        };
+
+        if let Ok(payload) = payload_result {
             eprintln!(
                 "DEBUG:[TEST/INCOMING_CALL] Payload: call_id={}, remote_number={}, call_id_header={}",
                 payload.call_id, payload.remote_number, payload.call_id_header
             );
             event_received_clone.store(true, Ordering::Relaxed);
+        } else {
+            eprintln!("DEBUG:[TEST/INCOMING_CALL] Failed to parse payload");
         }
     });
 
