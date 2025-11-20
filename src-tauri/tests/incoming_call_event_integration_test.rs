@@ -118,7 +118,7 @@ async fn test_incoming_call_event_emission() {
     // This verifies that emit_incoming_call() works correctly and emits events
     let event_emitter = EventEmitter::new(app_handle.clone());
     event_emitter.emit_incoming_call(
-        "test-call-id".to_string(),
+        "test-call-id",
         "sip:alice@example.com".to_string(),
         "test-call-id-header".to_string(),
     );
