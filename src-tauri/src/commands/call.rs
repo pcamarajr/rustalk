@@ -274,3 +274,37 @@ pub async fn answer_call(call_id: String, state: State<'_, AppState>) -> Result<
     eprintln!("DEBUG:[ANSWER_CALL] Call answered successfully");
     Ok(())
 }
+
+/// Reject (decline) an inbound call
+///
+/// This command:
+/// 1. Validates the call_id exists and is an inbound call in Ringing state
+/// 2. Calls CallService to reject the call (transitions to Ended state, emits state change event)
+///
+/// # Arguments
+/// * `call_id` - Call identifier
+///
+/// # Returns
+/// * `Ok(())` if call was rejected successfully
+/// * `Err(CommandError)` - Validation or service error
+#[tauri::command]
+pub async fn reject_call(call_id: String, state: State<'_, AppState>) -> Result<(), CommandError> {
+    eprintln!("DEBUG:[REJECT_CALL] Rejecting inbound call: {}", call_id);
+
+    use crate::domain::entities::call::CallId;
+    let call_id_entity = CallId::from(call_id);
+
+    let call_service = state.call_service.lock().await;
+    call_service
+        .handle_inbound_reject(&call_id_entity)
+        .await
+        .map_err(|e| {
+            eprintln!("DEBUG:[REJECT_CALL] CallService error: {}", e);
+            CommandError::ServiceError {
+                message: format!("Failed to reject call: {}", e),
+            }
+        })?;
+
+    eprintln!("DEBUG:[REJECT_CALL] Call rejected successfully");
+    Ok(())
+}
