@@ -524,10 +524,13 @@ Phase 8: Production Polish        █████░░░░░░░░░░�
   - Tests: Integration test - event emission ✅
   - Implementation: Added `IncomingCallPayload` struct with `call_id`, `remote_number`, and `call_id_header` fields. Implemented `emit_incoming_call()` method in `EventEmitter` with debug logging. Updated `CallService.handle_incoming_invite()` to emit `incoming_call` event after successfully creating call and sending 100 Trying response, before emitting `call_state_changed` event. Created integration test verifying event emission with correct payload structure.
 
-- **IN-3.5** (8h): Tauri `answer_call` command
+- **IN-3.5** (8h): Tauri `answer_call` command ✅ **COMPLETED**
 
-  - Files: `/src-tauri/src/commands/call.rs` (extend)
-  - Tests: Integration test - answer flow
+  - Files: `/src-tauri/src/commands/call.rs` (answer_call command) ✅
+  - Files: `/src-tauri/src/services/call_service.rs` (handle_inbound_answer extended, INVITE metadata storage, send_200_ok, create_rtp_session_for_answer) ✅
+  - Files: `/src-tauri/src/lib.rs` (register answer_call command) ✅
+  - Tests: Integration test (`tests/answer_call_integration_test.rs`) ✅
+  - Implementation: Extended `handle_inbound_answer()` to generate SDP answer from stored SDP offer, build and send 200 OK response with SDP answer, create RTP session for inbound call, and transition call to Active state. Added INVITE metadata storage (from_header, to_header, via_header, cseq_header, source_addr) in CallService to support 200 OK response generation. Added `answer_call` Tauri command that validates call_id and calls `handle_inbound_answer()`. Complete with error handling, debug logging, RTP port generation, and proper state management. Integration tests verify SDP answer generation and validation logic.
 
 - **IN-3.6** (10h): Frontend incoming call notification UI
   - Files: `/src/lib/components/IncomingCall.svelte`
