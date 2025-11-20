@@ -37,7 +37,7 @@ pub struct EventEmitter {
 /// Trait for emitting events (allows both real and mock AppHandles)
 trait EmitEvent {
     fn emit(&self, event: &str, payload: &CallStateChangedPayload) -> Result<(), String>;
-    fn emit_incoming_call(&self, event: &str, payload: &IncomingCallPayload) -> Result<(), String>;
+    fn emit_incoming_call(&self, payload: &IncomingCallPayload) -> Result<(), String>;
 }
 
 // Implement for real AppHandle
@@ -46,8 +46,8 @@ impl<R: tauri::Runtime> EmitEvent for tauri::AppHandle<R> {
         tauri::Emitter::emit(self, event, payload).map_err(|e| e.to_string())
     }
 
-    fn emit_incoming_call(&self, event: &str, payload: &IncomingCallPayload) -> Result<(), String> {
-        tauri::Emitter::emit(self, event, payload).map_err(|e| e.to_string())
+    fn emit_incoming_call(&self, payload: &IncomingCallPayload) -> Result<(), String> {
+        tauri::Emitter::emit(self, "incoming_call", payload).map_err(|e| e.to_string())
     }
 }
 
@@ -108,7 +108,7 @@ impl EventEmitter {
             payload.call_id, payload.remote_number, payload.call_id_header
         );
 
-        if let Err(e) = self.app.emit_incoming_call("incoming_call", &payload) {
+        if let Err(e) = self.app.emit_incoming_call(&payload) {
             eprintln!(
                 "DEBUG:[EVENTS/INCOMING_CALL] Failed to emit incoming_call event: {}",
                 e
