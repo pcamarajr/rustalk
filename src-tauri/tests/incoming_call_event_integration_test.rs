@@ -96,12 +96,16 @@ async fn test_incoming_call_event_emission() {
         eprintln!("DEBUG:[TEST/INCOMING_CALL] Received incoming_call event: {:?}", event.payload());
 
         // Verify payload structure
-        // Tauri events may serialize payloads as JSON strings, so try parsing as string first
-        let payload_result = if let Ok(payload_str) = serde_json::from_value::<String>(serde_json::to_value(event.payload()).unwrap()) {
-            serde_json::from_str::<IncomingCallPayload>(&payload_str)
-        } else {
-            serde_json::from_value::<IncomingCallPayload>(serde_json::to_value(event.payload()).unwrap())
-        };
+        // Note: Tauri's test mock runtime may serialize payloads differently than production.
+        // Try direct deserialization first (production behavior), then fall back to JSON string parsing
+        // if needed (test mock behavior).
+        let payload_value = serde_json::to_value(event.payload()).unwrap();
+        let payload_result = serde_json::from_value::<IncomingCallPayload>(payload_value.clone())
+            .or_else(|_| {
+                // Fallback: if payload is a JSON string, parse it
+                serde_json::from_value::<String>(payload_value)
+                    .and_then(|payload_str| serde_json::from_str::<IncomingCallPayload>(&payload_str))
+            });
 
         if let Ok(payload) = payload_result {
             eprintln!(
