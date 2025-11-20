@@ -6,10 +6,10 @@ use rustalk_lib::domain::traits::CredentialStore;
 use rustalk_lib::infrastructure::sip::client::SipClient;
 use rustalk_lib::services::auth_service::AuthService;
 use rustalk_lib::services::call_service::CallService;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use tokio::sync::Mutex;
+use std::sync::Arc;
 use tauri::Listener;
+use tokio::sync::Mutex;
 
 // Mock credential store for testing
 struct MockCredentialStore;
@@ -88,8 +88,7 @@ async fn create_test_call_service_with_events() -> (
 async fn test_incoming_call_event_emission() {
     // Test that handle_incoming_invite emits incoming_call event with correct payload
 
-    let (_call_service, app_handle, event_received) =
-        create_test_call_service_with_events().await;
+    let (_call_service, app_handle, event_received) = create_test_call_service_with_events().await;
 
     // Set up event listener to capture incoming_call event
     let event_received_clone = Arc::clone(&event_received);
@@ -172,4 +171,3 @@ async fn test_incoming_call_event_without_emitter() {
 // - Event payload structure is correct
 // - Event is received by listeners
 // - Code handles None event_emitter gracefully
-

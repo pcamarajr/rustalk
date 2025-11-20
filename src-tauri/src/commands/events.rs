@@ -91,7 +91,12 @@ impl EventEmitter {
     /// * `call_id` - Call identifier
     /// * `remote_number` - Remote phone number/URI
     /// * `call_id_header` - SIP Call-ID header value
-    pub fn emit_incoming_call(&self, call_id: String, remote_number: String, call_id_header: String) {
+    pub fn emit_incoming_call(
+        &self,
+        call_id: String,
+        remote_number: String,
+        call_id_header: String,
+    ) {
         let payload = IncomingCallPayload {
             call_id,
             remote_number,
