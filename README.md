@@ -65,6 +65,10 @@ Open-source white-label VoIP desktop application built with Rust and Tauri.
   - Creates inbound Call entities in Ringing state
   - Sends 100 Trying provisional response (RFC 3261)
   - Validates registration state before accepting calls
+- ✅ Incoming call event emission (IN-3.4)
+  - `incoming_call` event emitted when inbound call is created
+  - Event payload includes call_id, remote_number, and call_id_header
+  - Enables frontend notification UI (IN-3.6)
 
 ## Quick Start
 
@@ -251,7 +255,7 @@ Phase 5 will implement full call lifecycle with bidirectional RTP audio:
 - **IN-3.1**: INVITE listener for incoming calls ✅
 - **IN-3.2**: Inbound SDP processing ✅
 - **IN-3.3**: Call state machine for inbound calls ✅
-- **IN-3.4**: Tauri `incoming_call` event emission
+- **IN-3.4**: Tauri `incoming_call` event emission ✅
 - **IN-3.5**: Tauri `answer_call` command
 - **IN-3.6**: Frontend incoming call notification UI
 
