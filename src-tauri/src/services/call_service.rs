@@ -1203,9 +1203,6 @@ impl CallService {
             call_id.as_str()
         );
 
-        // Stop RTP session if active
-        self.stop_rtp_session(call_id).await;
-
         let mut calls = self.active_calls.write().await;
         let call = calls.get_mut(call_id).ok_or_else(|| {
             eprintln!(
@@ -1245,6 +1242,20 @@ impl CallService {
                 ),
             });
         }
+
+        // Stop RTP session if active (after validation to ensure call exists)
+        drop(calls); // Release the lock before async call
+        self.stop_rtp_session(call_id).await;
+        let mut calls = self.active_calls.write().await;
+        let call = calls.get_mut(call_id).ok_or_else(|| {
+            eprintln!(
+                "DEBUG:[CALL_SERVICE/INBOUND_BYE] Call not found after RTP stop: {}",
+                call_id.as_str()
+            );
+            SipError::InvalidMessage {
+                reason: format!("Call not found: {}", call_id.as_str()),
+            }
+        })?;
 
         // Transition to Ended state
         call.transition_to_ended().map_err(|e| {
