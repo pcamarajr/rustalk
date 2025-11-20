@@ -512,10 +512,11 @@ Phase 8: Production Polish        █████░░░░░░░░░░�
   - Tests: Integration test for SDP parsing and storage (`tests/inbound_sdp_integration_test.rs`) ✅
   - Implementation: SDP offer from incoming INVITE is parsed using `parse_sdp()`, validated for audio codecs, and stored in Call entity via `set_sdp_offer()`. SDP is stored as raw String for later answer generation in IN-3.5. Graceful error handling - call creation continues even if SDP parsing fails. Complete with debug logging and validation of codec presence.
 
-- **IN-3.3** (10h): Call state machine for inbound calls
+- **IN-3.3** (10h): Call state machine for inbound calls ✅ **COMPLETED**
 
-  - Files: `/src-tauri/src/services/call_service.rs` (extend)
-  - Tests: Unit tests for inbound state flow
+  - Files: `/src-tauri/src/services/call_service.rs` (extend) ✅
+  - Tests: Unit tests for inbound state flow ✅
+  - Implementation: Extended CallService with four methods for inbound call state transitions: `handle_inbound_answer()` (Ringing → Active), `handle_inbound_reject()` (Ringing → Ended), `handle_inbound_cancel()` (Ringing → Ended for CANCEL requests), and `handle_inbound_bye()` (Active → Ended with RTP session stop). All methods validate call direction, state, and emit events. Comprehensive unit tests cover all state transitions and error cases (20 tests passing).
 
 - **IN-3.4** (6h): Tauri `incoming_call` event emission
 
