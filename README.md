@@ -69,6 +69,10 @@ Open-source white-label VoIP desktop application built with Rust and Tauri.
   - `incoming_call` event emitted when inbound call is created
   - Event payload includes call_id, remote_number, and call_id_header
   - Enables frontend notification UI (IN-3.6)
+- ✅ Answer call command (IN-3.5)
+  - `answer_call` Tauri command for answering inbound calls
+  - Generates SDP answer, sends 200 OK response, creates RTP session
+  - Transitions call from Ringing to Active state
 
 ## Quick Start
 
@@ -256,7 +260,11 @@ Phase 5 will implement full call lifecycle with bidirectional RTP audio:
 - **IN-3.2**: Inbound SDP processing ✅
 - **IN-3.3**: Call state machine for inbound calls ✅
 - **IN-3.4**: Tauri `incoming_call` event emission ✅
-- **IN-3.5**: Tauri `answer_call` command
+- ✅ **IN-3.5**: Tauri `answer_call` command
+  - Generates SDP answer from stored SDP offer
+  - Builds and sends 200 OK response with SDP answer
+  - Creates RTP session for inbound call
+  - Transitions call to Active state
 - **IN-3.6**: Frontend incoming call notification UI
 
 ## Project Goals
