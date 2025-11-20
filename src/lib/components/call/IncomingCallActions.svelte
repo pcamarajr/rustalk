@@ -4,16 +4,16 @@
   import { Phone, PhoneOff } from "lucide-svelte";
   import { callStore, isCallActive } from "$lib/stores/callStore";
 
-  function handleAnswer() {
+  async function handleAnswer() {
     console.log("DEBUG:[CALL/ANSWER] Answering call");
-    callStore.answerCall();
+    await callStore.answerCall();
     // Navigate to active call when answered
     goto("/active-call");
   }
 
-  function handleDecline() {
+  async function handleDecline() {
     console.log("DEBUG:[CALL/DECLINE] Declining call");
-    callStore.declineCall();
+    await callStore.declineCall();
     // Navigate back to dialer
     goto("/");
   }

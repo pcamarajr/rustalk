@@ -6,7 +6,12 @@
   import Sidebar from '$lib/components/Sidebar.svelte';
   import Header from '$lib/components/Header.svelte';
   import { authStore } from '$lib/stores/authStore';
-  import { initializeCallStateListener, cleanupCallStateListener } from '$lib/stores/callStore';
+  import { 
+    initializeCallStateListener, 
+    cleanupCallStateListener,
+    initializeIncomingCallListener,
+    cleanupIncomingCallListener
+  } from '$lib/stores/callStore';
 
   // Check registration status on mount (non-blocking)
   // Note: Registration is optional for now - users can use the app without registration
@@ -15,6 +20,12 @@
     // Initialize call state event listener
     initializeCallStateListener().catch((error) => {
       console.error('DEBUG:[LAYOUT/EVENTS] Error initializing call state listener', error);
+      // Continue normally even if listener fails
+    });
+
+    // Initialize incoming call event listener
+    initializeIncomingCallListener().catch((error) => {
+      console.error('DEBUG:[LAYOUT/EVENTS] Error initializing incoming call listener', error);
       // Continue normally even if listener fails
     });
 
@@ -29,6 +40,7 @@
     // Cleanup on unmount
     return () => {
       cleanupCallStateListener();
+      cleanupIncomingCallListener();
     };
   });
 </script>
