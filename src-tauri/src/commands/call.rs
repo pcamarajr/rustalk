@@ -240,3 +240,37 @@ pub async fn hold_call(
     // For now, this is a stub that returns success
     Ok(())
 }
+
+/// Answer an inbound call
+///
+/// This command:
+/// 1. Validates the call_id exists and is an inbound call in Ringing state
+/// 2. Calls CallService to answer the call (generates SDP answer, sends 200 OK, creates RTP session)
+///
+/// # Arguments
+/// * `call_id` - Call identifier
+///
+/// # Returns
+/// * `Ok(())` if call was answered successfully
+/// * `Err(CommandError)` - Validation or service error
+#[tauri::command]
+pub async fn answer_call(call_id: String, state: State<'_, AppState>) -> Result<(), CommandError> {
+    eprintln!("DEBUG:[ANSWER_CALL] Answering inbound call: {}", call_id);
+
+    use crate::domain::entities::call::CallId;
+    let call_id_entity = CallId::from(call_id);
+
+    let call_service = state.call_service.lock().await;
+    call_service
+        .handle_inbound_answer(&call_id_entity)
+        .await
+        .map_err(|e| {
+            eprintln!("DEBUG:[ANSWER_CALL] CallService error: {}", e);
+            CommandError::ServiceError {
+                message: format!("Failed to answer call: {}", e),
+            }
+        })?;
+
+    eprintln!("DEBUG:[ANSWER_CALL] Call answered successfully");
+    Ok(())
+}
