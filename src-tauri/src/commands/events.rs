@@ -15,6 +15,17 @@ pub struct CallStateChangedPayload {
     pub start_time: Option<u64>,
 }
 
+/// Incoming call event payload
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct IncomingCallPayload {
+    /// Call identifier
+    pub call_id: String,
+    /// Remote phone number/URI
+    pub remote_number: String,
+    /// SIP Call-ID header value
+    pub call_id_header: String,
+}
+
 /// Event emitter for Tauri events
 /// Wraps AppHandle to allow event emission from services
 /// Uses a trait object to support both real and mock AppHandles
@@ -26,11 +37,16 @@ pub struct EventEmitter {
 /// Trait for emitting events (allows both real and mock AppHandles)
 trait EmitEvent {
     fn emit(&self, event: &str, payload: &CallStateChangedPayload) -> Result<(), String>;
+    fn emit_incoming_call(&self, event: &str, payload: &IncomingCallPayload) -> Result<(), String>;
 }
 
 // Implement for real AppHandle
 impl<R: tauri::Runtime> EmitEvent for tauri::AppHandle<R> {
     fn emit(&self, event: &str, payload: &CallStateChangedPayload) -> Result<(), String> {
+        tauri::Emitter::emit(self, event, payload).map_err(|e| e.to_string())
+    }
+
+    fn emit_incoming_call(&self, event: &str, payload: &IncomingCallPayload) -> Result<(), String> {
         tauri::Emitter::emit(self, event, payload).map_err(|e| e.to_string())
     }
 }
@@ -64,6 +80,32 @@ impl EventEmitter {
         if let Err(e) = self.app.emit("call_state_changed", &payload) {
             eprintln!(
                 "DEBUG:[EVENTS/CALL_STATE] Failed to emit call_state_changed event: {}",
+                e
+            );
+        }
+    }
+
+    /// Emit an incoming_call event to the frontend
+    ///
+    /// # Arguments
+    /// * `call_id` - Call identifier
+    /// * `remote_number` - Remote phone number/URI
+    /// * `call_id_header` - SIP Call-ID header value
+    pub fn emit_incoming_call(&self, call_id: String, remote_number: String, call_id_header: String) {
+        let payload = IncomingCallPayload {
+            call_id,
+            remote_number,
+            call_id_header,
+        };
+
+        eprintln!(
+            "DEBUG:[EVENTS/INCOMING_CALL] Emitting incoming_call: call_id={}, remote_number={}, call_id_header={}",
+            payload.call_id, payload.remote_number, payload.call_id_header
+        );
+
+        if let Err(e) = self.app.emit_incoming_call("incoming_call", &payload) {
+            eprintln!(
+                "DEBUG:[EVENTS/INCOMING_CALL] Failed to emit incoming_call event: {}",
                 e
             );
         }
