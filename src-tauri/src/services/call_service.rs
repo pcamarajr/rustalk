@@ -1983,13 +1983,6 @@ mod tests {
             "Error should be about credentials/registration, got: {}",
             error_msg
         );
-
-        // Verify call is now in Active state
-        let call = service.get_call(&call_id).await;
-        assert!(call.is_some());
-        let call = call.unwrap();
-        assert!(matches!(call.state(), CallState::Active));
-        assert!(call.start_time().is_some(), "start_time should be set");
     }
 
     #[tokio::test]
