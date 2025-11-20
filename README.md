@@ -73,6 +73,12 @@ Open-source white-label VoIP desktop application built with Rust and Tauri.
   - `answer_call` Tauri command for answering inbound calls
   - Generates SDP answer, sends 200 OK response, creates RTP session
   - Transitions call from Ringing to Active state
+- ✅ Frontend incoming call notification UI (IN-3.6)
+  - `reject_call` Tauri command for declining inbound calls
+  - `incoming_call` event listener in callStore with auto-navigation
+  - Answer/Decline buttons connected to backend commands
+  - Automatic navigation to incoming call screen on incoming call event
+  - Missed call tracking in history when call is declined
 
 ## Quick Start
 
