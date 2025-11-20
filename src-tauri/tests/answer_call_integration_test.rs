@@ -65,13 +65,11 @@ async fn create_test_call_service() -> Arc<Mutex<CallService>> {
     // Note: Registration state setup would be needed for full integration test
     // The actual registration check happens in handle_incoming_invite, not handle_inbound_answer
 
-    let call_service = Arc::new(Mutex::new(CallService::new(
+    Arc::new(Mutex::new(CallService::new(
         client,
         auth_service,
         None, // No event emitter for this test
-    )));
-
-    call_service
+    )))
 }
 
 #[tokio::test]
