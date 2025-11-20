@@ -954,6 +954,329 @@ impl CallService {
 
         Ok(call_id)
     }
+
+    /// Handle inbound call answer
+    ///
+    /// Called when user answers an inbound call. Transitions call from Ringing to Active state.
+    ///
+    /// # Arguments
+    /// * `call_id` - Call identifier
+    ///
+    /// # Returns
+    /// `Ok(())` if call was answered successfully, `Err(SipError)` otherwise
+    pub async fn handle_inbound_answer(&self, call_id: &CallId) -> Result<(), SipError> {
+        eprintln!(
+            "DEBUG:[CALL_SERVICE/INBOUND_ANSWER] Handling answer for inbound call: {}",
+            call_id.as_str()
+        );
+
+        let mut calls = self.active_calls.write().await;
+        let call = calls.get_mut(call_id).ok_or_else(|| {
+            eprintln!(
+                "DEBUG:[CALL_SERVICE/INBOUND_ANSWER] Call not found: {}",
+                call_id.as_str()
+            );
+            SipError::InvalidMessage {
+                reason: format!("Call not found: {}", call_id.as_str()),
+            }
+        })?;
+
+        // Validate call is inbound
+        if !matches!(
+            call.direction(),
+            crate::domain::entities::call::CallDirection::Inbound
+        ) {
+            eprintln!(
+                "DEBUG:[CALL_SERVICE/INBOUND_ANSWER] Call is not inbound: {}",
+                call_id.as_str()
+            );
+            return Err(SipError::InvalidMessage {
+                reason: format!("Call {} is not an inbound call", call_id.as_str()),
+            });
+        }
+
+        // Validate call is in Ringing state
+        if !matches!(call.state(), CallState::Ringing) {
+            eprintln!(
+                "DEBUG:[CALL_SERVICE/INBOUND_ANSWER] Call is not in Ringing state: {} (state: {:?})",
+                call_id.as_str(),
+                call.state()
+            );
+            return Err(SipError::InvalidMessage {
+                reason: format!(
+                    "Cannot answer call: call is in {:?} state, expected Ringing",
+                    call.state()
+                ),
+            });
+        }
+
+        // Transition to Active state
+        call.transition_to_active().map_err(|e| {
+            eprintln!(
+                "DEBUG:[CALL_SERVICE/INBOUND_ANSWER] Failed to transition to active: {}",
+                e
+            );
+            e
+        })?;
+
+        // Get start_time before emitting event
+        let start_time = call.start_time();
+        let new_state = call.state().clone();
+
+        // Emit active state event with start_time
+        self.emit_state_changed(call_id, &new_state, start_time);
+
+        eprintln!(
+            "DEBUG:[CALL_SERVICE/INBOUND_ANSWER] Inbound call answered successfully: {}",
+            call_id.as_str()
+        );
+
+        Ok(())
+    }
+
+    /// Handle inbound call reject
+    ///
+    /// Called when user rejects an inbound call. Transitions call from Ringing to Ended state.
+    ///
+    /// # Arguments
+    /// * `call_id` - Call identifier
+    ///
+    /// # Returns
+    /// `Ok(())` if call was rejected successfully, `Err(SipError)` otherwise
+    pub async fn handle_inbound_reject(&self, call_id: &CallId) -> Result<(), SipError> {
+        eprintln!(
+            "DEBUG:[CALL_SERVICE/INBOUND_REJECT] Handling reject for inbound call: {}",
+            call_id.as_str()
+        );
+
+        let mut calls = self.active_calls.write().await;
+        let call = calls.get_mut(call_id).ok_or_else(|| {
+            eprintln!(
+                "DEBUG:[CALL_SERVICE/INBOUND_REJECT] Call not found: {}",
+                call_id.as_str()
+            );
+            SipError::InvalidMessage {
+                reason: format!("Call not found: {}", call_id.as_str()),
+            }
+        })?;
+
+        // Validate call is inbound
+        if !matches!(
+            call.direction(),
+            crate::domain::entities::call::CallDirection::Inbound
+        ) {
+            eprintln!(
+                "DEBUG:[CALL_SERVICE/INBOUND_REJECT] Call is not inbound: {}",
+                call_id.as_str()
+            );
+            return Err(SipError::InvalidMessage {
+                reason: format!("Call {} is not an inbound call", call_id.as_str()),
+            });
+        }
+
+        // Validate call is in Ringing state
+        if !matches!(call.state(), CallState::Ringing) {
+            eprintln!(
+                "DEBUG:[CALL_SERVICE/INBOUND_REJECT] Call is not in Ringing state: {} (state: {:?})",
+                call_id.as_str(),
+                call.state()
+            );
+            return Err(SipError::InvalidMessage {
+                reason: format!(
+                    "Cannot reject call: call is in {:?} state, expected Ringing",
+                    call.state()
+                ),
+            });
+        }
+
+        // Transition to Ended state
+        call.transition_to_ended().map_err(|e| {
+            eprintln!(
+                "DEBUG:[CALL_SERVICE/INBOUND_REJECT] Failed to transition to ended: {}",
+                e
+            );
+            e
+        })?;
+
+        // Emit ended state event
+        let new_state = call.state().clone();
+        self.emit_state_changed(call_id, &new_state, None);
+
+        eprintln!(
+            "DEBUG:[CALL_SERVICE/INBOUND_REJECT] Inbound call rejected successfully: {}",
+            call_id.as_str()
+        );
+
+        Ok(())
+    }
+
+    /// Handle inbound call cancel (CANCEL request)
+    ///
+    /// Called when CANCEL request is received for an inbound call.
+    /// CANCEL is only valid before the call is answered (i.e., when in Ringing state).
+    ///
+    /// # Arguments
+    /// * `call_id` - Call identifier
+    ///
+    /// # Returns
+    /// `Ok(())` if call was cancelled successfully, `Err(SipError)` otherwise
+    pub async fn handle_inbound_cancel(&self, call_id: &CallId) -> Result<(), SipError> {
+        eprintln!(
+            "DEBUG:[CALL_SERVICE/INBOUND_CANCEL] Handling CANCEL for inbound call: {}",
+            call_id.as_str()
+        );
+
+        let mut calls = self.active_calls.write().await;
+        let call = calls.get_mut(call_id).ok_or_else(|| {
+            eprintln!(
+                "DEBUG:[CALL_SERVICE/INBOUND_CANCEL] Call not found: {}",
+                call_id.as_str()
+            );
+            SipError::InvalidMessage {
+                reason: format!("Call not found: {}", call_id.as_str()),
+            }
+        })?;
+
+        // Validate call is inbound
+        if !matches!(
+            call.direction(),
+            crate::domain::entities::call::CallDirection::Inbound
+        ) {
+            eprintln!(
+                "DEBUG:[CALL_SERVICE/INBOUND_CANCEL] Call is not inbound: {}",
+                call_id.as_str()
+            );
+            return Err(SipError::InvalidMessage {
+                reason: format!("Call {} is not an inbound call", call_id.as_str()),
+            });
+        }
+
+        // Validate call is in Ringing state (CANCEL only valid before answer)
+        if !matches!(call.state(), CallState::Ringing) {
+            eprintln!(
+                "DEBUG:[CALL_SERVICE/INBOUND_CANCEL] Call is not in Ringing state: {} (state: {:?})",
+                call_id.as_str(),
+                call.state()
+            );
+            return Err(SipError::InvalidMessage {
+                reason: format!(
+                    "Cannot cancel call: call is in {:?} state, expected Ringing",
+                    call.state()
+                ),
+            });
+        }
+
+        // Transition to Ended state
+        call.transition_to_ended().map_err(|e| {
+            eprintln!(
+                "DEBUG:[CALL_SERVICE/INBOUND_CANCEL] Failed to transition to ended: {}",
+                e
+            );
+            e
+        })?;
+
+        // Emit ended state event
+        let new_state = call.state().clone();
+        self.emit_state_changed(call_id, &new_state, None);
+
+        eprintln!(
+            "DEBUG:[CALL_SERVICE/INBOUND_CANCEL] Inbound call cancelled successfully: {}",
+            call_id.as_str()
+        );
+
+        Ok(())
+    }
+
+    /// Handle inbound call BYE request
+    ///
+    /// Called when BYE request is received for an inbound call.
+    /// BYE is only valid for active calls (Active state).
+    ///
+    /// # Arguments
+    /// * `call_id` - Call identifier
+    ///
+    /// # Returns
+    /// `Ok(())` if call was ended successfully, `Err(SipError)` otherwise
+    pub async fn handle_inbound_bye(&self, call_id: &CallId) -> Result<(), SipError> {
+        eprintln!(
+            "DEBUG:[CALL_SERVICE/INBOUND_BYE] Handling BYE for inbound call: {}",
+            call_id.as_str()
+        );
+
+        let mut calls = self.active_calls.write().await;
+        let call = calls.get_mut(call_id).ok_or_else(|| {
+            eprintln!(
+                "DEBUG:[CALL_SERVICE/INBOUND_BYE] Call not found: {}",
+                call_id.as_str()
+            );
+            SipError::InvalidMessage {
+                reason: format!("Call not found: {}", call_id.as_str()),
+            }
+        })?;
+
+        // Validate call is inbound
+        if !matches!(
+            call.direction(),
+            crate::domain::entities::call::CallDirection::Inbound
+        ) {
+            eprintln!(
+                "DEBUG:[CALL_SERVICE/INBOUND_BYE] Call is not inbound: {}",
+                call_id.as_str()
+            );
+            return Err(SipError::InvalidMessage {
+                reason: format!("Call {} is not an inbound call", call_id.as_str()),
+            });
+        }
+
+        // Validate call is in Active state (BYE only valid for active calls)
+        if !matches!(call.state(), CallState::Active) {
+            eprintln!(
+                "DEBUG:[CALL_SERVICE/INBOUND_BYE] Call is not in Active state: {} (state: {:?})",
+                call_id.as_str(),
+                call.state()
+            );
+            return Err(SipError::InvalidMessage {
+                reason: format!(
+                    "Cannot handle BYE: call is in {:?} state, expected Active",
+                    call.state()
+                ),
+            });
+        }
+
+        // Stop RTP session if active (after validation to ensure call exists)
+        drop(calls); // Release the lock before async call
+        self.stop_rtp_session(call_id).await;
+        let mut calls = self.active_calls.write().await;
+        let call = calls.get_mut(call_id).ok_or_else(|| {
+            eprintln!(
+                "DEBUG:[CALL_SERVICE/INBOUND_BYE] Call not found after RTP stop: {}",
+                call_id.as_str()
+            );
+            SipError::InvalidMessage {
+                reason: format!("Call not found: {}", call_id.as_str()),
+            }
+        })?;
+
+        // Transition to Ended state
+        call.transition_to_ended().map_err(|e| {
+            eprintln!(
+                "DEBUG:[CALL_SERVICE/INBOUND_BYE] Failed to transition to ended: {}",
+                e
+            );
+            e
+        })?;
+
+        // Emit ended state event
+        let new_state = call.state().clone();
+        self.emit_state_changed(call_id, &new_state, None);
+
+        eprintln!(
+            "DEBUG:[CALL_SERVICE/INBOUND_BYE] Inbound call ended successfully: {}",
+            call_id.as_str()
+        );
+
+        Ok(())
+    }
 }
 
 /// Select codec from SDP codec list
@@ -1237,5 +1560,354 @@ mod tests {
         // Test get_sdp_offer with invalid SDP
         let result = service.get_sdp_offer(&call_id).await;
         assert!(result.is_err(), "Should fail to parse invalid SDP");
+    }
+
+    // Tests for handle_inbound_answer()
+    #[tokio::test]
+    async fn test_handle_inbound_answer_success() {
+        let service = create_test_call_service().await;
+
+        // Create an inbound call in Ringing state
+        let call = Call::new_inbound(
+            "sip:alice@example.com".to_string(),
+            "call-id-123".to_string(),
+            Some("from-tag-123".to_string()),
+        );
+        let call_id = call.id().clone();
+        {
+            let mut calls = service.active_calls.write().await;
+            calls.insert(call_id.clone(), call);
+        }
+
+        // Answer the call
+        let result = service.handle_inbound_answer(&call_id).await;
+        assert!(result.is_ok(), "Answer should succeed");
+
+        // Verify call is now in Active state
+        let call = service.get_call(&call_id).await;
+        assert!(call.is_some());
+        let call = call.unwrap();
+        assert!(matches!(call.state(), CallState::Active));
+        assert!(call.start_time().is_some(), "start_time should be set");
+    }
+
+    #[tokio::test]
+    async fn test_handle_inbound_answer_not_ringing() {
+        let service = create_test_call_service().await;
+
+        // Create an inbound call and transition to Active
+        let mut call = Call::new_inbound(
+            "sip:alice@example.com".to_string(),
+            "call-id-123".to_string(),
+            Some("from-tag-123".to_string()),
+        );
+        call.transition_to_active().unwrap();
+        let call_id = call.id().clone();
+        {
+            let mut calls = service.active_calls.write().await;
+            calls.insert(call_id.clone(), call);
+        }
+
+        // Try to answer (should fail - already active)
+        let result = service.handle_inbound_answer(&call_id).await;
+        assert!(
+            result.is_err(),
+            "Answer should fail - call not in Ringing state"
+        );
+        assert!(result.unwrap_err().to_string().contains("expected Ringing"));
+    }
+
+    #[tokio::test]
+    async fn test_handle_inbound_answer_outbound_call() {
+        let service = create_test_call_service().await;
+
+        // Create an outbound call in Ringing state
+        let mut call = Call::new_outbound("sip:bob@example.com".to_string());
+        call.transition_to_ringing().unwrap();
+        let call_id = call.id().clone();
+        {
+            let mut calls = service.active_calls.write().await;
+            calls.insert(call_id.clone(), call);
+        }
+
+        // Try to answer (should fail - not inbound)
+        let result = service.handle_inbound_answer(&call_id).await;
+        assert!(result.is_err(), "Answer should fail - call is not inbound");
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("not an inbound call"));
+    }
+
+    #[tokio::test]
+    async fn test_handle_inbound_answer_call_not_found() {
+        let service = create_test_call_service().await;
+        let call_id = CallId::new("nonexistent".to_string());
+
+        let result = service.handle_inbound_answer(&call_id).await;
+        assert!(result.is_err(), "Answer should fail - call not found");
+        assert!(result.unwrap_err().to_string().contains("not found"));
+    }
+
+    // Tests for handle_inbound_reject()
+    #[tokio::test]
+    async fn test_handle_inbound_reject_success() {
+        let service = create_test_call_service().await;
+
+        // Create an inbound call in Ringing state
+        let call = Call::new_inbound(
+            "sip:alice@example.com".to_string(),
+            "call-id-123".to_string(),
+            Some("from-tag-123".to_string()),
+        );
+        let call_id = call.id().clone();
+        {
+            let mut calls = service.active_calls.write().await;
+            calls.insert(call_id.clone(), call);
+        }
+
+        // Reject the call
+        let result = service.handle_inbound_reject(&call_id).await;
+        assert!(result.is_ok(), "Reject should succeed");
+
+        // Verify call is now in Ended state
+        let call = service.get_call(&call_id).await;
+        assert!(call.is_some());
+        let call = call.unwrap();
+        assert!(matches!(call.state(), CallState::Ended));
+        assert!(call.end_time().is_some(), "end_time should be set");
+    }
+
+    #[tokio::test]
+    async fn test_handle_inbound_reject_not_ringing() {
+        let service = create_test_call_service().await;
+
+        // Create an inbound call and transition to Active
+        let mut call = Call::new_inbound(
+            "sip:alice@example.com".to_string(),
+            "call-id-123".to_string(),
+            Some("from-tag-123".to_string()),
+        );
+        call.transition_to_active().unwrap();
+        let call_id = call.id().clone();
+        {
+            let mut calls = service.active_calls.write().await;
+            calls.insert(call_id.clone(), call);
+        }
+
+        // Try to reject (should fail - not in Ringing)
+        let result = service.handle_inbound_reject(&call_id).await;
+        assert!(
+            result.is_err(),
+            "Reject should fail - call not in Ringing state"
+        );
+        assert!(result.unwrap_err().to_string().contains("expected Ringing"));
+    }
+
+    #[tokio::test]
+    async fn test_handle_inbound_reject_outbound_call() {
+        let service = create_test_call_service().await;
+
+        // Create an outbound call in Ringing state
+        let mut call = Call::new_outbound("sip:bob@example.com".to_string());
+        call.transition_to_ringing().unwrap();
+        let call_id = call.id().clone();
+        {
+            let mut calls = service.active_calls.write().await;
+            calls.insert(call_id.clone(), call);
+        }
+
+        // Try to reject (should fail - not inbound)
+        let result = service.handle_inbound_reject(&call_id).await;
+        assert!(result.is_err(), "Reject should fail - call is not inbound");
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("not an inbound call"));
+    }
+
+    #[tokio::test]
+    async fn test_handle_inbound_reject_call_not_found() {
+        let service = create_test_call_service().await;
+        let call_id = CallId::new("nonexistent".to_string());
+
+        let result = service.handle_inbound_reject(&call_id).await;
+        assert!(result.is_err(), "Reject should fail - call not found");
+        assert!(result.unwrap_err().to_string().contains("not found"));
+    }
+
+    // Tests for handle_inbound_cancel()
+    #[tokio::test]
+    async fn test_handle_inbound_cancel_success() {
+        let service = create_test_call_service().await;
+
+        // Create an inbound call in Ringing state
+        let call = Call::new_inbound(
+            "sip:alice@example.com".to_string(),
+            "call-id-123".to_string(),
+            Some("from-tag-123".to_string()),
+        );
+        let call_id = call.id().clone();
+        {
+            let mut calls = service.active_calls.write().await;
+            calls.insert(call_id.clone(), call);
+        }
+
+        // Cancel the call
+        let result = service.handle_inbound_cancel(&call_id).await;
+        assert!(result.is_ok(), "Cancel should succeed");
+
+        // Verify call is now in Ended state
+        let call = service.get_call(&call_id).await;
+        assert!(call.is_some());
+        let call = call.unwrap();
+        assert!(matches!(call.state(), CallState::Ended));
+        assert!(call.end_time().is_some(), "end_time should be set");
+    }
+
+    #[tokio::test]
+    async fn test_handle_inbound_cancel_not_ringing() {
+        let service = create_test_call_service().await;
+
+        // Create an inbound call and transition to Active
+        let mut call = Call::new_inbound(
+            "sip:alice@example.com".to_string(),
+            "call-id-123".to_string(),
+            Some("from-tag-123".to_string()),
+        );
+        call.transition_to_active().unwrap();
+        let call_id = call.id().clone();
+        {
+            let mut calls = service.active_calls.write().await;
+            calls.insert(call_id.clone(), call);
+        }
+
+        // Try to cancel (should fail - not in Ringing)
+        let result = service.handle_inbound_cancel(&call_id).await;
+        assert!(
+            result.is_err(),
+            "Cancel should fail - call not in Ringing state"
+        );
+        assert!(result.unwrap_err().to_string().contains("expected Ringing"));
+    }
+
+    #[tokio::test]
+    async fn test_handle_inbound_cancel_outbound_call() {
+        let service = create_test_call_service().await;
+
+        // Create an outbound call in Ringing state
+        let mut call = Call::new_outbound("sip:bob@example.com".to_string());
+        call.transition_to_ringing().unwrap();
+        let call_id = call.id().clone();
+        {
+            let mut calls = service.active_calls.write().await;
+            calls.insert(call_id.clone(), call);
+        }
+
+        // Try to cancel (should fail - not inbound)
+        let result = service.handle_inbound_cancel(&call_id).await;
+        assert!(result.is_err(), "Cancel should fail - call is not inbound");
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("not an inbound call"));
+    }
+
+    #[tokio::test]
+    async fn test_handle_inbound_cancel_call_not_found() {
+        let service = create_test_call_service().await;
+        let call_id = CallId::new("nonexistent".to_string());
+
+        let result = service.handle_inbound_cancel(&call_id).await;
+        assert!(result.is_err(), "Cancel should fail - call not found");
+        assert!(result.unwrap_err().to_string().contains("not found"));
+    }
+
+    // Tests for handle_inbound_bye()
+    #[tokio::test]
+    async fn test_handle_inbound_bye_success() {
+        let service = create_test_call_service().await;
+
+        // Create an inbound call and transition to Active
+        let mut call = Call::new_inbound(
+            "sip:alice@example.com".to_string(),
+            "call-id-123".to_string(),
+            Some("from-tag-123".to_string()),
+        );
+        call.transition_to_active().unwrap();
+        let call_id = call.id().clone();
+        {
+            let mut calls = service.active_calls.write().await;
+            calls.insert(call_id.clone(), call);
+        }
+
+        // Handle BYE
+        let result = service.handle_inbound_bye(&call_id).await;
+        assert!(result.is_ok(), "BYE should succeed");
+
+        // Verify call is now in Ended state
+        let call = service.get_call(&call_id).await;
+        assert!(call.is_some());
+        let call = call.unwrap();
+        assert!(matches!(call.state(), CallState::Ended));
+        assert!(call.end_time().is_some(), "end_time should be set");
+    }
+
+    #[tokio::test]
+    async fn test_handle_inbound_bye_not_active() {
+        let service = create_test_call_service().await;
+
+        // Create an inbound call in Ringing state
+        let call = Call::new_inbound(
+            "sip:alice@example.com".to_string(),
+            "call-id-123".to_string(),
+            Some("from-tag-123".to_string()),
+        );
+        let call_id = call.id().clone();
+        {
+            let mut calls = service.active_calls.write().await;
+            calls.insert(call_id.clone(), call);
+        }
+
+        // Try to handle BYE (should fail - not Active)
+        let result = service.handle_inbound_bye(&call_id).await;
+        assert!(
+            result.is_err(),
+            "BYE should fail - call not in Active state"
+        );
+        assert!(result.unwrap_err().to_string().contains("expected Active"));
+    }
+
+    #[tokio::test]
+    async fn test_handle_inbound_bye_outbound_call() {
+        let service = create_test_call_service().await;
+
+        // Create an outbound call and transition to Active
+        let mut call = Call::new_outbound("sip:bob@example.com".to_string());
+        call.transition_to_ringing().unwrap();
+        call.transition_to_active().unwrap();
+        let call_id = call.id().clone();
+        {
+            let mut calls = service.active_calls.write().await;
+            calls.insert(call_id.clone(), call);
+        }
+
+        // Try to handle BYE (should fail - not inbound)
+        let result = service.handle_inbound_bye(&call_id).await;
+        assert!(result.is_err(), "BYE should fail - call is not inbound");
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("not an inbound call"));
+    }
+
+    #[tokio::test]
+    async fn test_handle_inbound_bye_call_not_found() {
+        let service = create_test_call_service().await;
+        let call_id = CallId::new("nonexistent".to_string());
+
+        let result = service.handle_inbound_bye(&call_id).await;
+        assert!(result.is_err(), "BYE should fail - call not found");
+        assert!(result.unwrap_err().to_string().contains("not found"));
     }
 }

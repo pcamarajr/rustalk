@@ -248,9 +248,9 @@ Phase 5 will implement full call lifecycle with bidirectional RTP audio:
 
 **Inbound Calls:**
 
-- **IN-3.1**: INVITE listener for incoming calls
+- **IN-3.1**: INVITE listener for incoming calls ✅
 - **IN-3.2**: Inbound SDP processing ✅
-- **IN-3.3**: Call state machine for inbound calls
+- **IN-3.3**: Call state machine for inbound calls ✅
 - **IN-3.4**: Tauri `incoming_call` event emission
 - **IN-3.5**: Tauri `answer_call` command
 - **IN-3.6**: Frontend incoming call notification UI
