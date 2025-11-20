@@ -70,34 +70,6 @@ async fn create_test_call_service() -> Arc<Mutex<CallService>> {
 }
 
 #[tokio::test]
-async fn test_handle_inbound_answer_success() {
-    // Test that handle_inbound_answer() successfully:
-    // 1. Generates SDP answer
-    // 2. Sends 200 OK response (we can't verify sending without a real server, but we can verify the call transitions)
-    // 3. Creates RTP session
-    // 4. Transitions call to Active state
-
-    let _service = create_test_call_service().await;
-
-    // Note: Full integration test for handle_inbound_answer() would require:
-    // 1. Setting up registration state to Registered
-    // 2. Calling handle_incoming_invite() to create the call with proper metadata
-    // 3. Then calling handle_inbound_answer()
-    // 4. Verifying:
-    //    - 200 OK response is sent
-    //    - SDP answer is generated correctly
-    //    - RTP session is created
-    //    - Call state transitions to Active
-    //
-    // The validation logic (call exists, is inbound, is in Ringing, has SDP) is tested
-    // in the unit tests in call_service.rs (test_handle_inbound_answer_*).
-    //
-    // This integration test focuses on:
-    // - SDP answer generation (test_sdp_answer_generation)
-    // - Command-level behavior
-}
-
-#[tokio::test]
 async fn test_handle_inbound_answer_validation() {
     // Test that handle_inbound_answer() validates:
     // 1. Call exists
