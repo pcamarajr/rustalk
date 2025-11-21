@@ -532,9 +532,12 @@ Phase 8: Production Polish        █████░░░░░░░░░░�
   - Tests: Integration test (`tests/answer_call_integration_test.rs`) ✅
   - Implementation: Extended `handle_inbound_answer()` to generate SDP answer from stored SDP offer, build and send 200 OK response with SDP answer, create RTP session for inbound call, and transition call to Active state. Added INVITE metadata storage (from_header, to_header, via_header, cseq_header, source_addr) in CallService to support 200 OK response generation. Added `answer_call` Tauri command that validates call_id and calls `handle_inbound_answer()`. Complete with error handling, debug logging, RTP port generation, and proper state management. Integration tests verify SDP answer generation and validation logic.
 
-- **IN-3.6** (10h): Frontend incoming call notification UI
-  - Files: `/src/lib/components/IncomingCall.svelte`
-  - Tests: Component tests
+- **IN-3.6** (10h): Frontend incoming call notification UI ✅ **COMPLETED**
+  - Files: `/src-tauri/src/commands/call.rs` (reject_call command) ✅
+  - Files: `/src/lib/stores/callStore.ts` (incoming_call event listener, answerCall/declineCall backend integration) ✅
+  - Files: `/src/routes/+layout.svelte` (initialize incoming call listener) ✅
+  - Files: `/src/lib/components/call/IncomingCallActions.svelte` (async answer/decline handlers) ✅
+  - Implementation: Added `reject_call` Tauri command that calls `CallService.handle_inbound_reject()`. Implemented `initializeIncomingCallListener()` in callStore that listens for `incoming_call` events, creates ActiveCall object, updates store, and auto-navigates to `/incoming-call` route. Updated `answerCall()` to call backend `answer_call` command. Updated `declineCall()` to call backend `reject_call` command and add missed call to history. All handlers are async and include error handling with fallback to local state updates. Complete with debug logging throughout.
 
 ### Deliverables
 

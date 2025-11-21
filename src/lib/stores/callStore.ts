@@ -1,6 +1,7 @@
 import { writable, derived, get, type Readable } from "svelte/store";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { goto } from "$app/navigation";
 import { historyStore, type CallHistoryEntry, type CallDirection } from "./historyStore";
 import { contactsStore } from "./contactsStore";
 
@@ -145,39 +146,87 @@ export const callStore = {
   },
 
   // Answer an incoming call
-  answerCall: () => {
-    console.log("DEBUG:[CALLSTORE/ANSWER] Answering call");
-    update((currentCall) => {
-      if (currentCall && currentCall.state === "ringing") {
-        return {
-          ...currentCall,
-          state: "active",
-          startTime: new Date(),
-        };
-      }
-      return currentCall;
-    });
+  answerCall: async () => {
+    console.log("DEBUG:[CALLSTORE/ANSWER] Answering call via backend");
+    const currentCall = get({ subscribe });
+    if (!currentCall || currentCall.state !== "ringing") {
+      console.warn("DEBUG:[CALLSTORE/ANSWER] Cannot answer - no ringing call");
+      return;
+    }
+
+    try {
+      // Call backend to answer the call
+      await invoke("answer_call", { call_id: currentCall.id });
+      console.log("DEBUG:[CALLSTORE/ANSWER] Call answered successfully via backend");
+      // Note: The backend will emit a call_state_changed event which will update the store
+      // via the event listener, so we don't need to manually update here
+    } catch (error) {
+      console.error("DEBUG:[CALLSTORE/ANSWER] Failed to answer call via backend:", error);
+      // Fallback to local state update if backend call fails
+      update((call) => {
+        if (call && call.state === "ringing") {
+          return {
+            ...call,
+            state: "active",
+            startTime: new Date(),
+          };
+        }
+        return call;
+      });
+    }
   },
 
   // Decline an incoming call
-  declineCall: () => {
-    console.log("DEBUG:[CALLSTORE/DECLINE] Declining call");
-    update((currentCall) => {
-      if (currentCall) {
-        // Clear any pending timeouts for this call
-        clearCallTimeouts(currentCall.id);
-        
-        // Add to history as missed call
-        historyStore.addEntry({
-          name: currentCall.name,
-          number: currentCall.number,
-          direction: "missed",
-          duration: 0,
-          timestamp: new Date(),
-        });
-      }
-      return null;
-    });
+  declineCall: async () => {
+    console.log("DEBUG:[CALLSTORE/DECLINE] Declining call via backend");
+    const currentCall = get({ subscribe });
+    if (!currentCall) {
+      console.warn("DEBUG:[CALLSTORE/DECLINE] No call to decline");
+      return;
+    }
+
+    try {
+      // Call backend to reject the call
+      await invoke("reject_call", { call_id: currentCall.id });
+      console.log("DEBUG:[CALLSTORE/DECLINE] Call declined successfully via backend");
+      
+      // Clear any pending timeouts for this call
+      clearCallTimeouts(currentCall.id);
+      
+      // Add to history as missed call
+      historyStore.addEntry({
+        name: currentCall.name,
+        number: currentCall.number,
+        direction: "missed",
+        duration: 0,
+        timestamp: new Date(),
+      });
+      
+      // Clear call from store
+      set(null);
+      
+      // Note: The backend will emit a call_state_changed event which will also update the store
+      // via the event listener, but we clear it immediately for better UX
+    } catch (error) {
+      console.error("DEBUG:[CALLSTORE/DECLINE] Failed to decline call via backend:", error);
+      // Fallback to local state update if backend call fails
+      update((call) => {
+        if (call) {
+          // Clear any pending timeouts for this call
+          clearCallTimeouts(call.id);
+          
+          // Add to history as missed call
+          historyStore.addEntry({
+            name: call.name,
+            number: call.number,
+            direction: "missed",
+            duration: 0,
+            timestamp: new Date(),
+          });
+        }
+        return null;
+      });
+    }
   },
 
   // End the current call
@@ -318,6 +367,13 @@ interface CallStateChangedPayload {
   start_time: number | null;
 }
 
+// Event listener for incoming calls from backend
+interface IncomingCallPayload {
+  call_id: string;
+  remote_number: string;
+  call_id_header: string;
+}
+
 // Initialize event listener on module load
 let eventListenerUnsubscribe: (() => void) | null = null;
 
@@ -413,6 +469,66 @@ export function cleanupCallStateListener(): void {
     eventListenerUnsubscribe();
     eventListenerUnsubscribe = null;
     console.log("DEBUG:[CALLSTORE/EVENT] Event listener cleaned up");
+  }
+}
+
+// Incoming call event listener
+let incomingCallListenerUnsubscribe: (() => void) | null = null;
+
+/**
+ * Initialize the incoming call event listener
+ * This should be called once when the app starts
+ */
+export function initializeIncomingCallListener(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    listen<IncomingCallPayload>("incoming_call", (event) => {
+      const payload = event.payload;
+      console.log("DEBUG:[CALLSTORE/INCOMING] Received incoming call event", payload);
+
+      // Find contact name from contactsStore
+      const name = findContactName(payload.remote_number);
+
+      // Create ActiveCall object
+      const call: ActiveCall = {
+        id: payload.call_id,
+        number: payload.remote_number,
+        name,
+        direction: "incoming",
+        state: "ringing",
+        startTime: null,
+        duration: 0,
+        isMuted: false,
+        isOnHold: false,
+      };
+
+      // Update callStore with new call
+      set(call);
+
+      // Auto-navigate to incoming call screen
+      console.log("DEBUG:[CALLSTORE/INCOMING] Navigating to incoming call screen");
+      goto("/incoming-call");
+    })
+      .then((unsubscribe) => {
+        incomingCallListenerUnsubscribe = unsubscribe;
+        console.log("DEBUG:[CALLSTORE/INCOMING] Incoming call event listener initialized");
+        resolve();
+      })
+      .catch((error) => {
+        console.error("DEBUG:[CALLSTORE/INCOMING] Failed to initialize incoming call event listener:", error);
+        reject(error);
+      });
+  });
+}
+
+/**
+ * Cleanup incoming call event listener
+ * Should be called when the app is closing
+ */
+export function cleanupIncomingCallListener(): void {
+  if (incomingCallListenerUnsubscribe) {
+    incomingCallListenerUnsubscribe();
+    incomingCallListenerUnsubscribe = null;
+    console.log("DEBUG:[CALLSTORE/INCOMING] Incoming call event listener cleaned up");
   }
 }
 

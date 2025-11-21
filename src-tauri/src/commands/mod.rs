@@ -14,7 +14,7 @@ pub use audio::{
 pub use auth::{
     get_registration_status, load_saved_credentials, register_account, unregister_account,
 };
-pub use call::{answer_call, hangup_call, hold_call, initiate_call, mute_call};
+pub use call::{answer_call, hangup_call, hold_call, initiate_call, mute_call, reject_call};
 pub use validation::*;
 
 use crate::domain::CommandError;

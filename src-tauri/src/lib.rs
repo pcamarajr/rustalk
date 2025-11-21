@@ -18,8 +18,8 @@ pub mod state;
 use commands::{
     answer_call, events::EventEmitter, get_input_device, get_output_device,
     get_registration_status, greet, hangup_call, hold_call, initiate_call, list_input_devices,
-    list_output_devices, load_saved_credentials, mute_call, register_account, set_input_device,
-    set_output_device, unregister_account,
+    list_output_devices, load_saved_credentials, mute_call, register_account, reject_call,
+    set_input_device, set_output_device, unregister_account,
 };
 use domain::traits::CredentialStore;
 use infrastructure::audio::create_audio_engine;
@@ -164,6 +164,7 @@ pub fn run() {
             set_output_device,
             initiate_call,
             answer_call,
+            reject_call,
             hangup_call,
             mute_call,
             hold_call
