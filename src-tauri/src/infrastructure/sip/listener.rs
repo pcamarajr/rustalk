@@ -12,7 +12,7 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 
 /// Extract From tag from From header
-fn extract_from_tag(from_header: &str) -> Option<String> {
+pub(crate) fn extract_from_tag(from_header: &str) -> Option<String> {
     if let Some(tag_part) = from_header.split("tag=").nth(1) {
         let tag = tag_part.split(';').next().map(|s| s.trim().to_string());
         if let Some(t) = tag {
@@ -25,7 +25,7 @@ fn extract_from_tag(from_header: &str) -> Option<String> {
 }
 
 /// Extract Request-URI from a SIP request message
-fn extract_request_uri(message: &SipMessage) -> Result<String, SipError> {
+pub(crate) fn extract_request_uri(message: &SipMessage) -> Result<String, SipError> {
     match message {
         SipMessage::Request(_request) => {
             // The request URI is in the request line
@@ -51,7 +51,7 @@ fn extract_request_uri(message: &SipMessage) -> Result<String, SipError> {
 }
 
 /// Extract Via header from a SIP message
-fn extract_via_header(message: &SipMessage) -> Result<String, SipError> {
+pub(crate) fn extract_via_header(message: &SipMessage) -> Result<String, SipError> {
     let message_bytes: Vec<u8> = message.clone().into();
     let message_str = String::from_utf8_lossy(&message_bytes);
 
@@ -73,7 +73,7 @@ fn extract_via_header(message: &SipMessage) -> Result<String, SipError> {
 }
 
 /// Extract CSeq header from a SIP message
-fn extract_cseq_header(message: &SipMessage) -> Result<String, SipError> {
+pub(crate) fn extract_cseq_header(message: &SipMessage) -> Result<String, SipError> {
     let message_bytes: Vec<u8> = message.clone().into();
     let message_str = String::from_utf8_lossy(&message_bytes);
 
@@ -95,7 +95,7 @@ fn extract_cseq_header(message: &SipMessage) -> Result<String, SipError> {
 }
 
 /// Extract SDP body from a SIP message if present
-fn extract_sdp_body(message: &SipMessage) -> Option<String> {
+pub(crate) fn extract_sdp_body(message: &SipMessage) -> Option<String> {
     // Convert SipMessage to bytes
     let message_bytes: Vec<u8> = message.clone().into();
     let message_str = String::from_utf8_lossy(&message_bytes);
