@@ -12,6 +12,7 @@ pub mod registration;
 pub mod sdp;
 pub mod tls;
 pub mod transport;
+pub mod unified_receiver;
 
 pub use client::{SipClient, TransportType};
 pub use headers::{extract_call_id_header, extract_from_header, extract_to_header};
@@ -28,3 +29,4 @@ pub use sdp::{
 };
 pub use tls::{create_tls_config, extract_hostname_from_credentials, extract_hostname_from_uri};
 pub use transport::{SipTransport, TcpTransport, TlsTransport, UdpTransport};
+pub use unified_receiver::start_unified_receiver;

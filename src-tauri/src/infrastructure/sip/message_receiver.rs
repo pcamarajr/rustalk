@@ -10,7 +10,7 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 
 /// Extract status code from a SIP response message
-fn extract_status_code(message: &SipMessage) -> Result<u16, SipError> {
+pub(crate) fn extract_status_code(message: &SipMessage) -> Result<u16, SipError> {
     match message {
         SipMessage::Response(response) => {
             let status_str = response.status_code.to_string();
@@ -31,7 +31,7 @@ fn extract_status_code(message: &SipMessage) -> Result<u16, SipError> {
 }
 
 /// Extract SDP body from a SIP message if present
-fn extract_sdp_body(message: &SipMessage) -> Option<String> {
+pub(crate) fn extract_sdp_body(message: &SipMessage) -> Option<String> {
     // Convert SipMessage to bytes
     let message_bytes: Vec<u8> = message.clone().into();
     let message_str = String::from_utf8_lossy(&message_bytes);
